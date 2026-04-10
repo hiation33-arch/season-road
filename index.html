@@ -2,12 +2,578 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Season Road — 계절로 떠나는 여행 코스</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --primary-500: #22c55e;
+      --primary-400: #4ade80;
+      --primary-100: #dcfce7;
+      --primary-900: #14532d;
+      --gray-900: #111827;
+      --gray-600: #4b5563;
+      --gray-400: #9ca3af;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --white: #ffffff;
+      --header-h: 56px;
+      --tab-h: 48px;
+      --font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      background: var(--gray-100);
+      color: var(--gray-900);
+      overflow: hidden;
+    }
+
+    /* ── 헤더 ── */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-h);
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      z-index: 300;
+    }
+
+    .logo {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--primary-500);
+      white-space: nowrap;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--gray-900); }
+
+    .search-bar {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background: var(--gray-100);
+      border-radius: 10px;
+      padding: 0 12px;
+      height: 38px;
+      gap: 8px;
+    }
+    .search-bar svg { flex-shrink: 0; color: var(--gray-400); }
+    .search-bar input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--gray-900);
+      outline: none;
+    }
+    .search-bar input::placeholder { color: var(--gray-400); }
+
+    /* ── 계절 탭 ── */
+    .season-tabs {
+      position: fixed;
+      top: var(--header-h);
+      left: 0; right: 0;
+      height: var(--tab-h);
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      z-index: 300;
+    }
+
+    .tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray-400);
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      transition: background 0.18s, color 0.18s, border-color 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .tab.active[data-s="spring"]  { background: #fef9c3; color: #78350f; border-bottom-color: #fde047; font-weight: 700; }
+    .tab.active[data-s="summer"]  { background: #dcfce7; color: #14532d; border-bottom-color: #4ade80; font-weight: 700; }
+    .tab.active[data-s="autumn"]  { background: #ffedd5; color: #7c2d12; border-bottom-color: #fb923c; font-weight: 700; }
+    .tab.active[data-s="winter"]  { background: #e0f2fe; color: #0c4a6e; border-bottom-color: #38bdf8; font-weight: 700; }
+
+    /* ── 지도 ── */
+    #map {
+      position: fixed;
+      top: calc(var(--header-h) + var(--tab-h));
+      left: 0; right: 0;
+      bottom: 0;
+    }
+
+    /* ── 범례 ── */
+    .legend {
+      position: fixed;
+      top: calc(var(--header-h) + var(--tab-h) + 12px);
+      right: 12px;
+      background: var(--white);
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .legend-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gray-600); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── 바텀시트 ── */
+    .sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--white);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.10);
+      z-index: 400;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(calc(100% - 52px));
+      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .sheet.open { transform: translateY(0); }
+
+    .sheet-handle-area {
+      padding: 10px 16px 12px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: var(--gray-200);
+      border-radius: 2px;
+    }
+    .sheet-title-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sheet-place { font-size: 17px; font-weight: 700; color: var(--gray-900); }
+    .sheet-badge {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .sheet-body {
+      padding: 0 16px 32px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .sheet-desc {
+      font-size: 14px;
+      color: var(--gray-600);
+      line-height: 1.65;
+      margin-bottom: 12px;
+    }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .tag {
+      font-size: 12px;
+      color: var(--primary-900);
+      background: var(--primary-100);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .info-card {
+      background: var(--gray-100);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .info-label { font-size: 11px; color: var(--gray-400); margin-bottom: 3px; }
+    .info-val   { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+    .col-2 { grid-column: 1 / -1; }
+
+    /* ── 커스텀 핀 ── */
+    .pin-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.22));
+      transition: transform 0.15s ease;
+      user-select: none;
+    }
+    .pin-wrap:active { transform: scale(0.92); }
+    .pin-circle {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+    .pin-tail {
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      margin-top: -1px;
+    }
+
+    /* ── 데스크톱 ── */
+    @media (min-width: 1024px) {
+      #map { left: 360px; }
+      .legend { right: 24px; top: calc(var(--header-h) + var(--tab-h) + 16px); }
+
+      .side-panel {
+        display: flex !important;
+        flex-direction: column;
+        position: fixed;
+        top: calc(var(--header-h) + var(--tab-h));
+        left: 0;
+        width: 360px;
+        bottom: 0;
+        background: var(--white);
+        border-right: 1px solid var(--gray-200);
+        overflow-y: auto;
+        z-index: 200;
+        padding: 16px;
+      }
+
+      .sheet { display: none !important; }
+    }
+
+    .side-panel { display: none; }
+
+    .side-hint {
+      font-size: 13px;
+      color: var(--gray-400);
+      text-align: center;
+      margin-top: 24px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Season Road</h1>
-  <p>계절과 트렌드로 이어지는 여행 코스 추천 서비스입니다.</p>
-  <!-- 개발 예정 -->
+
+<!-- 헤더 -->
+<header class="header">
+  <div class="logo">🗺 Season<span>Road</span></div>
+  <div class="search-bar">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" placeholder="여행지, 드라마 제목으로 검색" />
+  </div>
+</header>
+
+<!-- 계절 탭 -->
+<nav class="season-tabs">
+  <button class="tab active" data-s="spring">🌸 봄</button>
+  <button class="tab" data-s="summer">🌿 여름</button>
+  <button class="tab" data-s="autumn">🍂 가을</button>
+  <button class="tab" data-s="winter">❄️ 겨울</button>
+</nav>
+
+<!-- 지도 -->
+<div id="map"></div>
+
+<!-- 범례 -->
+<div class="legend">
+  <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div>당일 코스</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div>1박 코스</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div>2박 코스</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div>한류 촬영지</div>
+</div>
+
+<!-- 데스크톱 사이드패널 -->
+<aside class="side-panel" id="sidePanel">
+  <p class="side-hint">지도의 핀을 클릭하면<br>여행 코스 정보가 표시됩니다</p>
+</aside>
+
+<!-- 모바일 바텀시트 -->
+<div class="sheet" id="sheet">
+  <div class="sheet-handle-area" id="sheetHandle">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title-row">
+      <span class="sheet-place" id="sheetPlace">여행지를 선택하세요</span>
+      <span class="sheet-badge" id="sheetBadge"></span>
+    </div>
+  </div>
+  <div class="sheet-body" id="sheetBody">
+    <p class="sheet-desc">지도의 핀을 클릭하면 여행 코스 정보가 표시됩니다.</p>
+  </div>
+</div>
+
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=55409ecf705a8ddbb3d4ddd948cbe274"></script>
+<script>
+// ────────────────────────────
+// 여행지 데이터
+// ────────────────────────────
+const PLACES = [
+  {
+    id: 1,
+    name: '경복궁',
+    lat: 37.5796, lng: 126.9770,
+    type: 'hallyu', label: '한류 촬영지', color: '#a855f7',
+    seasons: ['spring', 'autumn'],
+    desc: '조선 왕조의 법궁. 드라마 〈미스터 션샤인〉·〈킹덤〉 촬영지. 북촌 한옥마을과 연계 반나절 코스 추천.',
+    tags: ['#궁궐', '#한복체험', '#드라마촬영지'],
+    duration: '반나절', location: '서울 종로구',
+  },
+  {
+    id: 2,
+    name: '해운대 해수욕장',
+    lat: 35.1587, lng: 129.1603,
+    type: '1night', label: '1박 코스', color: '#ef4444',
+    seasons: ['summer'],
+    desc: '대한민국 대표 해수욕장. 해운대 → 광안리 → 센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.',
+    tags: ['#해변', '#야경', '#부산여행'],
+    duration: '1박 2일', location: '부산 해운대구',
+  },
+  {
+    id: 3,
+    name: '성산일출봉',
+    lat: 33.4582, lng: 126.9428,
+    type: '2night', label: '2박 코스', color: '#3b82f6',
+    seasons: ['spring', 'summer', 'autumn', 'winter'],
+    desc: '유네스코 세계자연유산. 제주 동부 2박 3일 코스의 하이라이트. 우도·만장굴과 연계 추천.',
+    tags: ['#제주', '#유네스코', '#일출'],
+    duration: '2박 3일', location: '제주 서귀포시',
+  },
+  {
+    id: 4,
+    name: '전주 한옥마을',
+    lat: 35.8150, lng: 127.1530,
+    type: 'day', label: '당일 코스', color: '#22c55e',
+    seasons: ['spring', 'autumn'],
+    desc: '700여 채 한옥이 모인 전통문화 거리. 한복 체험과 전통 음식 투어를 함께 즐길 수 있습니다.',
+    tags: ['#한옥', '#비빔밥', '#전통문화'],
+    duration: '당일', location: '전북 전주시',
+  },
+  {
+    id: 5,
+    name: '남이섬',
+    lat: 37.7905, lng: 127.5260,
+    type: '1night', label: '1박 코스', color: '#ef4444',
+    seasons: ['spring', 'autumn'],
+    desc: '드라마 〈겨울연가〉 촬영지. 사계절 아름다운 메타세쿼이아 길이 유명. 가평 일대 1박 코스.',
+    tags: ['#겨울연가', '#단풍', '#가평'],
+    duration: '1박 2일', location: '강원 춘천시',
+  },
+  {
+    id: 6,
+    name: '불국사',
+    lat: 35.7902, lng: 129.3317,
+    type: '2night', label: '2박 코스', color: '#3b82f6',
+    seasons: ['spring', 'autumn'],
+    desc: '신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.',
+    tags: ['#경주', '#유네스코', '#역사여행'],
+    duration: '2박 3일', location: '경북 경주시',
+  },
+  {
+    id: 7,
+    name: '인사동',
+    lat: 37.5743, lng: 126.9850,
+    type: 'hallyu', label: '한류 촬영지', color: '#a855f7',
+    seasons: ['spring', 'summer', 'autumn', 'winter'],
+    desc: '전통 공예·갤러리·찻집이 모인 서울의 문화 거리. 다수의 K-드라마 로케이션 촬영 장소.',
+    tags: ['#갤러리', '#전통차', '#쇼핑'],
+    duration: '반나절', location: '서울 종로구',
+  },
+  {
+    id: 8,
+    name: '설악산 국립공원',
+    lat: 38.1196, lng: 128.4655,
+    type: '2night', label: '2박 코스', color: '#3b82f6',
+    seasons: ['autumn', 'winter'],
+    desc: '한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.',
+    tags: ['#등산', '#단풍', '#설경'],
+    duration: '2박 3일', location: '강원 속초시',
+  },
+  {
+    id: 9,
+    name: '광안리 해수욕장',
+    lat: 35.1532, lng: 129.1186,
+    type: 'day', label: '당일 코스', color: '#22c55e',
+    seasons: ['summer'],
+    desc: '광안대교 야경이 아름다운 부산의 힙한 해변. 카페·맛집 밀집 지역으로 당일 코스로 추천.',
+    tags: ['#야경', '#광안대교', '#카페'],
+    duration: '당일', location: '부산 수영구',
+  },
+];
+
+const BADGE_STYLE = {
+  day:     { bg: '#dcfce7', color: '#14532d' },
+  '1night':{ bg: '#fee2e2', color: '#991b1b' },
+  '2night':{ bg: '#dbeafe', color: '#1e3a8a' },
+  hallyu:  { bg: '#f3e8ff', color: '#6b21a8' },
+};
+
+const PIN_EMOJI = { day: '🌿', '1night': '🌙', '2night': '⭐', hallyu: '🎬' };
+
+// ────────────────────────────
+// 카카오맵 초기화
+// ────────────────────────────
+const map = new kakao.maps.Map(document.getElementById('map'), {
+  center: new kakao.maps.LatLng(36.5, 127.8),
+  level: 7,
+});
+map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+
+// ────────────────────────────
+// 커스텀 핀 DOM 생성
+// ────────────────────────────
+function makePinEl(place) {
+  const wrap = document.createElement('div');
+  wrap.className = 'pin-wrap';
+
+  const circle = document.createElement('div');
+  circle.className = 'pin-circle';
+  circle.style.background = place.color;
+  circle.textContent = PIN_EMOJI[place.type] || '📍';
+
+  const tail = document.createElement('div');
+  tail.className = 'pin-tail';
+  tail.style.borderTopColor = place.color;
+
+  wrap.appendChild(circle);
+  wrap.appendChild(tail);
+  wrap.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openPlace(place);
+  });
+  return wrap;
+}
+
+// ────────────────────────────
+// 핀 렌더링
+// ────────────────────────────
+let overlays = [];
+
+function renderPins(season) {
+  overlays.forEach(o => o.setMap(null));
+  overlays = [];
+
+  PLACES
+    .filter(p => p.seasons.includes(season))
+    .forEach(place => {
+      const overlay = new kakao.maps.CustomOverlay({
+        position: new kakao.maps.LatLng(place.lat, place.lng),
+        content: makePinEl(place),
+        yAnchor: 1.0,
+        zIndex: 3,
+      });
+      overlay.setMap(map);
+      overlays.push(overlay);
+    });
+}
+
+// ────────────────────────────
+// 장소 상세 열기
+// ────────────────────────────
+function openPlace(place) {
+  const bs = BADGE_STYLE[place.type] || {};
+
+  // 바텀시트 업데이트
+  document.getElementById('sheetPlace').textContent = place.name;
+  const badge = document.getElementById('sheetBadge');
+  badge.textContent = place.label;
+  badge.style.background = bs.bg || '#f3f4f6';
+  badge.style.color = bs.color || '#374151';
+
+  document.getElementById('sheetBody').innerHTML = `
+    <p class="sheet-desc">${place.desc}</p>
+    <div class="tag-row">${place.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-label">코스 유형</div>
+        <div class="info-val">${place.label}</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">소요 기간</div>
+        <div class="info-val">${place.duration}</div>
+      </div>
+      <div class="info-card col-2">
+        <div class="info-label">위치</div>
+        <div class="info-val">${place.location}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('sheet').classList.add('open');
+
+  // 사이드패널 업데이트 (데스크톱)
+  document.getElementById('sidePanel').innerHTML = `
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:17px;font-weight:700;color:#111827">${place.name}</span>
+        <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:${bs.bg};color:${bs.color}">${place.label}</span>
+      </div>
+      <p style="font-size:14px;color:#4b5563;line-height:1.65;margin-bottom:10px;">${place.desc}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        ${place.tags.map(t=>`<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">소요 기간</div>
+          <div style="font-size:14px;font-weight:600">${place.duration}</div>
+        </div>
+        <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">위치</div>
+          <div style="font-size:14px;font-weight:600">${place.location}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ────────────────────────────
+// 바텀시트 핸들 토글
+// ────────────────────────────
+document.getElementById('sheetHandle').addEventListener('click', () => {
+  document.getElementById('sheet').classList.toggle('open');
+});
+
+// 지도 클릭 시 바텀시트 닫기
+kakao.maps.event.addListener(map, 'click', () => {
+  document.getElementById('sheet').classList.remove('open');
+});
+
+// ────────────────────────────
+// 계절 탭
+// ────────────────────────────
+let currentSeason = 'spring';
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentSeason = tab.dataset.s;
+    renderPins(currentSeason);
+    document.getElementById('sheet').classList.remove('open');
+  });
+});
+
+// ────────────────────────────
+// 초기 렌더링
+// ────────────────────────────
+renderPins('spring');
+</script>
 </body>
 </html>
