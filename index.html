@@ -321,7 +321,7 @@
   </div>
 </div>
 
-<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=55409ecf705a8ddbb3d4ddd948cbe274"></script>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=55409ecf705a8ddbb3d4ddd948cbe274&autoload=false"></script>
 <script>
 // ────────────────────────────
 // 여행지 데이터
@@ -429,8 +429,10 @@ const BADGE_STYLE = {
 const PIN_EMOJI = { day: '🌿', '1night': '🌙', '2night': '⭐', hallyu: '🎬' };
 
 // ────────────────────────────
-// 카카오맵 초기화
+// 카카오맵 초기화 (SDK 로드 완료 후 실행)
 // ────────────────────────────
+kakao.maps.load(function() {
+
 const map = new kakao.maps.Map(document.getElementById('map'), {
   center: new kakao.maps.LatLng(36.5, 127.8),
   level: 7,
@@ -574,6 +576,8 @@ document.querySelectorAll('.tab').forEach(tab => {
 // 초기 렌더링
 // ────────────────────────────
 renderPins('spring');
+
+}); // kakao.maps.load 끝
 </script>
 </body>
 </html>
