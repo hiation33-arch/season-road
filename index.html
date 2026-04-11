@@ -20,6 +20,7 @@
       --white: #ffffff;
       --header-h: 56px;
       --tab-h: 48px;
+      --trend-h: 44px;
       --font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
@@ -46,7 +47,6 @@
       gap: 10px;
       z-index: 300;
     }
-
     .logo {
       font-size: 17px;
       font-weight: 800;
@@ -55,7 +55,6 @@
       letter-spacing: -0.5px;
     }
     .logo span { color: var(--gray-900); }
-
     .search-bar {
       flex: 1;
       display: flex;
@@ -89,7 +88,6 @@
       display: flex;
       z-index: 300;
     }
-
     .tab {
       flex: 1;
       border: none;
@@ -106,26 +104,72 @@
       justify-content: center;
       gap: 4px;
     }
+    .tab.active[data-s="spring"] { background: #fef9c3; color: #78350f; border-bottom-color: #fde047; font-weight: 700; }
+    .tab.active[data-s="summer"] { background: #dcfce7; color: #14532d; border-bottom-color: #4ade80; font-weight: 700; }
+    .tab.active[data-s="autumn"] { background: #ffedd5; color: #7c2d12; border-bottom-color: #fb923c; font-weight: 700; }
+    .tab.active[data-s="winter"] { background: #e0f2fe; color: #0c4a6e; border-bottom-color: #38bdf8; font-weight: 700; }
 
-    .tab.active[data-s="spring"]  { background: #fef9c3; color: #78350f; border-bottom-color: #fde047; font-weight: 700; }
-    .tab.active[data-s="summer"]  { background: #dcfce7; color: #14532d; border-bottom-color: #4ade80; font-weight: 700; }
-    .tab.active[data-s="autumn"]  { background: #ffedd5; color: #7c2d12; border-bottom-color: #fb923c; font-weight: 700; }
-    .tab.active[data-s="winter"]  { background: #e0f2fe; color: #0c4a6e; border-bottom-color: #38bdf8; font-weight: 700; }
+    /* ── 트렌드 스트립 (모바일) ── */
+    .trend-strip {
+      position: fixed;
+      top: calc(var(--header-h) + var(--tab-h));
+      left: 0; right: 0;
+      height: var(--trend-h);
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      z-index: 290;
+      -webkit-overflow-scrolling: touch;
+    }
+    .trend-strip::-webkit-scrollbar { display: none; }
+    .trend-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-400);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .trend-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--gray-100);
+      border-radius: 20px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-900);
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .trend-chip:active { background: var(--gray-200); }
+    .trend-rank { font-size: 11px; font-weight: 700; min-width: 14px; text-align: center; }
+    .trend-rank.rank-1 { color: #ef4444; }
+    .trend-rank.rank-2 { color: #f97316; }
+    .trend-rank.rank-3 { color: #eab308; }
+    .trend-rank.rank-4, .trend-rank.rank-5 { color: var(--gray-400); }
 
     /* ── 지도 ── */
     #map {
       position: fixed;
-      top: calc(var(--header-h) + var(--tab-h));
-      left: 0; right: 0;
-      bottom: 0;
+      top: calc(var(--header-h) + var(--tab-h) + var(--trend-h));
+      left: 0; right: 0; bottom: 0;
       width: 100%;
-      height: calc(100dvh - var(--header-h) - var(--tab-h));
+      height: calc(100dvh - var(--header-h) - var(--tab-h) - var(--trend-h));
     }
 
     /* ── 범례 ── */
     .legend {
       position: fixed;
-      top: calc(var(--header-h) + var(--tab-h) + 12px);
+      top: calc(var(--header-h) + var(--tab-h) + var(--trend-h) + 12px);
       right: 12px;
       background: var(--white);
       border-radius: 12px;
@@ -154,7 +198,6 @@
       transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
     }
     .sheet.open { transform: translateY(0); }
-
     .sheet-handle-area {
       padding: 10px 16px 12px;
       cursor: pointer;
@@ -164,50 +207,16 @@
       align-items: center;
       gap: 10px;
     }
-    .sheet-handle {
-      width: 36px; height: 4px;
-      background: var(--gray-200);
-      border-radius: 2px;
-    }
-    .sheet-title-row {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .sheet-handle { width: 36px; height: 4px; background: var(--gray-200); border-radius: 2px; }
+    .sheet-title-row { width: 100%; display: flex; align-items: center; gap: 8px; }
     .sheet-place { font-size: 17px; font-weight: 700; color: var(--gray-900); }
-    .sheet-badge {
-      font-size: 11px; font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    .sheet-body {
-      padding: 0 16px 32px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    .sheet-desc {
-      font-size: 14px;
-      color: var(--gray-600);
-      line-height: 1.65;
-      margin-bottom: 12px;
-    }
+    .sheet-badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .sheet-body { padding: 0 16px 32px; overflow-y: auto; flex: 1; }
+    .sheet-desc { font-size: 14px; color: var(--gray-600); line-height: 1.65; margin-bottom: 12px; }
     .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-    .tag {
-      font-size: 12px;
-      color: var(--primary-900);
-      background: var(--primary-100);
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
+    .tag { font-size: 12px; color: var(--primary-900); background: var(--primary-100); padding: 4px 10px; border-radius: 20px; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .info-card {
-      background: var(--gray-100);
-      border-radius: 12px;
-      padding: 10px 12px;
-    }
+    .info-card { background: var(--gray-100); border-radius: 12px; padding: 10px 12px; }
     .info-label { font-size: 11px; color: var(--gray-400); margin-bottom: 3px; }
     .info-val   { font-size: 14px; font-weight: 600; color: var(--gray-900); }
     .col-2 { grid-column: 1 / -1; }
@@ -239,10 +248,52 @@
       margin-top: -1px;
     }
 
+    /* ── 사이드패널 공통 ── */
+    .panel-section { margin-bottom: 20px; }
+    .panel-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gray-600);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .panel-list { display: flex; flex-direction: column; gap: 2px; }
+    .panel-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .panel-item:hover { background: var(--gray-100); }
+    .panel-item:active { background: var(--gray-200); }
+    .panel-rank { font-size: 13px; font-weight: 700; min-width: 18px; text-align: center; }
+    .panel-rank.rank-1 { color: #ef4444; }
+    .panel-rank.rank-2 { color: #f97316; }
+    .panel-rank.rank-3 { color: #eab308; }
+    .panel-rank.rank-4, .panel-rank.rank-5 { color: var(--gray-400); }
+    .panel-item-text { font-size: 13px; font-weight: 500; color: var(--gray-900); flex: 1; line-height: 1.4; }
+    .panel-item-sub { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
+    .panel-divider { height: 1px; background: var(--gray-200); margin: 4px 0 18px; }
+    .panel-place-card {
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
     /* ── 데스크톱 ── */
     @media (min-width: 1024px) {
-      #map { left: 360px; }
+      #map {
+        left: 360px;
+        top: calc(var(--header-h) + var(--tab-h));
+        height: calc(100dvh - var(--header-h) - var(--tab-h));
+      }
       .legend { right: 24px; top: calc(var(--header-h) + var(--tab-h) + 16px); }
+      .trend-strip { display: none; }
 
       .side-panel {
         display: flex !important;
@@ -258,18 +309,10 @@
         z-index: 200;
         padding: 16px;
       }
-
       .sheet { display: none !important; }
     }
 
     .side-panel { display: none; }
-
-    .side-hint {
-      font-size: 13px;
-      color: var(--gray-400);
-      text-align: center;
-      margin-top: 24px;
-    }
   </style>
 </head>
 <body>
@@ -293,6 +336,9 @@
   <button class="tab" data-s="winter">❄️ 겨울</button>
 </nav>
 
+<!-- 트렌드 스트립 (모바일) -->
+<div class="trend-strip" id="trendStrip"></div>
+
 <!-- 지도 -->
 <div id="map"></div>
 
@@ -305,9 +351,7 @@
 </div>
 
 <!-- 데스크톱 사이드패널 -->
-<aside class="side-panel" id="sidePanel">
-  <p class="side-hint">지도의 핀을 클릭하면<br>여행 코스 정보가 표시됩니다</p>
-</aside>
+<aside class="side-panel" id="sidePanel"></aside>
 
 <!-- 모바일 바텀시트 -->
 <div class="sheet" id="sheet">
@@ -326,7 +370,7 @@
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9353fd631e48d2e94126e798022c217e&autoload=false"></script>
 <script>
 // ────────────────────────────
-// 여행지 데이터
+// 여행지 데이터 (15곳)
 // ────────────────────────────
 const PLACES = [
   {
@@ -419,7 +463,101 @@ const PLACES = [
     tags: ['#야경', '#광안대교', '#카페'],
     duration: '당일', location: '부산 수영구',
   },
+  {
+    id: 10,
+    name: '강릉 경포대',
+    lat: 37.7967, lng: 128.9059,
+    type: '1night', label: '1박 코스', color: '#ef4444',
+    seasons: ['spring', 'summer'],
+    desc: '동해 최대 석호와 넓은 해변이 어우러진 강원 대표 관광지. 오죽헌·정동진과 연계 1박 코스.',
+    tags: ['#동해', '#해돋이', '#강원여행'],
+    duration: '1박 2일', location: '강원 강릉시',
+  },
+  {
+    id: 11,
+    name: '여수 오동도',
+    lat: 34.7420, lng: 127.7539,
+    type: '1night', label: '1박 코스', color: '#ef4444',
+    seasons: ['spring', 'summer', 'autumn'],
+    desc: '동백꽃 군락지로 유명한 여수 대표 섬. 낭만포차·돌산도·향일암과 함께 1박 여수 낭만 코스.',
+    tags: ['#동백꽃', '#낭만포차', '#여수밤바다'],
+    duration: '1박 2일', location: '전남 여수시',
+  },
+  {
+    id: 12,
+    name: '한라산',
+    lat: 33.3617, lng: 126.5292,
+    type: '2night', label: '2박 코스', color: '#3b82f6',
+    seasons: ['winter'],
+    desc: '한국 최고봉 1,947m. 겨울 눈꽃 트레킹이 압도적. 영실·어리목·성판악 코스 중 선택 가능.',
+    tags: ['#등산', '#눈꽃', '#제주'],
+    duration: '2박 3일', location: '제주특별자치도',
+  },
+  {
+    id: 13,
+    name: '안동 하회마을',
+    lat: 36.5352, lng: 128.5207,
+    type: 'day', label: '당일 코스', color: '#22c55e',
+    seasons: ['autumn'],
+    desc: '낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.',
+    tags: ['#유네스코', '#탈춤', '#한옥'],
+    duration: '당일', location: '경북 안동시',
+  },
+  {
+    id: 14,
+    name: '대관령 양떼목장',
+    lat: 37.7063, lng: 128.7473,
+    type: 'day', label: '당일 코스', color: '#22c55e',
+    seasons: ['winter', 'spring'],
+    desc: '해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.',
+    tags: ['#눈꽃', '#양떼', '#고원'],
+    duration: '당일', location: '강원 평창군',
+  },
+  {
+    id: 15,
+    name: '담양 죽녹원',
+    lat: 35.3217, lng: 126.9878,
+    type: 'day', label: '당일 코스', color: '#22c55e',
+    seasons: ['spring', 'summer'],
+    desc: '31만㎡ 울창한 대나무 숲이 만드는 천연 에어컨. 메타세쿼이아 가로수길과 함께하는 힐링 당일 코스.',
+    tags: ['#대나무숲', '#힐링', '#담양'],
+    duration: '당일', location: '전남 담양군',
+  },
 ];
+
+// ────────────────────────────
+// 트렌드 더미 데이터 (네이버 데이터랩 실 API는 백엔드 필요)
+// ────────────────────────────
+const TREND_DATA = {
+  spring: [
+    { keyword: '경복궁 벚꽃 나들이', placeId: 1 },
+    { keyword: '전주 한옥마을', placeId: 4 },
+    { keyword: '담양 죽녹원', placeId: 15 },
+    { keyword: '강릉 경포 벚꽃', placeId: 10 },
+    { keyword: '남이섬 봄소풍', placeId: 5 },
+  ],
+  summer: [
+    { keyword: '해운대 피서', placeId: 2 },
+    { keyword: '광안리 야경 카페', placeId: 9 },
+    { keyword: '여수 낭만포차', placeId: 11 },
+    { keyword: '강릉 경포해변', placeId: 10 },
+    { keyword: '담양 죽녹원 힐링', placeId: 15 },
+  ],
+  autumn: [
+    { keyword: '설악산 단풍 등산', placeId: 8 },
+    { keyword: '경주 불국사', placeId: 6 },
+    { keyword: '안동 하회마을', placeId: 13 },
+    { keyword: '남이섬 단풍', placeId: 5 },
+    { keyword: '여수 가을 여행', placeId: 11 },
+  ],
+  winter: [
+    { keyword: '한라산 눈꽃 트레킹', placeId: 12 },
+    { keyword: '설악산 설경', placeId: 8 },
+    { keyword: '대관령 양떼목장 눈꽃', placeId: 14 },
+    { keyword: '성산일출봉 일출', placeId: 3 },
+    { keyword: '인사동 연말 나들이', placeId: 7 },
+  ],
+};
 
 const BADGE_STYLE = {
   day:     { bg: '#dcfce7', color: '#14532d' },
@@ -427,162 +565,231 @@ const BADGE_STYLE = {
   '2night':{ bg: '#dbeafe', color: '#1e3a8a' },
   hallyu:  { bg: '#f3e8ff', color: '#6b21a8' },
 };
-
-const PIN_EMOJI = { day: '🌿', '1night': '🌙', '2night': '⭐', hallyu: '🎬' };
-
-// ────────────────────────────
-// 카카오맵 초기화 (SDK 로드 완료 후 실행)
-// ────────────────────────────
-kakao.maps.load(function() {
-
-const map = new kakao.maps.Map(document.getElementById('map'), {
-  center: new kakao.maps.LatLng(36.5, 127.8),
-  level: 7,
-});
-map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
+const PIN_EMOJI  = { day: '🌿', '1night': '🌙', '2night': '⭐', hallyu: '🎬' };
+const SEASON_KO  = { spring: '봄', summer: '여름', autumn: '가을', winter: '겨울' };
+const SEASON_EMO = { spring: '🌸', summer: '🌿', autumn: '🍂', winter: '❄️' };
 
 // ────────────────────────────
-// 커스텀 핀 DOM 생성
+// 카카오맵 초기화
 // ────────────────────────────
-let _pinClicked = false;
+kakao.maps.load(function () {
 
-function makePinEl(place) {
-  const wrap = document.createElement('div');
-  wrap.className = 'pin-wrap';
-
-  const circle = document.createElement('div');
-  circle.className = 'pin-circle';
-  circle.style.background = place.color;
-  circle.textContent = PIN_EMOJI[place.type] || '📍';
-
-  const tail = document.createElement('div');
-  tail.className = 'pin-tail';
-  tail.style.borderTopColor = place.color;
-
-  wrap.appendChild(circle);
-  wrap.appendChild(tail);
-  wrap.addEventListener('click', (e) => {
-    e.stopPropagation();
-    _pinClicked = true;
-    openPlace(place);
-    setTimeout(() => { _pinClicked = false; }, 0);
+  const map = new kakao.maps.Map(document.getElementById('map'), {
+    center: new kakao.maps.LatLng(36.5, 127.8),
+    level: 7,
   });
-  return wrap;
-}
+  map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
-// ────────────────────────────
-// 핀 렌더링
-// ────────────────────────────
-let overlays = [];
+  // ── 지도 이동 헬퍼 ──
+  function flyTo(lat, lng, level = 5) {
+    map.setLevel(level);
+    map.panTo(new kakao.maps.LatLng(lat, lng));
+  }
 
-function renderPins(season) {
-  overlays.forEach(o => o.setMap(null));
-  overlays = [];
+  // ── 커스텀 핀 DOM 생성 ──
+  let _pinClicked = false;
 
-  PLACES
-    .filter(p => p.seasons.includes(season))
-    .forEach(place => {
-      const overlay = new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(place.lat, place.lng),
-        content: makePinEl(place),
-        yAnchor: 1.0,
-        zIndex: 3,
-      });
-      overlay.setMap(map);
-      overlays.push(overlay);
+  function makePinEl(place) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pin-wrap';
+
+    const circle = document.createElement('div');
+    circle.className = 'pin-circle';
+    circle.style.background = place.color;
+    circle.textContent = PIN_EMOJI[place.type] || '📍';
+
+    const tail = document.createElement('div');
+    tail.className = 'pin-tail';
+    tail.style.borderTopColor = place.color;
+
+    wrap.appendChild(circle);
+    wrap.appendChild(tail);
+    wrap.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _pinClicked = true;
+      openPlace(place);
+      setTimeout(() => { _pinClicked = false; }, 0);
     });
-}
+    return wrap;
+  }
 
-// ────────────────────────────
-// 장소 상세 열기
-// ────────────────────────────
-function openPlace(place) {
-  const bs = BADGE_STYLE[place.type] || {};
+  // ── 핀 렌더링 ──
+  let overlays = [];
 
-  // 바텀시트 업데이트
-  document.getElementById('sheetPlace').textContent = place.name;
-  const badge = document.getElementById('sheetBadge');
-  badge.textContent = place.label;
-  badge.style.background = bs.bg || '#f3f4f6';
-  badge.style.color = bs.color || '#374151';
+  function renderPins(season) {
+    overlays.forEach(o => o.setMap(null));
+    overlays = [];
+    PLACES
+      .filter(p => p.seasons.includes(season))
+      .forEach(place => {
+        const overlay = new kakao.maps.CustomOverlay({
+          position: new kakao.maps.LatLng(place.lat, place.lng),
+          content: makePinEl(place),
+          yAnchor: 1.0,
+          zIndex: 3,
+        });
+        overlay.setMap(map);
+        overlays.push(overlay);
+      });
+  }
 
-  document.getElementById('sheetBody').innerHTML = `
-    <p class="sheet-desc">${place.desc}</p>
-    <div class="tag-row">${place.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
-    <div class="info-grid">
-      <div class="info-card">
-        <div class="info-label">코스 유형</div>
-        <div class="info-val">${place.label}</div>
+  // ── 트렌드 스트립 렌더링 (모바일) ──
+  function renderTrend(season) {
+    const strip = document.getElementById('trendStrip');
+    strip.innerHTML = '<span class="trend-label">🔥 트렌드</span>';
+    (TREND_DATA[season] || []).forEach((item, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'trend-chip';
+      chip.innerHTML = `<span class="trend-rank rank-${i + 1}">${i + 1}</span>${item.keyword}`;
+      chip.addEventListener('click', () => {
+        const place = PLACES.find(p => p.id === item.placeId);
+        if (!place) return;
+        flyTo(place.lat, place.lng);
+        openPlace(place);
+      });
+      strip.appendChild(chip);
+    });
+  }
+
+  // ── 사이드패널 렌더링 (데스크톱) ──
+  function renderSidePanel(season, activePlace) {
+    const panel = document.getElementById('sidePanel');
+    const trends = TREND_DATA[season] || [];
+    const top5   = PLACES.filter(p => p.seasons.includes(season)).slice(0, 5);
+
+    const trendRows = trends.map((item, i) => {
+      const p = PLACES.find(q => q.id === item.placeId);
+      return `
+        <div class="panel-item" data-id="${item.placeId}">
+          <span class="panel-rank rank-${i + 1}">${i + 1}</span>
+          <span class="panel-item-text">${item.keyword}</span>
+          ${p ? `<span class="panel-item-sub">${p.location.split(' ')[0]}</span>` : ''}
+        </div>`;
+    }).join('');
+
+    const top5Rows = top5.map((place, i) => {
+      const bs = BADGE_STYLE[place.type] || {};
+      const isActive = activePlace && activePlace.id === place.id;
+      return `
+        <div class="panel-item" data-id="${place.id}" ${isActive ? 'style="background:var(--gray-100)"' : ''}>
+          <span class="panel-rank rank-${i + 1}">${i + 1}</span>
+          <span class="panel-item-text">${place.name}</span>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${bs.bg};color:${bs.color}">${place.label}</span>
+        </div>`;
+    }).join('');
+
+    const placeCard = activePlace ? (() => {
+      const bs = BADGE_STYLE[activePlace.type] || {};
+      return `
+        <div class="panel-divider"></div>
+        <div class="panel-place-card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="font-size:17px;font-weight:700;color:#111827">${activePlace.name}</span>
+            <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:${bs.bg};color:${bs.color}">${activePlace.label}</span>
+          </div>
+          <p style="font-size:14px;color:#4b5563;line-height:1.65;margin-bottom:10px;">${activePlace.desc}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+            ${activePlace.tags.map(t => `<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
+              <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">소요 기간</div>
+              <div style="font-size:14px;font-weight:600">${activePlace.duration}</div>
+            </div>
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
+              <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">위치</div>
+              <div style="font-size:14px;font-weight:600">${activePlace.location}</div>
+            </div>
+          </div>
+        </div>`;
+    })() : '';
+
+    panel.innerHTML = `
+      <div class="panel-section">
+        <div class="panel-section-title">🔥 지금 뜨는 여행지 TOP5</div>
+        <div class="panel-list" id="trendList">${trendRows}</div>
       </div>
-      <div class="info-card">
-        <div class="info-label">소요 기간</div>
-        <div class="info-val">${place.duration}</div>
+      <div class="panel-divider"></div>
+      <div class="panel-section">
+        <div class="panel-section-title">${SEASON_EMO[season]} ${SEASON_KO[season]} 추천 여행지 TOP5</div>
+        <div class="panel-list" id="top5List">${top5Rows}</div>
       </div>
-      <div class="info-card col-2">
-        <div class="info-label">위치</div>
-        <div class="info-val">${place.location}</div>
+      ${placeCard}
+    `;
+
+    panel.querySelectorAll('#trendList .panel-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const place = PLACES.find(p => p.id === Number(el.dataset.id));
+        if (!place) return;
+        flyTo(place.lat, place.lng);
+        openPlace(place);
+      });
+    });
+    panel.querySelectorAll('#top5List .panel-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const place = PLACES.find(p => p.id === Number(el.dataset.id));
+        if (!place) return;
+        flyTo(place.lat, place.lng);
+        openPlace(place);
+      });
+    });
+  }
+
+  // ── 장소 상세 열기 ──
+  function openPlace(place) {
+    const bs = BADGE_STYLE[place.type] || {};
+
+    // 바텀시트 (모바일)
+    document.getElementById('sheetPlace').textContent = place.name;
+    const badge = document.getElementById('sheetBadge');
+    badge.textContent = place.label;
+    badge.style.background = bs.bg || '#f3f4f6';
+    badge.style.color = bs.color || '#374151';
+    document.getElementById('sheetBody').innerHTML = `
+      <p class="sheet-desc">${place.desc}</p>
+      <div class="tag-row">${place.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">코스 유형</div><div class="info-val">${place.label}</div></div>
+        <div class="info-card"><div class="info-label">소요 기간</div><div class="info-val">${place.duration}</div></div>
+        <div class="info-card col-2"><div class="info-label">위치</div><div class="info-val">${place.location}</div></div>
       </div>
-    </div>
-  `;
-  document.getElementById('sheet').classList.add('open');
+    `;
+    document.getElementById('sheet').classList.add('open');
 
-  // 사이드패널 업데이트 (데스크톱)
-  document.getElementById('sidePanel').innerHTML = `
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <span style="font-size:17px;font-weight:700;color:#111827">${place.name}</span>
-        <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:${bs.bg};color:${bs.color}">${place.label}</span>
-      </div>
-      <p style="font-size:14px;color:#4b5563;line-height:1.65;margin-bottom:10px;">${place.desc}</p>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-        ${place.tags.map(t=>`<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">소요 기간</div>
-          <div style="font-size:14px;font-weight:600">${place.duration}</div>
-        </div>
-        <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">위치</div>
-          <div style="font-size:14px;font-weight:600">${place.location}</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
+    // 사이드패널 (데스크톱)
+    renderSidePanel(currentSeason, place);
+  }
 
-// ────────────────────────────
-// 바텀시트 핸들 토글
-// ────────────────────────────
-document.getElementById('sheetHandle').addEventListener('click', () => {
-  document.getElementById('sheet').classList.toggle('open');
-});
+  // ── 바텀시트 핸들 토글 ──
+  document.getElementById('sheetHandle').addEventListener('click', () => {
+    document.getElementById('sheet').classList.toggle('open');
+  });
 
-// 지도 클릭 시 바텀시트 닫기 (핀 클릭은 제외)
-kakao.maps.event.addListener(map, 'click', () => {
-  if (_pinClicked) return;
-  document.getElementById('sheet').classList.remove('open');
-});
-
-// ────────────────────────────
-// 계절 탭
-// ────────────────────────────
-let currentSeason = 'spring';
-
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    currentSeason = tab.dataset.s;
-    renderPins(currentSeason);
+  // 지도 클릭 시 바텀시트 닫기 (핀 클릭은 제외)
+  kakao.maps.event.addListener(map, 'click', () => {
+    if (_pinClicked) return;
     document.getElementById('sheet').classList.remove('open');
   });
-});
 
-// ────────────────────────────
-// 초기 렌더링
-// ────────────────────────────
-renderPins('spring');
+  // ── 계절 탭 ──
+  let currentSeason = 'spring';
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentSeason = tab.dataset.s;
+      renderPins(currentSeason);
+      renderTrend(currentSeason);
+      renderSidePanel(currentSeason);
+      document.getElementById('sheet').classList.remove('open');
+    });
+  });
+
+  // ── 초기 렌더링 ──
+  renderPins('spring');
+  renderTrend('spring');
+  renderSidePanel('spring');
 
 }); // kakao.maps.load 끝
 </script>
