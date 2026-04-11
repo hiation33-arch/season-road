@@ -23,7 +23,11 @@
       --white: #ffffff;
       --header-h: 56px;
       --tab-h: 48px;
+      --bf-h: 40px;
       --trend-h: 44px;
+      --barrier-500: #f59e0b;
+      --barrier-100: #fffbeb;
+      --barrier-900: #92400e;
       --font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -79,8 +83,62 @@
     .hallyu-tab.active { background: var(--hallyu-100); color: var(--hallyu-900); border-bottom-color: var(--hallyu-500); font-weight: 700; }
 
     /* ── 트렌드 스트립 (모바일) ── */
+    /* ── 무장애 토글 행 ── */
+    .bf-toggle-row {
+      position: fixed; top: calc(var(--header-h) + var(--tab-h));
+      left: 0; right: 0; height: var(--bf-h);
+      background: var(--white); border-bottom: 1px solid var(--gray-200);
+      display: flex; align-items: center; padding: 0 14px; gap: 10px; z-index: 295;
+    }
+    .bf-toggle-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border: 1.5px solid var(--gray-200); border-radius: 20px;
+      background: var(--white); font-family: var(--font); font-size: 13px; font-weight: 600;
+      color: var(--gray-600); cursor: pointer; transition: all 0.18s; white-space: nowrap;
+    }
+    .bf-toggle-btn.active {
+      background: var(--barrier-100); border-color: var(--barrier-500);
+      color: var(--barrier-900);
+    }
+    .bf-toggle-hint {
+      font-size: 11px; color: var(--gray-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .bf-chip {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--barrier-100); border-radius: 20px; padding: 5px 11px;
+      font-size: 12px; font-weight: 500; color: var(--barrier-900);
+      white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+      border: 1px solid #fed7aa;
+    }
+    .bf-chip:active { background: #fde68a; }
+    .acc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .acc-item {
+      display: flex; align-items: center; gap: 7px; font-size: 12px;
+      background: var(--gray-100); border-radius: 8px; padding: 7px 10px;
+      color: var(--gray-900);
+    }
+    .acc-item .acc-icon { font-size: 14px; flex-shrink: 0; }
+    .acc-label { font-size: 11px; color: var(--gray-600); }
+    .bf-course-card {
+      border: 1.5px solid #fed7aa; border-radius: 12px; padding: 12px 14px;
+      margin-bottom: 8px; cursor: pointer; transition: background 0.15s;
+    }
+    .bf-course-card:hover { background: var(--barrier-100); }
+    .bf-course-title { font-size: 13px; font-weight: 700; color: var(--gray-900); margin-bottom: 3px; }
+    .bf-course-desc  { font-size: 11px; color: var(--gray-400); line-height: 1.5; }
+    .bf-place-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 10px; cursor: pointer; transition: background 0.15s;
+    }
+    .bf-place-item:hover { background: var(--gray-100); }
+    .bf-place-item.active { background: var(--barrier-100); }
+    .bf-pin-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--barrier-500); flex-shrink: 0; }
+    .bf-place-name { font-size: 13px; font-weight: 600; color: var(--gray-900); flex: 1; }
+    .bf-place-loc  { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
+
+    /* ── 트렌드 스트립 (모바일) ── */
     .trend-strip {
-      position: fixed; top: calc(var(--header-h) + var(--tab-h)); left: 0; right: 0;
+      position: fixed; top: calc(var(--header-h) + var(--tab-h) + var(--bf-h)); left: 0; right: 0;
       height: var(--trend-h); background: var(--white); border-bottom: 1px solid var(--gray-200);
       display: flex; align-items: center; padding: 0 12px; gap: 8px;
       overflow-x: auto; overflow-y: hidden; scrollbar-width: none; z-index: 290;
@@ -106,15 +164,15 @@
     /* ── 지도 ── */
     #map {
       position: fixed;
-      top: calc(var(--header-h) + var(--tab-h) + var(--trend-h));
+      top: calc(var(--header-h) + var(--tab-h) + var(--bf-h) + var(--trend-h));
       left: 0; right: 0; bottom: 0;
-      height: calc(100dvh - var(--header-h) - var(--tab-h) - var(--trend-h));
+      height: calc(100dvh - var(--header-h) - var(--tab-h) - var(--bf-h) - var(--trend-h));
     }
 
     /* ── 범례 ── */
     .legend {
       position: fixed;
-      top: calc(var(--header-h) + var(--tab-h) + var(--trend-h) + 12px);
+      top: calc(var(--header-h) + var(--tab-h) + var(--bf-h) + var(--trend-h) + 12px);
       right: 12px;
       background: var(--white); border-radius: 12px; padding: 10px 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 200;
@@ -229,12 +287,12 @@
 
     /* ── 데스크톱 ── */
     @media (min-width: 1024px) {
-      #map { left: 360px; top: calc(var(--header-h) + var(--tab-h)); height: calc(100dvh - var(--header-h) - var(--tab-h)); }
-      .legend { right: 24px; top: calc(var(--header-h) + var(--tab-h) + 16px); }
+      #map { left: 360px; top: calc(var(--header-h) + var(--tab-h) + var(--bf-h)); height: calc(100dvh - var(--header-h) - var(--tab-h) - var(--bf-h)); }
+      .legend { right: 24px; top: calc(var(--header-h) + var(--tab-h) + var(--bf-h) + 16px); }
       .trend-strip { display: none; }
       .side-panel {
         display: flex !important; flex-direction: column;
-        position: fixed; top: calc(var(--header-h) + var(--tab-h)); left: 0; width: 360px; bottom: 0;
+        position: fixed; top: calc(var(--header-h) + var(--tab-h) + var(--bf-h)); left: 0; width: 360px; bottom: 0;
         background: var(--white); border-right: 1px solid var(--gray-200);
         overflow-y: auto; z-index: 200; padding: 16px;
       }
@@ -264,6 +322,11 @@
   <button class="tab hallyu-tab" id="hallyuTab" data-s="hallyu">🎬 한류</button>
 </nav>
 
+<div class="bf-toggle-row">
+  <button class="bf-toggle-btn" id="bfToggleBtn">♿ 무장애 여행</button>
+  <span class="bf-toggle-hint" id="bfToggleHint">시니어·장애인 모두 이용 가능한 여행지</span>
+</div>
+
 <div class="trend-strip" id="trendStrip"></div>
 
 <div id="map"></div>
@@ -273,6 +336,7 @@
   <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div>1박 코스</div>
   <div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div>2박 코스</div>
   <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div>한류 촬영지</div>
+  <div class="legend-row" id="bfLegendRow" style="display:none"><div class="legend-dot" style="background:#f59e0b"></div>무장애 여행지</div>
 </div>
 
 <aside class="side-panel" id="sidePanel"></aside>
@@ -429,11 +493,62 @@ const DRAMA_DATA = [
   },
 ];
 
+// ── 무장애 여행지 데이터 (8곳) ── 한국관광공사 OpenAPI 연동 구조 (현재 더미)
+const BARRIER_FREE_DATA = [
+  { id:'bf1', name:'국립중앙박물관', lat:37.5237, lng:126.9804, type:'day', label:'당일 코스', duration:'당일', location:'서울 용산구',
+    desc:'국내 최대 박물관. 전 구역 휠체어 접근 가능, 시각장애인 오디오 가이드 제공.',
+    tags:['#박물관','#시니어','#가족여행'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true }, apiId:'KTO_264570' },
+  { id:'bf2', name:'경복궁', lat:37.5796, lng:126.9770, type:'day', label:'당일 코스', duration:'반나절', location:'서울 종로구',
+    desc:'전동 휠체어 대여 서비스 운영. 무장애 관람 경로 전용 지도 배포.',
+    tags:['#궁궐','#역사','#무장애'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true }, apiId:'KTO_264540' },
+  { id:'bf3', name:'한강공원 여의도', lat:37.5285, lng:126.9326, type:'day', label:'당일 코스', duration:'당일', location:'서울 영등포구',
+    desc:'평탄한 자전거·산책로 7.2km. 휠체어·유모차 이동 편리.',
+    tags:['#공원','#산책','#피크닉'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true }, apiId:'KTO_264571' },
+  { id:'bf4', name:'제주 사려니숲길', lat:33.4304, lng:126.6623, type:'1night', label:'1박 코스', duration:'1박 2일', location:'제주 제주시',
+    desc:'포장된 숲길 구간(2.4km) 전동 휠체어 통행 가능.',
+    tags:['#숲길','#제주','#힐링'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true }, apiId:'KTO_264572' },
+  { id:'bf5', name:'순천만 국가정원', lat:34.9178, lng:127.4923, type:'1night', label:'1박 코스', duration:'1박 2일', location:'전남 순천시',
+    desc:'전 구간 평탄 포장로. 전동 보조 수레 무료 대여.',
+    tags:['#국가정원','#생태','#시니어'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true }, apiId:'KTO_264573' },
+  { id:'bf6', name:'불국사', lat:35.7902, lng:129.3317, type:'2night', label:'2박 코스', duration:'2박 3일', location:'경북 경주시',
+    desc:'무장애 탐방로 조성. 점자 유물 안내판 운영.',
+    tags:['#사찰','#경주','#역사'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true }, apiId:'KTO_264574' },
+  { id:'bf7', name:'해운대 해수욕장', lat:35.1587, lng:129.1603, type:'1night', label:'1박 코스', duration:'1박 2일', location:'부산 해운대구',
+    desc:'수상 휠체어 대여(하계). 해안산책로 전 구간 포장.',
+    tags:['#해변','#여름','#수상휠체어'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true }, apiId:'KTO_264575' },
+  { id:'bf8', name:'전주 한옥마을', lat:35.8150, lng:127.1530, type:'day', label:'당일 코스', duration:'당일', location:'전북 전주시',
+    desc:'무장애 한복 체험관 운영. 관광안내소 점자 지도 비치.',
+    tags:['#한옥','#전통','#무장애체험'],
+    accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true }, apiId:'KTO_264576' },
+];
+
+const BF_COURSES = [
+  { id:'bfc1', name:'서울 문화 당일 코스', desc:'국립중앙박물관 → 경복궁 → 한강공원 여의도', placeIds:['bf1','bf2','bf3'], type:'day' },
+  { id:'bfc2', name:'제주·순천 힐링 1박 코스', desc:'제주 사려니숲길 → 순천만 국가정원', placeIds:['bf4','bf5'], type:'1night' },
+  { id:'bfc3', name:'경주·부산 역사 2박 코스', desc:'불국사 → 해운대 해수욕장', placeIds:['bf6','bf7'], type:'2night' },
+];
+
+const ACC_LABELS = {
+  wheelchair: '휠체어 접근',
+  toilet:     '장애인 화장실',
+  ramp:       '경사로',
+  braille:    '점자 안내',
+  parking:    '장애인 주차',
+};
+
 const BADGE_STYLE = {
   day:     { bg:'#dcfce7', color:'#14532d' },
   '1night':{ bg:'#fee2e2', color:'#991b1b' },
   '2night':{ bg:'#dbeafe', color:'#1e3a8a' },
   hallyu:  { bg:'#f3e8ff', color:'#6b21a8' },
+  bf:      { bg:'#fffbeb', color:'#92400e' },
 };
 const PIN_EMOJI  = { day:'🌿', '1night':'🌙', '2night':'⭐', hallyu:'🎬' };
 const SEASON_KO  = { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' };
@@ -449,8 +564,10 @@ kakao.maps.load(function () {
   // ── 상태 ──
   let currentSeason   = 'spring';
   let hallyuMode      = false;
+  let bfMode          = false;
   let activeDramaId   = null;   // 선택된 드라마 (null = 전체)
   let activeSiteId    = null;   // 선택된 촬영지
+  let activeBFId      = null;   // 선택된 무장애 장소
   let _pinClicked     = false;
   let _searchTimer    = null;
 
@@ -495,9 +612,8 @@ kakao.maps.load(function () {
     return wrap;
   }
 
-  // ── 계절 핀 렌더링 ──
-  function renderSeasonPins(season) {
-    clearOverlays();
+  // ── 핀 추가 (clear 없이) ──
+  function addSeasonPins(season) {
     PLACES.filter(p => p.seasons.includes(season)).forEach(place => {
       addOverlay(place.lat, place.lng,
         makePinEl(place.color, PIN_EMOJI[place.type] || '📍', () => openPlace(place))
@@ -505,9 +621,7 @@ kakao.maps.load(function () {
     });
   }
 
-  // ── 드라마 핀 렌더링 ──
-  function renderDramaPins(dramas) {
-    clearOverlays();
+  function addDramaPins(dramas) {
     dramas.forEach(drama => {
       drama.sites.forEach(site => {
         addOverlay(site.lat, site.lng,
@@ -515,6 +629,33 @@ kakao.maps.load(function () {
         );
       });
     });
+  }
+
+  function addBFPins() {
+    BARRIER_FREE_DATA.forEach(place => {
+      addOverlay(place.lat, place.lng,
+        makePinEl('#f59e0b', '♿', () => openBFPlace(place))
+      );
+    });
+  }
+
+  // ── 통합 핀 갱신 (항상 이걸 호출) ──
+  function refreshPins() {
+    clearOverlays();
+    if (hallyuMode) {
+      const dramas = activeDramaId ? DRAMA_DATA.filter(d => d.id === activeDramaId) : DRAMA_DATA;
+      addDramaPins(dramas);
+    } else {
+      addSeasonPins(currentSeason);
+    }
+    if (bfMode) addBFPins();
+  }
+
+  // 하위 호환 래퍼 (enterHallyuMode 등에서 기존처럼 호출)
+  function renderSeasonPins(season) { currentSeason = season; refreshPins(); }
+  function renderDramaPins(dramas) {
+    clearOverlays(); addDramaPins(dramas);
+    if (bfMode) addBFPins();
   }
 
   // ── 모바일 스트립 ──
@@ -547,6 +688,108 @@ kakao.maps.load(function () {
       });
       strip.appendChild(chip);
     });
+  }
+
+  // ── 무장애 스트립 (모바일) ──
+  function renderBFStrip() {
+    const strip = document.getElementById('trendStrip');
+    strip.innerHTML = '<span class="trend-label">♿ 무장애</span>';
+    BARRIER_FREE_DATA.forEach(place => {
+      const chip = document.createElement('div');
+      chip.className = 'bf-chip';
+      chip.textContent = place.name;
+      chip.addEventListener('click', () => {
+        flyTo(place.lat, place.lng, 5);
+        openBFPlace(place);
+      });
+      strip.appendChild(chip);
+    });
+  }
+
+  // ── 무장애 사이드패널 ──
+  function renderBFPanel() {
+    const panel = document.getElementById('sidePanel');
+
+    const courseCards = BF_COURSES.map(c => {
+      const bs = BADGE_STYLE[c.type] || BADGE_STYLE.day;
+      return `<div class="bf-course-card" data-course-id="${c.id}">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+          <span class="bf-course-title">${c.name}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${bs.bg};color:${bs.color};white-space:nowrap">${c.type==='day'?'당일':c.type==='1night'?'1박 2일':'2박 3일'}</span>
+        </div>
+        <div class="bf-course-desc">${c.desc}</div>
+      </div>`;
+    }).join('');
+
+    const placeItems = BARRIER_FREE_DATA.map(place => {
+      const isActive = place.id === activeBFId;
+      return `<div class="bf-place-item ${isActive?'active':''}" data-bf-id="${place.id}">
+        <div class="bf-pin-dot"></div>
+        <span class="bf-place-name">${place.name}</span>
+        <span class="bf-place-loc">${place.location.split(' ')[0]}</span>
+      </div>`;
+    }).join('');
+
+    panel.innerHTML = `
+      <div class="panel-section">
+        <div class="panel-section-title">♿ 추천 무장애 코스</div>
+        ${courseCards}
+      </div>
+      <div class="panel-divider"></div>
+      <div class="panel-section">
+        <div class="panel-section-title">📍 무장애 여행지 목록</div>
+        <div id="bfPlaceList">${placeItems}</div>
+      </div>`;
+
+    panel.querySelectorAll('.bf-course-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const course = BF_COURSES.find(c => c.id === el.dataset.courseId);
+        if (!course) return;
+        const places = course.placeIds.map(id => BARRIER_FREE_DATA.find(p => p.id === id)).filter(Boolean);
+        fitBounds(places);
+        renderBFPanel();
+      });
+    });
+
+    panel.querySelectorAll('#bfPlaceList .bf-place-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const place = BARRIER_FREE_DATA.find(p => p.id === el.dataset.bfId);
+        if (place) { flyTo(place.lat, place.lng, 5); openBFPlace(place); }
+      });
+    });
+  }
+
+  // ── 무장애 장소 상세 ──
+  function openBFPlace(place) {
+    activeBFId = place.id;
+    document.getElementById('sheetPlace').textContent = place.name;
+    const badge = document.getElementById('sheetBadge');
+    badge.textContent = place.label;
+    badge.style.background = '#fffbeb';
+    badge.style.color = '#92400e';
+
+    const accItems = Object.entries(place.accessibility).map(([key, val]) => {
+      const icon = val ? '✅' : '❌';
+      return `<div class="acc-item">
+        <span class="acc-icon">${icon}</span>
+        <span class="acc-label">${ACC_LABELS[key] || key}</span>
+      </div>`;
+    }).join('');
+
+    document.getElementById('sheetBody').innerHTML = `
+      <p class="sheet-desc">${place.desc}</p>
+      <div class="tag-row">${place.tags.map(t=>`<span class="tag" style="background:#fffbeb;color:#92400e">${t}</span>`).join('')}</div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">코스 유형</div><div class="info-val">${place.label}</div></div>
+        <div class="info-card"><div class="info-label">소요 기간</div><div class="info-val">${place.duration}</div></div>
+        <div class="info-card col-2"><div class="info-label">위치</div><div class="info-val">${place.location}</div></div>
+      </div>
+      <div class="i18n-section">
+        <div class="i18n-title">♿ 접근성 정보</div>
+        <div class="acc-grid">${accItems}</div>
+      </div>`;
+    document.getElementById('sheet').classList.add('open');
+    if (bfMode && !hallyuMode) renderBFPanel();
   }
 
   // ── 계절 사이드패널 ──
@@ -777,7 +1020,9 @@ kakao.maps.load(function () {
       if (t.dataset.s !== 'hallyu') t.classList.remove('active');
     });
     document.getElementById('legend').classList.add('hidden');
-    renderDramaPins(dramas || DRAMA_DATA);
+    clearOverlays();
+    addDramaPins(dramas || DRAMA_DATA);
+    if (bfMode) addBFPins();
     renderDramaStrip(dramas || DRAMA_DATA);
     renderDramaPanel(searchLabel || null);
   }
@@ -786,11 +1031,49 @@ kakao.maps.load(function () {
     hallyuMode = false; activeDramaId = null; activeSiteId = null;
     document.getElementById('hallyuTab').classList.remove('active');
     document.getElementById('legend').classList.remove('hidden');
-    renderSeasonPins(currentSeason);
-    renderSeasonStrip(currentSeason);
-    renderSeasonPanel(null);
+    refreshPins();
+    if (bfMode) {
+      renderBFStrip();
+      renderBFPanel();
+    } else {
+      renderSeasonStrip(currentSeason);
+      renderSeasonPanel(null);
+    }
     document.getElementById('sheet').classList.remove('open');
   }
+
+  // ── 무장애 토글 ──
+  document.getElementById('bfToggleBtn').addEventListener('click', () => {
+    bfMode = !bfMode;
+    const btn = document.getElementById('bfToggleBtn');
+    const hint = document.getElementById('bfToggleHint');
+    const bfLegendRow = document.getElementById('bfLegendRow');
+
+    if (bfMode) {
+      btn.classList.add('active');
+      bfLegendRow.style.display = 'flex';
+      hint.textContent = '무장애 여행지가 지도에 표시됩니다';
+      refreshPins();
+      if (!hallyuMode) {
+        renderBFStrip();
+        renderBFPanel();
+      }
+    } else {
+      btn.classList.remove('active');
+      bfLegendRow.style.display = 'none';
+      hint.textContent = '시니어·장애인 모두 이용 가능한 여행지';
+      activeBFId = null;
+      refreshPins();
+      if (hallyuMode) {
+        renderDramaStrip(activeDramaId ? DRAMA_DATA.filter(d => d.id === activeDramaId) : DRAMA_DATA);
+        renderDramaPanel();
+      } else {
+        renderSeasonStrip(currentSeason);
+        renderSeasonPanel(null);
+      }
+      document.getElementById('sheet').classList.remove('open');
+    }
+  });
 
   // ── 검색 ──
   const searchInput = document.getElementById('searchInput');
