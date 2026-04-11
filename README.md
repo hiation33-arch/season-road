@@ -2,6 +2,8 @@
 
 > 계절과 트렌드로 이어지는 여행 코스 추천 웹서비스
 
+![Season Road 인포그래픽](images/시즌로드.png)
+
 👉 **바로 사용하기**: https://hiation33-arch.github.io/season-road
 
 ---
