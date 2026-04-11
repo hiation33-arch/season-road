@@ -12,6 +12,9 @@
       --primary-400: #4ade80;
       --primary-100: #dcfce7;
       --primary-900: #14532d;
+      --hallyu-500: #a855f7;
+      --hallyu-100: #faf5ff;
+      --hallyu-900: #6b21a8;
       --gray-900: #111827;
       --gray-600: #4b5563;
       --gray-400: #9ca3af;
@@ -23,134 +26,79 @@
       --trend-h: 44px;
       --font: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      height: 100%;
-      font-family: var(--font);
-      background: var(--gray-100);
-      color: var(--gray-900);
-      overflow: hidden;
-    }
+    html, body { height: 100%; font-family: var(--font); background: var(--gray-100); color: var(--gray-900); overflow: hidden; }
 
     /* ── 헤더 ── */
     .header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
+      position: fixed; top: 0; left: 0; right: 0;
       height: var(--header-h);
       background: var(--white);
       border-bottom: 1px solid var(--gray-200);
-      display: flex;
-      align-items: center;
-      padding: 0 14px;
-      gap: 10px;
-      z-index: 300;
+      display: flex; align-items: center; padding: 0 14px; gap: 10px; z-index: 300;
     }
-    .logo {
-      font-size: 17px;
-      font-weight: 800;
-      color: var(--primary-500);
-      white-space: nowrap;
-      letter-spacing: -0.5px;
-    }
+    .logo { font-size: 17px; font-weight: 800; color: var(--primary-500); white-space: nowrap; letter-spacing: -0.5px; }
     .logo span { color: var(--gray-900); }
     .search-bar {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      background: var(--gray-100);
-      border-radius: 10px;
-      padding: 0 12px;
-      height: 38px;
-      gap: 8px;
+      flex: 1; display: flex; align-items: center;
+      background: var(--gray-100); border-radius: 10px; padding: 0 12px; height: 38px; gap: 8px;
+      transition: background 0.15s, box-shadow 0.15s;
     }
+    .search-bar.focused { background: var(--white); box-shadow: 0 0 0 2px var(--hallyu-500); }
     .search-bar svg { flex-shrink: 0; color: var(--gray-400); }
     .search-bar input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      font-family: var(--font);
-      font-size: 14px;
-      color: var(--gray-900);
-      outline: none;
+      flex: 1; border: none; background: transparent;
+      font-family: var(--font); font-size: 14px; color: var(--gray-900); outline: none;
     }
     .search-bar input::placeholder { color: var(--gray-400); }
+    .search-clear {
+      display: none; border: none; background: none; cursor: pointer;
+      color: var(--gray-400); font-size: 16px; line-height: 1; padding: 2px 4px;
+      border-radius: 50%; transition: background 0.12s;
+    }
+    .search-clear:hover { background: var(--gray-200); }
 
-    /* ── 계절 탭 ── */
+    /* ── 탭 바 ── */
     .season-tabs {
-      position: fixed;
-      top: var(--header-h);
-      left: 0; right: 0;
+      position: fixed; top: var(--header-h); left: 0; right: 0;
       height: var(--tab-h);
-      background: var(--white);
-      border-bottom: 1px solid var(--gray-200);
-      display: flex;
-      z-index: 300;
+      background: var(--white); border-bottom: 1px solid var(--gray-200);
+      display: flex; z-index: 300;
     }
     .tab {
-      flex: 1;
-      border: none;
-      background: transparent;
-      font-family: var(--font);
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--gray-400);
-      cursor: pointer;
-      border-bottom: 2.5px solid transparent;
+      flex: 1; border: none; background: transparent;
+      font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--gray-400);
+      cursor: pointer; border-bottom: 2.5px solid transparent;
       transition: background 0.18s, color 0.18s, border-color 0.18s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
     }
     .tab.active[data-s="spring"] { background: #fef9c3; color: #78350f; border-bottom-color: #fde047; font-weight: 700; }
     .tab.active[data-s="summer"] { background: #dcfce7; color: #14532d; border-bottom-color: #4ade80; font-weight: 700; }
     .tab.active[data-s="autumn"] { background: #ffedd5; color: #7c2d12; border-bottom-color: #fb923c; font-weight: 700; }
     .tab.active[data-s="winter"] { background: #e0f2fe; color: #0c4a6e; border-bottom-color: #38bdf8; font-weight: 700; }
+    .tab-sep { width: 1px; background: var(--gray-200); margin: 10px 2px; flex-shrink: 0; }
+    .hallyu-tab { flex: 0 0 68px; font-size: 13px; }
+    .hallyu-tab.active { background: var(--hallyu-100); color: var(--hallyu-900); border-bottom-color: var(--hallyu-500); font-weight: 700; }
 
     /* ── 트렌드 스트립 (모바일) ── */
     .trend-strip {
-      position: fixed;
-      top: calc(var(--header-h) + var(--tab-h));
-      left: 0; right: 0;
-      height: var(--trend-h);
-      background: var(--white);
-      border-bottom: 1px solid var(--gray-200);
-      display: flex;
-      align-items: center;
-      padding: 0 12px;
-      gap: 8px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      scrollbar-width: none;
-      z-index: 290;
+      position: fixed; top: calc(var(--header-h) + var(--tab-h)); left: 0; right: 0;
+      height: var(--trend-h); background: var(--white); border-bottom: 1px solid var(--gray-200);
+      display: flex; align-items: center; padding: 0 12px; gap: 8px;
+      overflow-x: auto; overflow-y: hidden; scrollbar-width: none; z-index: 290;
       -webkit-overflow-scrolling: touch;
     }
     .trend-strip::-webkit-scrollbar { display: none; }
-    .trend-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--gray-400);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
+    .trend-label { font-size: 11px; font-weight: 700; color: var(--gray-400); white-space: nowrap; flex-shrink: 0; }
     .trend-chip {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--gray-100);
-      border-radius: 20px;
-      padding: 5px 11px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--gray-900);
-      white-space: nowrap;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background 0.15s;
+      display: flex; align-items: center; gap: 5px;
+      background: var(--gray-100); border-radius: 20px; padding: 5px 11px;
+      font-size: 12px; font-weight: 500; color: var(--gray-900);
+      white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: background 0.15s;
     }
     .trend-chip:active { background: var(--gray-200); }
+    .trend-chip.drama-chip { background: var(--hallyu-100); color: var(--hallyu-900); }
+    .trend-chip.drama-chip:active { background: #ede9fe; }
     .trend-rank { font-size: 11px; font-weight: 700; min-width: 14px; text-align: center; }
     .trend-rank.rank-1 { color: #ef4444; }
     .trend-rank.rank-2 { color: #f97316; }
@@ -162,7 +110,6 @@
       position: fixed;
       top: calc(var(--header-h) + var(--tab-h) + var(--trend-h));
       left: 0; right: 0; bottom: 0;
-      width: 100%;
       height: calc(100dvh - var(--header-h) - var(--tab-h) - var(--trend-h));
     }
 
@@ -171,41 +118,28 @@
       position: fixed;
       top: calc(var(--header-h) + var(--tab-h) + var(--trend-h) + 12px);
       right: 12px;
-      background: var(--white);
-      border-radius: 12px;
-      padding: 10px 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      z-index: 200;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      background: var(--white); border-radius: 12px; padding: 10px 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 200;
+      display: flex; flex-direction: column; gap: 6px;
+      transition: opacity 0.2s;
     }
+    .legend.hidden { opacity: 0; pointer-events: none; }
     .legend-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gray-600); }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
     /* ── 바텀시트 ── */
     .sheet {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      background: var(--white);
-      border-radius: 20px 20px 0 0;
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.10);
-      z-index: 400;
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: var(--white); border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.10); z-index: 400;
+      max-height: 80vh; display: flex; flex-direction: column;
       transform: translateY(calc(100% - 52px));
       transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
     }
     .sheet.open { transform: translateY(0); }
     .sheet-handle-area {
-      padding: 10px 16px 12px;
-      cursor: pointer;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
+      padding: 10px 16px 12px; cursor: pointer; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
     .sheet-handle { width: 36px; height: 4px; background: var(--gray-200); border-radius: 2px; }
     .sheet-title-row { width: 100%; display: flex; align-items: center; gap: 8px; }
@@ -221,53 +155,34 @@
     .info-val   { font-size: 14px; font-weight: 600; color: var(--gray-900); }
     .col-2 { grid-column: 1 / -1; }
 
-    /* ── 커스텀 핀 ── */
+    /* ── 다국어 그리드 ── */
+    .i18n-section { margin-top: 14px; }
+    .i18n-title { font-size: 12px; font-weight: 700; color: var(--gray-400); margin-bottom: 8px; }
+    .i18n-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .i18n-item { background: var(--gray-100); border-radius: 8px; padding: 7px 10px; }
+    .i18n-lang { font-size: 10px; font-weight: 700; color: var(--gray-400); display: block; margin-bottom: 2px; }
+    .i18n-text { font-size: 12px; font-weight: 500; color: var(--gray-900); line-height: 1.4; }
+
+    /* ── 핀 ── */
     .pin-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.22));
-      transition: transform 0.15s ease;
-      user-select: none;
+      display: flex; flex-direction: column; align-items: center;
+      cursor: pointer; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.22));
+      transition: transform 0.15s ease; user-select: none;
     }
     .pin-wrap:active { transform: scale(0.92); }
     .pin-circle {
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      border: 2.5px solid #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
+      width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
     }
-    .pin-tail {
-      width: 0; height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      margin-top: -1px;
-    }
+    .pin-tail { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; margin-top: -1px; }
 
     /* ── 사이드패널 공통 ── */
     .panel-section { margin-bottom: 20px; }
-    .panel-section-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--gray-600);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
+    .panel-section-title { font-size: 13px; font-weight: 700; color: var(--gray-600); margin-bottom: 10px; }
     .panel-list { display: flex; flex-direction: column; gap: 2px; }
     .panel-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 10px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.15s;
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 10px; cursor: pointer; transition: background 0.15s;
     }
     .panel-item:hover { background: var(--gray-100); }
     .panel-item:active { background: var(--gray-200); }
@@ -277,83 +192,94 @@
     .panel-rank.rank-3 { color: #eab308; }
     .panel-rank.rank-4, .panel-rank.rank-5 { color: var(--gray-400); }
     .panel-item-text { font-size: 13px; font-weight: 500; color: var(--gray-900); flex: 1; line-height: 1.4; }
-    .panel-item-sub { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
+    .panel-item-sub  { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
     .panel-divider { height: 1px; background: var(--gray-200); margin: 4px 0 18px; }
-    .panel-place-card {
-      border: 1px solid var(--gray-200);
-      border-radius: 16px;
-      padding: 16px;
+    .panel-place-card { border: 1px solid var(--gray-200); border-radius: 16px; padding: 16px; }
+
+    /* ── 드라마 카드 ── */
+    .drama-card {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px; border-radius: 12px; cursor: pointer;
+      border: 1.5px solid transparent; transition: background 0.15s, border-color 0.15s;
+      margin-bottom: 4px;
     }
+    .drama-card:hover { background: var(--gray-100); }
+    .drama-card.active { background: var(--hallyu-100); border-color: #e9d5ff; }
+    .drama-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .drama-card-rank { font-size: 13px; font-weight: 700; min-width: 16px; flex-shrink: 0; margin-top: 1px; }
+    .drama-card-info { flex: 1; min-width: 0; }
+    .drama-card-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .drama-card-meta { font-size: 11px; color: var(--gray-400); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .drama-ott-badge { font-size: 10px; font-weight: 700; background: var(--hallyu-100); color: var(--hallyu-900); padding: 1px 6px; border-radius: 6px; }
+    .drama-site-count { font-size: 11px; color: var(--hallyu-500); font-weight: 600; }
+    .drama-reset-btn {
+      width: 100%; padding: 8px; border: 1px solid var(--gray-200); border-radius: 8px;
+      background: var(--white); font-family: var(--font); font-size: 12px; color: var(--gray-600);
+      cursor: pointer; margin-bottom: 14px; transition: background 0.15s;
+    }
+    .drama-reset-btn:hover { background: var(--gray-100); }
+    .drama-site-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: background 0.15s;
+      border-left: 3px solid transparent;
+    }
+    .drama-site-item:hover { background: var(--gray-100); }
+    .drama-site-item.active { background: var(--hallyu-100); border-left-color: var(--hallyu-500); }
+    .drama-site-name { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
+    .drama-site-scene { font-size: 11px; color: var(--gray-400); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .empty-state { text-align: center; padding: 32px 16px; color: var(--gray-400); font-size: 13px; line-height: 1.7; }
 
     /* ── 데스크톱 ── */
     @media (min-width: 1024px) {
-      #map {
-        left: 360px;
-        top: calc(var(--header-h) + var(--tab-h));
-        height: calc(100dvh - var(--header-h) - var(--tab-h));
-      }
+      #map { left: 360px; top: calc(var(--header-h) + var(--tab-h)); height: calc(100dvh - var(--header-h) - var(--tab-h)); }
       .legend { right: 24px; top: calc(var(--header-h) + var(--tab-h) + 16px); }
       .trend-strip { display: none; }
-
       .side-panel {
-        display: flex !important;
-        flex-direction: column;
-        position: fixed;
-        top: calc(var(--header-h) + var(--tab-h));
-        left: 0;
-        width: 360px;
-        bottom: 0;
-        background: var(--white);
-        border-right: 1px solid var(--gray-200);
-        overflow-y: auto;
-        z-index: 200;
-        padding: 16px;
+        display: flex !important; flex-direction: column;
+        position: fixed; top: calc(var(--header-h) + var(--tab-h)); left: 0; width: 360px; bottom: 0;
+        background: var(--white); border-right: 1px solid var(--gray-200);
+        overflow-y: auto; z-index: 200; padding: 16px;
       }
       .sheet { display: none !important; }
     }
-
     .side-panel { display: none; }
   </style>
 </head>
 <body>
 
-<!-- 헤더 -->
 <header class="header">
   <div class="logo">🗺 Season<span>Road</span></div>
-  <div class="search-bar">
+  <div class="search-bar" id="searchBar">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
     </svg>
-    <input type="text" placeholder="여행지, 드라마 제목으로 검색" />
+    <input type="text" id="searchInput" placeholder="드라마 제목으로 촬영지 검색" autocomplete="off" />
+    <button class="search-clear" id="searchClear" aria-label="검색 초기화">✕</button>
   </div>
 </header>
 
-<!-- 계절 탭 -->
 <nav class="season-tabs">
   <button class="tab active" data-s="spring">🌸 봄</button>
   <button class="tab" data-s="summer">🌿 여름</button>
   <button class="tab" data-s="autumn">🍂 가을</button>
   <button class="tab" data-s="winter">❄️ 겨울</button>
+  <div class="tab-sep"></div>
+  <button class="tab hallyu-tab" id="hallyuTab" data-s="hallyu">🎬 한류</button>
 </nav>
 
-<!-- 트렌드 스트립 (모바일) -->
 <div class="trend-strip" id="trendStrip"></div>
 
-<!-- 지도 -->
 <div id="map"></div>
 
-<!-- 범례 -->
-<div class="legend">
+<div class="legend" id="legend">
   <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div>당일 코스</div>
   <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div>1박 코스</div>
   <div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div>2박 코스</div>
   <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div>한류 촬영지</div>
 </div>
 
-<!-- 데스크톱 사이드패널 -->
 <aside class="side-panel" id="sidePanel"></aside>
 
-<!-- 모바일 바텀시트 -->
 <div class="sheet" id="sheet">
   <div class="sheet-handle-area" id="sheetHandle">
     <div class="sheet-handle"></div>
@@ -363,343 +289,309 @@
     </div>
   </div>
   <div class="sheet-body" id="sheetBody">
-    <p class="sheet-desc">지도의 핀을 클릭하면 여행 코스 정보가 표시됩니다.</p>
+    <p class="sheet-desc">지도의 핀을 클릭하면 정보가 표시됩니다.</p>
   </div>
 </div>
 
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9353fd631e48d2e94126e798022c217e&autoload=false"></script>
 <script>
-// ────────────────────────────
-// 여행지 데이터 (15곳)
-// ────────────────────────────
+// ── 여행지 데이터 (15곳) ──
 const PLACES = [
+  { id:1,  name:'경복궁',          lat:37.5796, lng:126.9770, type:'hallyu', label:'한류 촬영지', color:'#a855f7', seasons:['spring','autumn'],                   desc:'조선 왕조의 법궁. 드라마 〈미스터 션샤인〉·〈킹덤〉 촬영지. 북촌 한옥마을과 연계 반나절 코스 추천.',     tags:['#궁궐','#한복체험','#드라마촬영지'], duration:'반나절', location:'서울 종로구' },
+  { id:2,  name:'해운대 해수욕장', lat:35.1587, lng:129.1603, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['summer'],                              desc:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.',             tags:['#해변','#야경','#부산여행'],        duration:'1박 2일', location:'부산 해운대구' },
+  { id:3,  name:'성산일출봉',      lat:33.4582, lng:126.9428, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','summer','autumn','winter'],    desc:'유네스코 세계자연유산. 제주 동부 2박 3일 코스의 하이라이트. 우도·만장굴과 연계 추천.',                tags:['#제주','#유네스코','#일출'],        duration:'2박 3일', location:'제주 서귀포시' },
+  { id:4,  name:'전주 한옥마을',   lat:35.8150, lng:127.1530, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','autumn'],                    desc:'700여 채 한옥이 모인 전통문화 거리. 한복 체험과 전통 음식 투어를 함께 즐길 수 있습니다.',             tags:['#한옥','#비빔밥','#전통문화'],      duration:'당일',    location:'전북 전주시' },
+  { id:5,  name:'남이섬',          lat:37.7905, lng:127.5260, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','autumn'],                    desc:'드라마 〈겨울연가〉 촬영지. 사계절 아름다운 메타세쿼이아 길이 유명. 가평 일대 1박 코스.',              tags:['#겨울연가','#단풍','#가평'],        duration:'1박 2일', location:'강원 춘천시' },
+  { id:6,  name:'불국사',          lat:35.7902, lng:129.3317, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','autumn'],                    desc:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.',                   tags:['#경주','#유네스코','#역사여행'],    duration:'2박 3일', location:'경북 경주시' },
+  { id:7,  name:'인사동',          lat:37.5743, lng:126.9850, type:'hallyu', label:'한류 촬영지', color:'#a855f7', seasons:['spring','summer','autumn','winter'],   desc:'전통 공예·갤러리·찻집이 모인 서울의 문화 거리. 다수의 K-드라마 로케이션 촬영 장소.',                 tags:['#갤러리','#전통차','#쇼핑'],        duration:'반나절', location:'서울 종로구' },
+  { id:8,  name:'설악산 국립공원', lat:38.1196, lng:128.4655, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['autumn','winter'],                    desc:'한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.',                   tags:['#등산','#단풍','#설경'],            duration:'2박 3일', location:'강원 속초시' },
+  { id:9,  name:'광안리 해수욕장', lat:35.1532, lng:129.1186, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['summer'],                             desc:'광안대교 야경이 아름다운 부산의 힙한 해변. 카페·맛집 밀집 지역으로 당일 코스로 추천.',                tags:['#야경','#광안대교','#카페'],        duration:'당일',    location:'부산 수영구' },
+  { id:10, name:'강릉 경포대',     lat:37.7967, lng:128.9059, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','summer'],                    desc:'동해 최대 석호와 넓은 해변이 어우러진 강원 대표 관광지. 오죽헌·정동진과 연계 1박 코스.',             tags:['#동해','#해돋이','#강원여행'],      duration:'1박 2일', location:'강원 강릉시' },
+  { id:11, name:'여수 오동도',     lat:34.7420, lng:127.7539, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','summer','autumn'],            desc:'동백꽃 군락지로 유명한 여수 대표 섬. 낭만포차·돌산도·향일암과 함께 1박 여수 낭만 코스.',            tags:['#동백꽃','#낭만포차','#여수밤바다'], duration:'1박 2일', location:'전남 여수시' },
+  { id:12, name:'한라산',          lat:33.3617, lng:126.5292, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['winter'],                             desc:'한국 최고봉 1,947m. 겨울 눈꽃 트레킹이 압도적. 영실·어리목·성판악 코스 중 선택 가능.',              tags:['#등산','#눈꽃','#제주'],            duration:'2박 3일', location:'제주특별자치도' },
+  { id:13, name:'안동 하회마을',   lat:36.5352, lng:128.5207, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['autumn'],                             desc:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.', tags:['#유네스코','#탈춤','#한옥'],        duration:'당일',    location:'경북 안동시' },
+  { id:14, name:'대관령 양떼목장', lat:37.7063, lng:128.7473, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['winter','spring'],                    desc:'해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.',                   tags:['#눈꽃','#양떼','#고원'],            duration:'당일',    location:'강원 평창군' },
+  { id:15, name:'담양 죽녹원',     lat:35.3217, lng:126.9878, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','summer'],                    desc:'31만㎡ 울창한 대나무 숲이 만드는 천연 에어컨. 메타세쿼이아 가로수길과 함께하는 힐링 당일 코스.',    tags:['#대나무숲','#힐링','#담양'],        duration:'당일',    location:'전남 담양군' },
+];
+
+// ── 트렌드 데이터 ──
+const TREND_DATA = {
+  spring: [
+    { keyword:'경복궁 벚꽃 나들이', placeId:1 }, { keyword:'전주 한옥마을', placeId:4 },
+    { keyword:'담양 죽녹원', placeId:15 }, { keyword:'강릉 경포 벚꽃', placeId:10 }, { keyword:'남이섬 봄소풍', placeId:5 },
+  ],
+  summer: [
+    { keyword:'해운대 피서', placeId:2 }, { keyword:'광안리 야경 카페', placeId:9 },
+    { keyword:'여수 낭만포차', placeId:11 }, { keyword:'강릉 경포해변', placeId:10 }, { keyword:'담양 죽녹원 힐링', placeId:15 },
+  ],
+  autumn: [
+    { keyword:'설악산 단풍 등산', placeId:8 }, { keyword:'경주 불국사', placeId:6 },
+    { keyword:'안동 하회마을', placeId:13 }, { keyword:'남이섬 단풍', placeId:5 }, { keyword:'여수 가을 여행', placeId:11 },
+  ],
+  winter: [
+    { keyword:'한라산 눈꽃 트레킹', placeId:12 }, { keyword:'설악산 설경', placeId:8 },
+    { keyword:'대관령 양떼목장 눈꽃', placeId:14 }, { keyword:'성산일출봉 일출', placeId:3 }, { keyword:'인사동 연말 나들이', placeId:7 },
+  ],
+};
+
+// ── 드라마 데이터 (7편, 18개 촬영지) ──
+// 실제 OTT API 연동 시 이 객체만 교체
+const DRAMA_DATA = [
   {
-    id: 1,
-    name: '경복궁',
-    lat: 37.5796, lng: 126.9770,
-    type: 'hallyu', label: '한류 촬영지', color: '#a855f7',
-    seasons: ['spring', 'autumn'],
-    desc: '조선 왕조의 법궁. 드라마 〈미스터 션샤인〉·〈킹덤〉 촬영지. 북촌 한옥마을과 연계 반나절 코스 추천.',
-    tags: ['#궁궐', '#한복체험', '#드라마촬영지'],
-    duration: '반나절', location: '서울 종로구',
+    id:'d1', rank:1, title:'오징어게임 시즌2', titleEn:'Squid Game S2',
+    genre:'스릴러·서바이벌', ott:'Netflix', pinColor:'#e879f9',
+    sites:[
+      { id:'s1',  name:'노량진 수산시장',  lat:37.5133, lng:126.9416, location:'서울 동작구',
+        scene:'참가자들이 몰래 접선하는 초반 시장 씬. 생동감 넘치는 군중 속 비밀 거래가 긴장감을 더한다.',
+        i18n:{ ko:'노량진 수산시장', en:'Noryangjin Fish Market', zh:'鹭梁津水产市场', ja:'鷺梁津水産市場' } },
+      { id:'s2',  name:'인천 월미도',      lat:37.4739, lng:126.5986, location:'인천 중구',
+        scene:'시즌2 오프닝 시퀀스 촬영지. 황량한 놀이공원의 겨울 풍경이 서바이벌의 분위기를 암시한다.',
+        i18n:{ ko:'인천 월미도', en:'Wolmido Island', zh:'月尾岛', ja:'月尾島' } },
+      { id:'s3',  name:'수원 장안공원',    lat:37.2869, lng:127.0162, location:'경기 수원시',
+        scene:'재참가자 모집 장면 촬영. 거대한 달고나 세트가 설치됐던 공원 광장.',
+        i18n:{ ko:'수원 장안공원', en:'Jangan Park Suwon', zh:'水原长安公园', ja:'水原長安公園' } },
+    ]
   },
   {
-    id: 2,
-    name: '해운대 해수욕장',
-    lat: 35.1587, lng: 129.1603,
-    type: '1night', label: '1박 코스', color: '#ef4444',
-    seasons: ['summer'],
-    desc: '대한민국 대표 해수욕장. 해운대 → 광안리 → 센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.',
-    tags: ['#해변', '#야경', '#부산여행'],
-    duration: '1박 2일', location: '부산 해운대구',
+    id:'d2', rank:2, title:'선재 업고 튀어', titleEn:'Lovely Runner',
+    genre:'타임슬립·로맨스', ott:'tvN·Netflix', pinColor:'#d946ef',
+    sites:[
+      { id:'s4',  name:'인천 차이나타운',   lat:37.4759, lng:126.6173, location:'인천 중구',
+        scene:'솔이가 과거로 타임슬립한 뒤 선재를 처음 발견하는 낯선 거리 씬.',
+        i18n:{ ko:'인천 차이나타운', en:'Incheon Chinatown', zh:'仁川中国城', ja:'仁川チャイナタウン' } },
+      { id:'s5',  name:'홍대 걷고싶은거리', lat:37.5570, lng:126.9265, location:'서울 마포구',
+        scene:'아이돌 선재의 팬미팅 행렬 씬. 현재와 과거 홍대 거리의 변화를 대비시킨 감성 장면.',
+        i18n:{ ko:'홍대 걷고싶은거리', en:'Hongdae Walking Street', zh:'弘大步行街', ja:'弘大歩行者天国' } },
+      { id:'s6',  name:'구리 한강시민공원', lat:37.5918, lng:127.1542, location:'경기 구리시',
+        scene:'선재가 솔이에게 고백하는 한강 둑 씬. 노을빛 배경이 명장면으로 회자된다.',
+        i18n:{ ko:'구리 한강시민공원', en:'Guri Han River Park', zh:'九里汉江市民公园', ja:'九里漢江市民公園' } },
+    ]
   },
   {
-    id: 3,
-    name: '성산일출봉',
-    lat: 33.4582, lng: 126.9428,
-    type: '2night', label: '2박 코스', color: '#3b82f6',
-    seasons: ['spring', 'summer', 'autumn', 'winter'],
-    desc: '유네스코 세계자연유산. 제주 동부 2박 3일 코스의 하이라이트. 우도·만장굴과 연계 추천.',
-    tags: ['#제주', '#유네스코', '#일출'],
-    duration: '2박 3일', location: '제주 서귀포시',
+    id:'d3', rank:3, title:'도깨비', titleEn:'Goblin',
+    genre:'판타지·로맨스', ott:'tvN·Netflix', pinColor:'#9333ea',
+    sites:[
+      { id:'s7',  name:'강릉 선교장',       lat:37.7869, lng:128.9025, location:'강원 강릉시',
+        scene:'도깨비가 밀밭을 거닐던 강릉 대표 촬영지. 조선시대 양반 가옥과 어우러진 환상적인 장면.',
+        i18n:{ ko:'강릉 선교장', en:'Seongyojang Gangneung', zh:'船桥庄', ja:'船橋荘' } },
+      { id:'s8',  name:'삼청동 카페거리',   lat:37.5839, lng:126.9815, location:'서울 종로구',
+        scene:'도깨비와 저승사자가 산책하던 골목. 한옥과 카페가 어우러진 레트로 감성 거리.',
+        i18n:{ ko:'삼청동 카페거리', en:'Samcheong-dong Cafe Street', zh:'三清洞咖啡街', ja:'三清洞カフェ通り' } },
+      { id:'s9',  name:'인천 개항장 거리',  lat:37.4732, lng:126.6213, location:'인천 중구',
+        scene:'도깨비 신부와 걷는 근대 거리 씬. 개항기 건축물이 판타지적 분위기를 자아냈다.',
+        i18n:{ ko:'인천 개항장 거리', en:'Incheon Open Port Street', zh:'仁川开港场街道', ja:'仁川開港場通り' } },
+    ]
   },
   {
-    id: 4,
-    name: '전주 한옥마을',
-    lat: 35.8150, lng: 127.1530,
-    type: 'day', label: '당일 코스', color: '#22c55e',
-    seasons: ['spring', 'autumn'],
-    desc: '700여 채 한옥이 모인 전통문화 거리. 한복 체험과 전통 음식 투어를 함께 즐길 수 있습니다.',
-    tags: ['#한옥', '#비빔밥', '#전통문화'],
-    duration: '당일', location: '전북 전주시',
+    id:'d4', rank:4, title:'눈물의 여왕', titleEn:'Queen of Tears',
+    genre:'로맨스·드라마', ott:'tvN·Netflix', pinColor:'#6d28d9',
+    sites:[
+      { id:'s10', name:'가평 아침고요수목원', lat:37.8303, lng:127.3897, location:'경기 가평군',
+        scene:'홍해인이 시한부 선고를 받은 뒤 혼자 찾아가는 수목원 씬. 겨울~봄 꽃이 어우러져 감동을 배가했다.',
+        i18n:{ ko:'아침고요수목원', en:'Garden of Morning Calm', zh:'晨静树木园', ja:'朝の静寂樹木園' } },
+      { id:'s11', name:'제주 협재해수욕장',  lat:33.3942, lng:126.2393, location:'제주 제주시',
+        scene:'김수현·김지원 커플이 화해하는 해변 씬. 에메랄드빛 바다와 함께 명장면으로 꼽힌다.',
+        i18n:{ ko:'협재해수욕장', en:'Hyeopjae Beach', zh:'挟才海水浴场', ja:'挟才海水浴場' } },
+    ]
   },
   {
-    id: 5,
-    name: '남이섬',
-    lat: 37.7905, lng: 127.5260,
-    type: '1night', label: '1박 코스', color: '#ef4444',
-    seasons: ['spring', 'autumn'],
-    desc: '드라마 〈겨울연가〉 촬영지. 사계절 아름다운 메타세쿼이아 길이 유명. 가평 일대 1박 코스.',
-    tags: ['#겨울연가', '#단풍', '#가평'],
-    duration: '1박 2일', location: '강원 춘천시',
+    id:'d5', rank:5, title:'사랑의 불시착', titleEn:'Crash Landing on You',
+    genre:'로맨스·드라마', ott:'tvN·Netflix', pinColor:'#7c3aed',
+    sites:[
+      { id:'s12', name:'남이섬',            lat:37.7905, lng:127.5260, location:'강원 춘천시',
+        scene:'리정혁이 윤세리를 처음 발견하는 패러글라이딩 착지 씬. 국내 촬영분은 남이섬에서 진행됐다.',
+        i18n:{ ko:'남이섬', en:'Nami Island', zh:'南怡岛', ja:'ナミ島' } },
+      { id:'s13', name:'파주 임진각',        lat:37.8864, lng:126.7368, location:'경기 파주시',
+        scene:'남북 경계 분위기를 위해 활용된 촬영지. 철조망과 경계 초소가 사실감을 더했다.',
+        i18n:{ ko:'임진각', en:'Imjingak', zh:'临津阁', ja:'臨津閣' } },
+    ]
   },
   {
-    id: 6,
-    name: '불국사',
-    lat: 35.7902, lng: 129.3317,
-    type: '2night', label: '2박 코스', color: '#3b82f6',
-    seasons: ['spring', 'autumn'],
-    desc: '신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.',
-    tags: ['#경주', '#유네스코', '#역사여행'],
-    duration: '2박 3일', location: '경북 경주시',
+    id:'d6', rank:4, title:'이태원 클라쓰', titleEn:'Itaewon Class',
+    genre:'청춘·복수극', ott:'JTBC·Netflix', pinColor:'#8b5cf6',
+    sites:[
+      { id:'s14', name:'이태원 세계음식거리', lat:37.5350, lng:126.9946, location:'서울 용산구',
+        scene:'박새로이의 포차 "단밤"이 위치한 이태원 거리. 드라마 방영 후 성지 순례 필수 코스.',
+        i18n:{ ko:'이태원 세계음식거리', en:'Itaewon World Food Street', zh:'梨泰院世界美食街', ja:'梨泰院グルメ通り' } },
+      { id:'s15', name:'경리단길',           lat:37.5388, lng:126.9884, location:'서울 용산구',
+        scene:'박새로이가 홀로 걸으며 다짐을 새기는 골목 씬. 이태원 언덕의 독특한 분위기가 캐릭터와 맞아 떨어졌다.',
+        i18n:{ ko:'경리단길', en:'Gyeongridan-gil', zh:'经理团路', ja:'経理団通り' } },
+    ]
   },
   {
-    id: 7,
-    name: '인사동',
-    lat: 37.5743, lng: 126.9850,
-    type: 'hallyu', label: '한류 촬영지', color: '#a855f7',
-    seasons: ['spring', 'summer', 'autumn', 'winter'],
-    desc: '전통 공예·갤러리·찻집이 모인 서울의 문화 거리. 다수의 K-드라마 로케이션 촬영 장소.',
-    tags: ['#갤러리', '#전통차', '#쇼핑'],
-    duration: '반나절', location: '서울 종로구',
-  },
-  {
-    id: 8,
-    name: '설악산 국립공원',
-    lat: 38.1196, lng: 128.4655,
-    type: '2night', label: '2박 코스', color: '#3b82f6',
-    seasons: ['autumn', 'winter'],
-    desc: '한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.',
-    tags: ['#등산', '#단풍', '#설경'],
-    duration: '2박 3일', location: '강원 속초시',
-  },
-  {
-    id: 9,
-    name: '광안리 해수욕장',
-    lat: 35.1532, lng: 129.1186,
-    type: 'day', label: '당일 코스', color: '#22c55e',
-    seasons: ['summer'],
-    desc: '광안대교 야경이 아름다운 부산의 힙한 해변. 카페·맛집 밀집 지역으로 당일 코스로 추천.',
-    tags: ['#야경', '#광안대교', '#카페'],
-    duration: '당일', location: '부산 수영구',
-  },
-  {
-    id: 10,
-    name: '강릉 경포대',
-    lat: 37.7967, lng: 128.9059,
-    type: '1night', label: '1박 코스', color: '#ef4444',
-    seasons: ['spring', 'summer'],
-    desc: '동해 최대 석호와 넓은 해변이 어우러진 강원 대표 관광지. 오죽헌·정동진과 연계 1박 코스.',
-    tags: ['#동해', '#해돋이', '#강원여행'],
-    duration: '1박 2일', location: '강원 강릉시',
-  },
-  {
-    id: 11,
-    name: '여수 오동도',
-    lat: 34.7420, lng: 127.7539,
-    type: '1night', label: '1박 코스', color: '#ef4444',
-    seasons: ['spring', 'summer', 'autumn'],
-    desc: '동백꽃 군락지로 유명한 여수 대표 섬. 낭만포차·돌산도·향일암과 함께 1박 여수 낭만 코스.',
-    tags: ['#동백꽃', '#낭만포차', '#여수밤바다'],
-    duration: '1박 2일', location: '전남 여수시',
-  },
-  {
-    id: 12,
-    name: '한라산',
-    lat: 33.3617, lng: 126.5292,
-    type: '2night', label: '2박 코스', color: '#3b82f6',
-    seasons: ['winter'],
-    desc: '한국 최고봉 1,947m. 겨울 눈꽃 트레킹이 압도적. 영실·어리목·성판악 코스 중 선택 가능.',
-    tags: ['#등산', '#눈꽃', '#제주'],
-    duration: '2박 3일', location: '제주특별자치도',
-  },
-  {
-    id: 13,
-    name: '안동 하회마을',
-    lat: 36.5352, lng: 128.5207,
-    type: 'day', label: '당일 코스', color: '#22c55e',
-    seasons: ['autumn'],
-    desc: '낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.',
-    tags: ['#유네스코', '#탈춤', '#한옥'],
-    duration: '당일', location: '경북 안동시',
-  },
-  {
-    id: 14,
-    name: '대관령 양떼목장',
-    lat: 37.7063, lng: 128.7473,
-    type: 'day', label: '당일 코스', color: '#22c55e',
-    seasons: ['winter', 'spring'],
-    desc: '해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.',
-    tags: ['#눈꽃', '#양떼', '#고원'],
-    duration: '당일', location: '강원 평창군',
-  },
-  {
-    id: 15,
-    name: '담양 죽녹원',
-    lat: 35.3217, lng: 126.9878,
-    type: 'day', label: '당일 코스', color: '#22c55e',
-    seasons: ['spring', 'summer'],
-    desc: '31만㎡ 울창한 대나무 숲이 만드는 천연 에어컨. 메타세쿼이아 가로수길과 함께하는 힐링 당일 코스.',
-    tags: ['#대나무숲', '#힐링', '#담양'],
-    duration: '당일', location: '전남 담양군',
+    id:'d7', rank:5, title:'응답하라 1988', titleEn:'Reply 1988',
+    genre:'가족·복고', ott:'tvN·Netflix', pinColor:'#c084fc',
+    sites:[
+      { id:'s16', name:'쌍문동 골목 (도봉구)', lat:37.6686, lng:127.0471, location:'서울 도봉구',
+        scene:'덕선이네·택이네·정환이네가 옹기종기 모여 사는 골목. 실제 쌍문동 일대 세트장과 로케이션 혼합 촬영.',
+        i18n:{ ko:'쌍문동 골목', en:'Ssangmun-dong Alley', zh:'双门洞小巷', ja:'雙門洞路地' } },
+      { id:'s17', name:'혜화동 낙산공원',    lat:37.5823, lng:127.0024, location:'서울 종로구',
+        scene:'성덕이가 좋아하는 선배와 걷던 성곽 길. 80년대 서울 도심 골목 분위기가 잘 살아있다.',
+        i18n:{ ko:'낙산공원', en:'Naksan Park', zh:'骆山公园', ja:'駱山公園' } },
+    ]
   },
 ];
 
-// ────────────────────────────
-// 트렌드 더미 데이터 (네이버 데이터랩 실 API는 백엔드 필요)
-// ────────────────────────────
-const TREND_DATA = {
-  spring: [
-    { keyword: '경복궁 벚꽃 나들이', placeId: 1 },
-    { keyword: '전주 한옥마을', placeId: 4 },
-    { keyword: '담양 죽녹원', placeId: 15 },
-    { keyword: '강릉 경포 벚꽃', placeId: 10 },
-    { keyword: '남이섬 봄소풍', placeId: 5 },
-  ],
-  summer: [
-    { keyword: '해운대 피서', placeId: 2 },
-    { keyword: '광안리 야경 카페', placeId: 9 },
-    { keyword: '여수 낭만포차', placeId: 11 },
-    { keyword: '강릉 경포해변', placeId: 10 },
-    { keyword: '담양 죽녹원 힐링', placeId: 15 },
-  ],
-  autumn: [
-    { keyword: '설악산 단풍 등산', placeId: 8 },
-    { keyword: '경주 불국사', placeId: 6 },
-    { keyword: '안동 하회마을', placeId: 13 },
-    { keyword: '남이섬 단풍', placeId: 5 },
-    { keyword: '여수 가을 여행', placeId: 11 },
-  ],
-  winter: [
-    { keyword: '한라산 눈꽃 트레킹', placeId: 12 },
-    { keyword: '설악산 설경', placeId: 8 },
-    { keyword: '대관령 양떼목장 눈꽃', placeId: 14 },
-    { keyword: '성산일출봉 일출', placeId: 3 },
-    { keyword: '인사동 연말 나들이', placeId: 7 },
-  ],
-};
-
 const BADGE_STYLE = {
-  day:     { bg: '#dcfce7', color: '#14532d' },
-  '1night':{ bg: '#fee2e2', color: '#991b1b' },
-  '2night':{ bg: '#dbeafe', color: '#1e3a8a' },
-  hallyu:  { bg: '#f3e8ff', color: '#6b21a8' },
+  day:     { bg:'#dcfce7', color:'#14532d' },
+  '1night':{ bg:'#fee2e2', color:'#991b1b' },
+  '2night':{ bg:'#dbeafe', color:'#1e3a8a' },
+  hallyu:  { bg:'#f3e8ff', color:'#6b21a8' },
 };
-const PIN_EMOJI  = { day: '🌿', '1night': '🌙', '2night': '⭐', hallyu: '🎬' };
-const SEASON_KO  = { spring: '봄', summer: '여름', autumn: '가을', winter: '겨울' };
-const SEASON_EMO = { spring: '🌸', summer: '🌿', autumn: '🍂', winter: '❄️' };
+const PIN_EMOJI  = { day:'🌿', '1night':'🌙', '2night':'⭐', hallyu:'🎬' };
+const SEASON_KO  = { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' };
+const SEASON_EMO = { spring:'🌸', summer:'🌿', autumn:'🍂', winter:'❄️' };
 
-// ────────────────────────────
-// 카카오맵 초기화
-// ────────────────────────────
+// ── 카카오맵 초기화 ──
 kakao.maps.load(function () {
-
   const map = new kakao.maps.Map(document.getElementById('map'), {
-    center: new kakao.maps.LatLng(36.5, 127.8),
-    level: 7,
+    center: new kakao.maps.LatLng(36.5, 127.8), level: 7,
   });
   map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
-  // ── 지도 이동 헬퍼 ──
+  // ── 상태 ──
+  let currentSeason   = 'spring';
+  let hallyuMode      = false;
+  let activeDramaId   = null;   // 선택된 드라마 (null = 전체)
+  let activeSiteId    = null;   // 선택된 촬영지
+  let _pinClicked     = false;
+  let _searchTimer    = null;
+
+  // ── 지도 이동 ──
   function flyTo(lat, lng, level = 5) {
     map.setLevel(level);
     map.panTo(new kakao.maps.LatLng(lat, lng));
   }
+  function fitBounds(sites) {
+    if (!sites.length) return;
+    if (sites.length === 1) { flyTo(sites[0].lat, sites[0].lng, 5); return; }
+    const bounds = new kakao.maps.LatLngBounds();
+    sites.forEach(s => bounds.extend(new kakao.maps.LatLng(s.lat, s.lng)));
+    map.setBounds(bounds, 70);
+  }
 
-  // ── 커스텀 핀 DOM 생성 ──
-  let _pinClicked = false;
+  // ── 핀 DOM 생성 ──
+  let overlays = [];
+  function clearOverlays() { overlays.forEach(o => o.setMap(null)); overlays = []; }
 
-  function makePinEl(place) {
-    const wrap = document.createElement('div');
-    wrap.className = 'pin-wrap';
+  function addOverlay(lat, lng, el) {
+    const o = new kakao.maps.CustomOverlay({
+      position: new kakao.maps.LatLng(lat, lng),
+      content: el, yAnchor: 1.0, zIndex: 3,
+    });
+    o.setMap(map);
+    overlays.push(o);
+  }
 
-    const circle = document.createElement('div');
-    circle.className = 'pin-circle';
-    circle.style.background = place.color;
-    circle.textContent = PIN_EMOJI[place.type] || '📍';
-
-    const tail = document.createElement('div');
-    tail.className = 'pin-tail';
-    tail.style.borderTopColor = place.color;
-
-    wrap.appendChild(circle);
-    wrap.appendChild(tail);
+  function makePinEl(color, emoji, onClick) {
+    const wrap   = document.createElement('div'); wrap.className = 'pin-wrap';
+    const circle = document.createElement('div'); circle.className = 'pin-circle';
+    circle.style.background = color; circle.textContent = emoji;
+    const tail   = document.createElement('div'); tail.className = 'pin-tail';
+    tail.style.borderTopColor = color;
+    wrap.appendChild(circle); wrap.appendChild(tail);
     wrap.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _pinClicked = true;
-      openPlace(place);
+      e.stopPropagation(); _pinClicked = true;
+      onClick();
       setTimeout(() => { _pinClicked = false; }, 0);
     });
     return wrap;
   }
 
-  // ── 핀 렌더링 ──
-  let overlays = [];
-
-  function renderPins(season) {
-    overlays.forEach(o => o.setMap(null));
-    overlays = [];
-    PLACES
-      .filter(p => p.seasons.includes(season))
-      .forEach(place => {
-        const overlay = new kakao.maps.CustomOverlay({
-          position: new kakao.maps.LatLng(place.lat, place.lng),
-          content: makePinEl(place),
-          yAnchor: 1.0,
-          zIndex: 3,
-        });
-        overlay.setMap(map);
-        overlays.push(overlay);
-      });
+  // ── 계절 핀 렌더링 ──
+  function renderSeasonPins(season) {
+    clearOverlays();
+    PLACES.filter(p => p.seasons.includes(season)).forEach(place => {
+      addOverlay(place.lat, place.lng,
+        makePinEl(place.color, PIN_EMOJI[place.type] || '📍', () => openPlace(place))
+      );
+    });
   }
 
-  // ── 트렌드 스트립 렌더링 (모바일) ──
-  function renderTrend(season) {
+  // ── 드라마 핀 렌더링 ──
+  function renderDramaPins(dramas) {
+    clearOverlays();
+    dramas.forEach(drama => {
+      drama.sites.forEach(site => {
+        addOverlay(site.lat, site.lng,
+          makePinEl(drama.pinColor, '🎬', () => openDramaSite(site, drama))
+        );
+      });
+    });
+  }
+
+  // ── 모바일 스트립 ──
+  function renderSeasonStrip(season) {
     const strip = document.getElementById('trendStrip');
     strip.innerHTML = '<span class="trend-label">🔥 트렌드</span>';
     (TREND_DATA[season] || []).forEach((item, i) => {
       const chip = document.createElement('div');
       chip.className = 'trend-chip';
-      chip.innerHTML = `<span class="trend-rank rank-${i + 1}">${i + 1}</span>${item.keyword}`;
+      chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${item.keyword}`;
       chip.addEventListener('click', () => {
         const place = PLACES.find(p => p.id === item.placeId);
-        if (!place) return;
-        flyTo(place.lat, place.lng);
-        openPlace(place);
+        if (place) { flyTo(place.lat, place.lng); openPlace(place); }
       });
       strip.appendChild(chip);
     });
   }
 
-  // ── 사이드패널 렌더링 (데스크톱) ──
-  function renderSidePanel(season, activePlace) {
-    const panel = document.getElementById('sidePanel');
-    const trends = TREND_DATA[season] || [];
-    const top5   = PLACES.filter(p => p.seasons.includes(season)).slice(0, 5);
+  function renderDramaStrip(dramas) {
+    const strip = document.getElementById('trendStrip');
+    strip.innerHTML = '<span class="trend-label">🎬 드라마</span>';
+    dramas.forEach((d, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'trend-chip drama-chip';
+      chip.innerHTML = `<span class="trend-rank rank-${Math.min(i+1,5)}">${i+1}</span>${d.title}`;
+      chip.addEventListener('click', () => {
+        activeDramaId = d.id; activeSiteId = null;
+        renderDramaPins([d]); fitBounds(d.sites);
+        renderDramaPanel();
+      });
+      strip.appendChild(chip);
+    });
+  }
+
+  // ── 계절 사이드패널 ──
+  function renderSeasonPanel(activePlace) {
+    const panel  = document.getElementById('sidePanel');
+    const trends = TREND_DATA[currentSeason] || [];
+    const top5   = PLACES.filter(p => p.seasons.includes(currentSeason)).slice(0, 5);
 
     const trendRows = trends.map((item, i) => {
       const p = PLACES.find(q => q.id === item.placeId);
-      return `
-        <div class="panel-item" data-id="${item.placeId}">
-          <span class="panel-rank rank-${i + 1}">${i + 1}</span>
-          <span class="panel-item-text">${item.keyword}</span>
-          ${p ? `<span class="panel-item-sub">${p.location.split(' ')[0]}</span>` : ''}
-        </div>`;
+      return `<div class="panel-item" data-id="${item.placeId}">
+        <span class="panel-rank rank-${i+1}">${i+1}</span>
+        <span class="panel-item-text">${item.keyword}</span>
+        ${p ? `<span class="panel-item-sub">${p.location.split(' ')[0]}</span>` : ''}
+      </div>`;
     }).join('');
 
     const top5Rows = top5.map((place, i) => {
       const bs = BADGE_STYLE[place.type] || {};
       const isActive = activePlace && activePlace.id === place.id;
-      return `
-        <div class="panel-item" data-id="${place.id}" ${isActive ? 'style="background:var(--gray-100)"' : ''}>
-          <span class="panel-rank rank-${i + 1}">${i + 1}</span>
-          <span class="panel-item-text">${place.name}</span>
-          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${bs.bg};color:${bs.color}">${place.label}</span>
-        </div>`;
+      return `<div class="panel-item" data-id="${place.id}" ${isActive?'style="background:var(--gray-100)"':''}>
+        <span class="panel-rank rank-${i+1}">${i+1}</span>
+        <span class="panel-item-text">${place.name}</span>
+        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${bs.bg};color:${bs.color}">${place.label}</span>
+      </div>`;
     }).join('');
 
     const placeCard = activePlace ? (() => {
       const bs = BADGE_STYLE[activePlace.type] || {};
-      return `
-        <div class="panel-divider"></div>
+      return `<div class="panel-divider"></div>
         <div class="panel-place-card">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <span style="font-size:17px;font-weight:700;color:#111827">${activePlace.name}</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:17px;font-weight:700">${activePlace.name}</span>
             <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:${bs.bg};color:${bs.color}">${activePlace.label}</span>
           </div>
-          <p style="font-size:14px;color:#4b5563;line-height:1.65;margin-bottom:10px;">${activePlace.desc}</p>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-            ${activePlace.tags.map(t => `<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
+          <p style="font-size:14px;color:#4b5563;line-height:1.65;margin-bottom:10px">${activePlace.desc}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+            ${activePlace.tags.map(t=>`<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
-              <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">소요 기간</div>
-              <div style="font-size:14px;font-weight:600">${activePlace.duration}</div>
-            </div>
-            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;">
-              <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">위치</div>
-              <div style="font-size:14px;font-weight:600">${activePlace.location}</div>
-            </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">소요 기간</div><div style="font-size:14px;font-weight:600">${activePlace.duration}</div></div>
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">위치</div><div style="font-size:14px;font-weight:600">${activePlace.location}</div></div>
           </div>
         </div>`;
     })() : '';
@@ -711,85 +603,273 @@ kakao.maps.load(function () {
       </div>
       <div class="panel-divider"></div>
       <div class="panel-section">
-        <div class="panel-section-title">${SEASON_EMO[season]} ${SEASON_KO[season]} 추천 여행지 TOP5</div>
+        <div class="panel-section-title">${SEASON_EMO[currentSeason]} ${SEASON_KO[currentSeason]} 추천 여행지 TOP5</div>
         <div class="panel-list" id="top5List">${top5Rows}</div>
       </div>
-      ${placeCard}
-    `;
+      ${placeCard}`;
 
     panel.querySelectorAll('#trendList .panel-item').forEach(el => {
       el.addEventListener('click', () => {
         const place = PLACES.find(p => p.id === Number(el.dataset.id));
-        if (!place) return;
-        flyTo(place.lat, place.lng);
-        openPlace(place);
+        if (place) { flyTo(place.lat, place.lng); openPlace(place); }
       });
     });
     panel.querySelectorAll('#top5List .panel-item').forEach(el => {
       el.addEventListener('click', () => {
         const place = PLACES.find(p => p.id === Number(el.dataset.id));
-        if (!place) return;
-        flyTo(place.lat, place.lng);
-        openPlace(place);
+        if (place) { flyTo(place.lat, place.lng); openPlace(place); }
       });
     });
   }
 
-  // ── 장소 상세 열기 ──
+  // ── 드라마 사이드패널 ──
+  function renderDramaPanel(searchLabel) {
+    const panel = document.getElementById('sidePanel');
+    const dramas = activeDramaId
+      ? DRAMA_DATA.filter(d => d.id === activeDramaId)
+      : DRAMA_DATA;
+
+    const resetBtn = activeDramaId
+      ? `<button class="drama-reset-btn" id="dramaResetBtn">← 전체 드라마 보기</button>` : '';
+
+    const dramaCards = dramas.map((d, i) => {
+      const isActive = d.id === activeDramaId;
+      const rankClass = `rank-${Math.min(d.rank, 5)}`;
+      return `<div class="drama-card ${isActive?'active':''}" data-drama-id="${d.id}">
+        <div class="drama-color-dot" style="background:${d.pinColor}"></div>
+        <span class="drama-card-rank ${rankClass}">${d.rank}</span>
+        <div class="drama-card-info">
+          <div class="drama-card-title">${d.title}</div>
+          <div class="drama-card-meta">
+            <span>${d.genre}</span>
+            <span class="drama-ott-badge">${d.ott}</span>
+            <span class="drama-site-count">📍 ${d.sites.length}개 촬영지</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // 활성 드라마의 촬영지 목록
+    let siteList = '';
+    if (activeDramaId) {
+      const drama = DRAMA_DATA.find(d => d.id === activeDramaId);
+      if (drama) {
+        const items = drama.sites.map(s => {
+          const isActiveSite = s.id === activeSiteId;
+          return `<div class="drama-site-item ${isActiveSite?'active':''}" data-site-id="${s.id}" data-drama-id="${drama.id}">
+            <div>
+              <div class="drama-site-name">${s.name}</div>
+              <div class="drama-site-scene">${s.scene}</div>
+            </div>
+          </div>`;
+        }).join('');
+        siteList = `<div class="panel-divider"></div>
+          <div class="panel-section">
+            <div class="panel-section-title">📍 촬영지 목록</div>
+            <div id="siteList">${items}</div>
+          </div>`;
+      }
+    }
+
+    const title = searchLabel
+      ? `🔍 검색 결과: <span style="color:var(--hallyu-500)">${searchLabel}</span>`
+      : '🎬 지금 뜨는 드라마 TOP5';
+
+    panel.innerHTML = `
+      <div class="panel-section">
+        <div class="panel-section-title">${title}</div>
+        ${resetBtn}
+        <div id="dramaCardList">${dramaCards}</div>
+      </div>
+      ${siteList}`;
+
+    panel.querySelectorAll('#dramaCardList .drama-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.dramaId;
+        const drama = DRAMA_DATA.find(d => d.id === id);
+        if (!drama) return;
+        if (activeDramaId === id) {
+          activeDramaId = null; activeSiteId = null;
+          renderDramaPins(DRAMA_DATA); renderDramaPanel(searchLabel);
+          map.setLevel(7); map.setCenter(new kakao.maps.LatLng(36.5, 127.8));
+        } else {
+          activeDramaId = id; activeSiteId = null;
+          renderDramaPins([drama]); fitBounds(drama.sites);
+          renderDramaPanel(searchLabel);
+        }
+      });
+    });
+
+    const resetBtn2 = panel.querySelector('#dramaResetBtn');
+    if (resetBtn2) {
+      resetBtn2.addEventListener('click', () => {
+        activeDramaId = null; activeSiteId = null;
+        const filtered = searchLabel
+          ? DRAMA_DATA.filter(d => d.title.includes(searchLabel) || d.titleEn.toLowerCase().includes(searchLabel.toLowerCase()))
+          : DRAMA_DATA;
+        renderDramaPins(filtered);
+        renderDramaPanel(searchLabel);
+        map.setLevel(7); map.setCenter(new kakao.maps.LatLng(36.5, 127.8));
+      });
+    }
+
+    panel.querySelectorAll('#siteList .drama-site-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const siteId   = el.dataset.siteId;
+        const dramaId  = el.dataset.dramaId;
+        const drama    = DRAMA_DATA.find(d => d.id === dramaId);
+        const site     = drama && drama.sites.find(s => s.id === siteId);
+        if (site && drama) { flyTo(site.lat, site.lng); openDramaSite(site, drama); }
+      });
+    });
+  }
+
+  // ── 장소 상세 (계절) ──
   function openPlace(place) {
     const bs = BADGE_STYLE[place.type] || {};
-
-    // 바텀시트 (모바일)
     document.getElementById('sheetPlace').textContent = place.name;
     const badge = document.getElementById('sheetBadge');
     badge.textContent = place.label;
     badge.style.background = bs.bg || '#f3f4f6';
-    badge.style.color = bs.color || '#374151';
+    badge.style.color      = bs.color || '#374151';
     document.getElementById('sheetBody').innerHTML = `
       <p class="sheet-desc">${place.desc}</p>
-      <div class="tag-row">${place.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      <div class="tag-row">${place.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
       <div class="info-grid">
         <div class="info-card"><div class="info-label">코스 유형</div><div class="info-val">${place.label}</div></div>
         <div class="info-card"><div class="info-label">소요 기간</div><div class="info-val">${place.duration}</div></div>
         <div class="info-card col-2"><div class="info-label">위치</div><div class="info-val">${place.location}</div></div>
-      </div>
-    `;
+      </div>`;
     document.getElementById('sheet').classList.add('open');
-
-    // 사이드패널 (데스크톱)
-    renderSidePanel(currentSeason, place);
+    renderSeasonPanel(place);
   }
 
-  // ── 바텀시트 핸들 토글 ──
+  // ── 촬영지 상세 (드라마) ──
+  function openDramaSite(site, drama) {
+    activeSiteId = site.id;
+    document.getElementById('sheetPlace').textContent = site.name;
+    const badge = document.getElementById('sheetBadge');
+    badge.textContent = drama.title;
+    badge.style.background = '#faf5ff';
+    badge.style.color = '#6b21a8';
+    document.getElementById('sheetBody').innerHTML = `
+      <p class="sheet-desc">${site.scene}</p>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">위치</div><div class="info-val">${site.location}</div></div>
+        <div class="info-card"><div class="info-label">장르</div><div class="info-val">${drama.genre}</div></div>
+        <div class="info-card col-2"><div class="info-label">OTT 플랫폼</div><div class="info-val">${drama.ott}</div></div>
+      </div>
+      <div class="i18n-section">
+        <div class="i18n-title">🌏 다국어 안내</div>
+        <div class="i18n-grid">
+          <div class="i18n-item"><span class="i18n-lang">한국어</span><span class="i18n-text">${site.i18n.ko}</span></div>
+          <div class="i18n-item"><span class="i18n-lang">English</span><span class="i18n-text">${site.i18n.en}</span></div>
+          <div class="i18n-item"><span class="i18n-lang">中文</span><span class="i18n-text">${site.i18n.zh}</span></div>
+          <div class="i18n-item"><span class="i18n-lang">日本語</span><span class="i18n-text">${site.i18n.ja}</span></div>
+        </div>
+      </div>`;
+    document.getElementById('sheet').classList.add('open');
+    renderDramaPanel();
+  }
+
+  // ── 한류 모드 진입/해제 ──
+  function enterHallyuMode(dramas, searchLabel) {
+    hallyuMode = true;
+    document.getElementById('hallyuTab').classList.add('active');
+    document.querySelectorAll('.tab[data-s]').forEach(t => {
+      if (t.dataset.s !== 'hallyu') t.classList.remove('active');
+    });
+    document.getElementById('legend').classList.add('hidden');
+    renderDramaPins(dramas || DRAMA_DATA);
+    renderDramaStrip(dramas || DRAMA_DATA);
+    renderDramaPanel(searchLabel || null);
+  }
+
+  function exitHallyuMode() {
+    hallyuMode = false; activeDramaId = null; activeSiteId = null;
+    document.getElementById('hallyuTab').classList.remove('active');
+    document.getElementById('legend').classList.remove('hidden');
+    renderSeasonPins(currentSeason);
+    renderSeasonStrip(currentSeason);
+    renderSeasonPanel(null);
+    document.getElementById('sheet').classList.remove('open');
+  }
+
+  // ── 검색 ──
+  const searchInput = document.getElementById('searchInput');
+  const searchClear = document.getElementById('searchClear');
+  const searchBarEl = document.getElementById('searchBar');
+
+  searchInput.addEventListener('focus', () => searchBarEl.classList.add('focused'));
+  searchInput.addEventListener('blur',  () => searchBarEl.classList.remove('focused'));
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim();
+    searchClear.style.display = q ? 'block' : 'none';
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => handleSearch(q), 280);
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = ''; searchClear.style.display = 'none';
+    activeDramaId = null; activeSiteId = null;
+    exitHallyuMode();
+  });
+
+  function handleSearch(q) {
+    if (!q) { if (hallyuMode) renderDramaPanel(); return; }
+    const lower = q.toLowerCase();
+    const matched = DRAMA_DATA.filter(d =>
+      d.title.includes(q) ||
+      d.titleEn.toLowerCase().includes(lower) ||
+      d.sites.some(s => s.name.includes(q) || s.location.includes(q))
+    );
+    if (matched.length) {
+      activeDramaId = null; activeSiteId = null;
+      enterHallyuMode(matched, q);
+      fitBounds(matched.flatMap(d => d.sites));
+    } else {
+      enterHallyuMode([], q);
+      clearOverlays();
+      document.getElementById('sidePanel').innerHTML =
+        `<div class="empty-state">🔍 "${q}"에 해당하는<br>드라마를 찾을 수 없습니다.<br><br>다른 키워드로 검색해보세요.</div>`;
+      document.getElementById('trendStrip').innerHTML =
+        `<span class="trend-label">검색 결과 없음</span>`;
+    }
+  }
+
+  // ── 탭 이벤트 ──
+  document.querySelectorAll('.tab[data-s]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.dataset.s === 'hallyu') {
+        searchInput.value = ''; searchClear.style.display = 'none';
+        activeDramaId = null; activeSiteId = null;
+        enterHallyuMode(DRAMA_DATA, null);
+      } else {
+        searchInput.value = ''; searchClear.style.display = 'none';
+        currentSeason = tab.dataset.s;
+        document.querySelectorAll('.tab[data-s]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        exitHallyuMode();
+      }
+    });
+  });
+
+  // ── 바텀시트 핸들 ──
   document.getElementById('sheetHandle').addEventListener('click', () => {
     document.getElementById('sheet').classList.toggle('open');
   });
 
-  // 지도 클릭 시 바텀시트 닫기 (핀 클릭은 제외)
+  // 지도 클릭 → 바텀시트 닫기 (핀 클릭 제외)
   kakao.maps.event.addListener(map, 'click', () => {
     if (_pinClicked) return;
     document.getElementById('sheet').classList.remove('open');
   });
 
-  // ── 계절 탭 ──
-  let currentSeason = 'spring';
-
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      currentSeason = tab.dataset.s;
-      renderPins(currentSeason);
-      renderTrend(currentSeason);
-      renderSidePanel(currentSeason);
-      document.getElementById('sheet').classList.remove('open');
-    });
-  });
-
   // ── 초기 렌더링 ──
-  renderPins('spring');
-  renderTrend('spring');
-  renderSidePanel('spring');
+  renderSeasonPins('spring');
+  renderSeasonStrip('spring');
+  renderSeasonPanel(null);
 
 }); // kakao.maps.load 끝
 </script>
