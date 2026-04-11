@@ -444,6 +444,8 @@ map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 // ────────────────────────────
 // 커스텀 핀 DOM 생성
 // ────────────────────────────
+let _pinClicked = false;
+
 function makePinEl(place) {
   const wrap = document.createElement('div');
   wrap.className = 'pin-wrap';
@@ -461,7 +463,9 @@ function makePinEl(place) {
   wrap.appendChild(tail);
   wrap.addEventListener('click', (e) => {
     e.stopPropagation();
+    _pinClicked = true;
     openPlace(place);
+    setTimeout(() => { _pinClicked = false; }, 0);
   });
   return wrap;
 }
@@ -554,8 +558,9 @@ document.getElementById('sheetHandle').addEventListener('click', () => {
   document.getElementById('sheet').classList.toggle('open');
 });
 
-// 지도 클릭 시 바텀시트 닫기
+// 지도 클릭 시 바텀시트 닫기 (핀 클릭은 제외)
 kakao.maps.event.addListener(map, 'click', () => {
+  if (_pinClicked) return;
   document.getElementById('sheet').classList.remove('open');
 });
 
