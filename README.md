@@ -200,12 +200,29 @@
 
 ## 개발자 정보
 
+### GitHub Secrets 등록 방법
+
+GitHub Actions를 통해 API 키를 안전하게 관리합니다. `main` 브랜치에 push하면 자동으로 키가 주입되어 GitHub Pages에 배포됩니다.
+
+#### 등록 경로
+
+`GitHub 저장소 → Settings → Secrets and variables → Actions → New repository secret`
+
+#### 등록할 Secrets
+
+| Secret 이름 | 설명 | 발급처 |
+|------------|------|--------|
+| `KAKAO_JS_KEY` | 카카오 JavaScript 앱 키 | https://developers.kakao.com |
+| `TOUR_API_KEY` | 한국관광공사 Tour API 서비스 키 | https://api.visitkorea.or.kr |
+
+> **주의**: `index.html`에는 실제 키 대신 `__KAKAO_JS_KEY__`, `__TOUR_API_KEY__` 플레이스홀더가 들어 있으며, 배포 시 GitHub Actions가 자동으로 교체합니다. 실제 키를 코드에 직접 커밋하지 마세요.
+
 ### 한국관광공사 OpenAPI 연동
 
 현재 더미 데이터 사용 중. 실제 API 연동 준비 완료.
 
 - API 키 발급: https://api.visitkorea.or.kr
-- `index.html` 내 `KTO_API_KEY` 변수에 키 입력 후 주석 해제
+- GitHub Secret `TOUR_API_KEY`에 등록하면 자동 적용
 - 각 데이터 항목에 `apiId` (콘텐츠 ID) 포함되어 있어 즉시 교체 가능
 
 ### 기술 스택
@@ -214,6 +231,7 @@
 - 카카오맵 API
 - Pretendard 폰트 (CDN)
 - 한국관광공사 Tour API 4.0 (연동 구조 완성)
+- GitHub Actions / GitHub Pages (자동 배포)
 
 ---
 

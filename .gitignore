@@ -1,0 +1,15 @@
+# 환경 변수 / 시크릿
+.env
+.env.*
+*.env
+secrets.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
