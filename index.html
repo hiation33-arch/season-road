@@ -358,6 +358,24 @@
     }
     .side-panel { display: none; }
 
+    /* ── API 로딩 스피너 ── */
+    .api-spinner {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.25);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .spinner-inner {
+      background: var(--white); border-radius: 16px;
+      padding: 24px 32px; display: flex; flex-direction: column;
+      align-items: center; gap: 12px; box-shadow: var(--shadow-md);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid var(--gray-200); border-top-color: var(--primary-500);
+      animation: spin 0.7s linear infinite;
+    }
+    .spinner-text { font-size: 13px; color: var(--gray-600); font-weight: 500; }
+
     /* ── 모바일 375px 최적화 ── */
     @media (max-width: 380px) {
       .header { padding: 0 10px; gap: 7px; }
@@ -427,6 +445,13 @@
   </div>
   <div class="sheet-body" id="sheetBody">
     <p class="sheet-desc">지도의 핀을 클릭하면 정보가 표시됩니다.</p>
+  </div>
+</div>
+
+<div id="apiSpinner" class="api-spinner" style="display:none">
+  <div class="spinner-inner">
+    <div class="spinner-circle"></div>
+    <div class="spinner-text">관광 데이터 불러오는 중…</div>
   </div>
 </div>
 
@@ -552,57 +577,134 @@ function isHalfPriceRegion(location) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// 한국관광공사 Tour API 4.0 연동 구조
-// API 키 발급: https://api.visitkorea.or.kr
+// 한국관광공사 Tour API 4.0 연동
 // ════════════════════════════════════════════════════════════════
-/*
-const KTO_API_KEY  = '__TOUR_API_KEY__';
+const USE_REAL_API = true;
+const KTO_API_KEY  = 'd9f3c82a62d57914fce1896277180c3520d1e559137dd6e7d2d443e005e6d371';
 const KTO_BASE_URL = 'https://apis.data.go.kr/B551011/KorService1';
 
-// 지역 코드: 강원(32) 충북(33) 전북(37) 전남(38) 경남(36)
-// 콘텐츠 타입: 관광지(12) 숙박(32) 음식(39)
+// 계절별 areaCode (관광지가 풍부한 지역 우선)
+const SEASON_AREA_CODES = {
+  spring: [38, 6, 37],   // 전남(벚꽃), 부산, 전북
+  summer: [6, 39, 32],   // 부산(해수욕장), 제주, 강원(계곡)
+  autumn: [32, 35, 36],  // 강원(단풍), 경북, 경남
+  winter: [32, 39, 33],  // 강원(설경), 제주, 충북
+};
 
-// GET /areaBasedList1 — 지역별 관광지 목록 조회
-async function fetchKTOPlaces(areaCode, contentTypeId = 12) {
-  const url = `${KTO_BASE_URL}/areaBasedList1` +
-    `?serviceKey=${KTO_API_KEY}&numOfRows=20&pageNo=1` +
-    `&MobileOS=ETC&MobileApp=SeasonRoad&_type=json` +
-    `&areaCode=${areaCode}&contentTypeId=${contentTypeId}`;
-  const res  = await fetch(url);
-  const data = await res.json();
-  return data.response.body.items.item || [];
+// 반값 여행 areaCode (인구감소지역 포함 도)
+const HALF_PRICE_AREA_CODES = new Set([32, 33, 37, 38, 36]);
+
+// type 순환 배정 (contentid 기반)
+const _TC = ['day', '1night', '2night'];
+const _TL = { day:'당일 코스', '1night':'1박 코스', '2night':'2박 코스' };
+const _TK = { day:'#22c55e',   '1night':'#ef4444',   '2night':'#3b82f6' };
+const _TD = { day:'당일',      '1night':'1박 2일',   '2night':'2박 3일' };
+
+// 캐시 (탭 전환 시 중복 호출 방지)
+const _seasonCache  = {};
+let   _bfCache      = null;
+let   _hallyuCache  = null;
+
+// 스피너 제어
+function showSpinner() { document.getElementById('apiSpinner').style.display = 'flex'; }
+function hideSpinner() { document.getElementById('apiSpinner').style.display = 'none'; }
+
+// ── API 공통 fetch ──
+async function ktoFetch(endpoint, params = {}) {
+  const qs = new URLSearchParams({
+    serviceKey: KTO_API_KEY,
+    numOfRows: 20, pageNo: 1,
+    MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+    ...params,
+  });
+  const res = await fetch(`${KTO_BASE_URL}/${endpoint}?${qs}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data  = await res.json();
+  const items = data?.response?.body?.items?.item;
+  if (!items) return [];
+  return Array.isArray(items) ? items : [items];
 }
 
-// GET /detailIntro1 — 관광지 상세 정보 (접근성 포함)
-async function fetchKTODetail(contentId, contentTypeId = 12) {
-  const url = `${KTO_BASE_URL}/detailIntro1` +
-    `?serviceKey=${KTO_API_KEY}&contentId=${contentId}` +
-    `&contentTypeId=${contentTypeId}` +
-    `&MobileOS=ETC&MobileApp=SeasonRoad&_type=json`;
-  const res  = await fetch(url);
-  const data = await res.json();
-  return data.response.body.items.item[0] || null;
+// ── 변환 함수 ──
+function _ktoToPlace(item, season) {
+  const t = _TC[Math.abs(parseInt(item.contentid, 10) || 0) % 3];
+  return {
+    id: item.contentid, name: item.title,
+    lat: parseFloat(item.mapy), lng: parseFloat(item.mapx),
+    type: t, label: _TL[t], color: _TK[t],
+    seasons: [season], desc: item.addr1 || '',
+    tags: item.cat2 ? [`#${item.cat2}`] : ['#관광지'],
+    duration: _TD[t], location: item.addr1 || '',
+    i18n: { ko: item.title, en: item.title, zh: item.title, ja: item.title },
+    apiId: item.contentid, image: item.firstimage || '',
+  };
 }
 
-// API 응답 → PLACES 형식 변환 (더미 데이터 교체 시 활용)
-// function ktoItemToPlace(item, season, type) {
-//   return {
-//     id: item.contentid,
-//     name: item.title,
-//     lat: parseFloat(item.mapy),
-//     lng: parseFloat(item.mapx),
-//     type, label: ...,
-//     color: ...,
-//     seasons: [season],
-//     desc: item.overview || '',
-//     tags: [],
-//     duration: '',
-//     location: `${item.addr1}`,
-//     i18n: { ko: item.title, en: '', zh: '', ja: '' },
-//     apiId: item.contentid,
-//   };
-// }
-*/
+function _ktoToBF(item) {
+  return {
+    id: 'bf_' + item.contentid, name: item.title,
+    lat: parseFloat(item.mapy), lng: parseFloat(item.mapx),
+    type: 'day', label: '당일 코스', duration: '당일',
+    location: item.addr1 || '', desc: item.addr1 || '',
+    tags: ['#무장애', '#접근가능'],
+    accessibility: { wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
+    i18n: { ko: item.title, en: item.title, zh: item.title, ja: item.title },
+    apiId: item.contentid, image: item.firstimage || '',
+  };
+}
+
+// ── 계절 관광지 로드 (areaBasedList1 + searchFestival1) ──
+async function loadSeasonData(season) {
+  if (_seasonCache[season]) return _seasonCache[season];
+  const SEASON_START = {
+    spring:'20260301', summer:'20260601', autumn:'20260901', winter:'20261201',
+  };
+  const areaCodes = SEASON_AREA_CODES[season] || [1];
+  const [spotResults, festivalItems] = await Promise.all([
+    Promise.all(areaCodes.map(ac => ktoFetch('areaBasedList1', { areaCode: ac, contentTypeId: 12 }))),
+    ktoFetch('searchFestival1', { eventStartDate: SEASON_START[season], contentTypeId: 15, numOfRows: 10 }),
+  ]);
+  const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
+  const spots     = spotResults.flat().filter(valid).map(i => _ktoToPlace(i, season));
+  const festivals = festivalItems.filter(valid).map(i => _ktoToPlace(i, season));
+  const all = [...spots, ...festivals];
+  _seasonCache[season] = all.length ? all : null;
+  return _seasonCache[season];
+}
+
+// ── 무장애 관광지 로드 (areaBasedList1) ──
+async function loadBFData() {
+  if (_bfCache) return _bfCache;
+  const results = await Promise.all(
+    [1, 6, 39, 32].map(ac => ktoFetch('areaBasedList1', { areaCode: ac, contentTypeId: 12, numOfRows: 8 }))
+  );
+  const places = results.flat()
+    .filter(i => i.mapx && i.mapy)
+    .map(_ktoToBF)
+    .slice(0, 8);
+  _bfCache = places.length ? places : null;
+  return _bfCache;
+}
+
+// ── 한류 관광지 로드 (contentTypeId=85) ──
+async function loadHallyuData() {
+  if (_hallyuCache) return _hallyuCache;
+  const items = await ktoFetch('areaBasedList1', { contentTypeId: 85, numOfRows: 20 });
+  const places = items
+    .filter(i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0)
+    .map(i => ({
+      id: i.contentid, name: i.title,
+      lat: parseFloat(i.mapy), lng: parseFloat(i.mapx),
+      type: 'hallyu', label: '한류 촬영지', color: '#a855f7',
+      seasons: ['spring','summer','autumn','winter'],
+      desc: i.addr1 || '', tags: ['#한류관광'],
+      duration: '반나절', location: i.addr1 || '',
+      i18n: { ko: i.title, en: i.title, zh: i.title, ja: i.title },
+      apiId: i.contentid, image: i.firstimage || '',
+    }));
+  _hallyuCache = places.length ? places : null;
+  return _hallyuCache;
+}
 
 // ════════════════════════════════════════════════════════════════
 // 여행지 데이터 — 더미 (API 교체 준비 완료)
@@ -938,7 +1040,8 @@ kakao.maps.load(function () {
 
   // ── 핀 추가 ──
   function addSeasonPins(season) {
-    PLACES.filter(p => p.seasons.includes(season)).forEach(place => {
+    const places = _seasonCache[season] || PLACES.filter(p => p.seasons.includes(season));
+    places.forEach(place => {
       addOverlay(place.lat, place.lng,
         makePinEl(place.color, PIN_EMOJI[place.type] || '📍', () => openPlace(place), isHalfPriceRegion(place.location))
       );
@@ -956,7 +1059,7 @@ kakao.maps.load(function () {
   }
 
   function addBFPins() {
-    BARRIER_FREE_DATA.forEach(place => {
+    (_bfCache || BARRIER_FREE_DATA).forEach(place => {
       addOverlay(place.lat, place.lng,
         makePinEl('#f59e0b', '♿', () => openBFPlace(place))
       );
@@ -997,15 +1100,25 @@ kakao.maps.load(function () {
   function renderSeasonStrip(season) {
     const strip = document.getElementById('trendStrip');
     strip.innerHTML = '<span class="trend-label">🔥 트렌드</span>';
-    (TREND_DATA[season] || []).forEach((item, i) => {
-      const chip = document.createElement('div'); chip.className = 'trend-chip';
-      chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${item.keyword}`;
-      chip.addEventListener('click', () => {
-        const place = PLACES.find(p => p.id === item.placeId);
-        if (place) { flyTo(place.lat, place.lng); openPlace(place); }
+    const apiPlaces = _seasonCache[season];
+    if (apiPlaces && apiPlaces.length) {
+      apiPlaces.slice(0, 5).forEach((place, i) => {
+        const chip = document.createElement('div'); chip.className = 'trend-chip';
+        chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${place.name}`;
+        chip.addEventListener('click', () => { flyTo(place.lat, place.lng); openPlace(place); });
+        strip.appendChild(chip);
       });
-      strip.appendChild(chip);
-    });
+    } else {
+      (TREND_DATA[season] || []).forEach((item, i) => {
+        const chip = document.createElement('div'); chip.className = 'trend-chip';
+        chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${item.keyword}`;
+        chip.addEventListener('click', () => {
+          const place = PLACES.find(p => p.id === item.placeId);
+          if (place) { flyTo(place.lat, place.lng); openPlace(place); }
+        });
+        strip.appendChild(chip);
+      });
+    }
   }
 
   function renderDramaStrip(dramas) {
@@ -1024,9 +1137,10 @@ kakao.maps.load(function () {
   }
 
   function renderBFStrip() {
+    const bfPlaces = _bfCache || BARRIER_FREE_DATA;
     const strip = document.getElementById('trendStrip');
     strip.innerHTML = '<span class="trend-label">♿ 무장애</span>';
-    BARRIER_FREE_DATA.forEach(place => {
+    bfPlaces.forEach(place => {
       const chip = document.createElement('div'); chip.className = 'bf-chip';
       chip.textContent = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       chip.addEventListener('click', () => { flyTo(place.lat, place.lng, 5); openBFPlace(place); });
@@ -1036,8 +1150,9 @@ kakao.maps.load(function () {
 
   // ── 무장애 사이드패널 ──
   function renderBFPanel() {
-    const panel = document.getElementById('panelContent');
-    const lang  = L();
+    const panel    = document.getElementById('panelContent');
+    const lang     = L();
+    const bfPlaces = _bfCache || BARRIER_FREE_DATA;
 
     const courseCards = BF_COURSES.map(c => {
       const bs = BADGE_STYLE[c.type] || BADGE_STYLE.day;
@@ -1050,13 +1165,13 @@ kakao.maps.load(function () {
       </div>`;
     }).join('');
 
-    const placeItems = BARRIER_FREE_DATA.map(place => {
+    const placeItems = bfPlaces.map(place => {
       const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       const isActive = place.id === activeBFId;
       return `<div class="bf-place-item ${isActive?'active':''}" data-bf-id="${place.id}">
         <div class="bf-pin-dot"></div>
         <span class="bf-place-name">${name}</span>
-        <span class="bf-place-loc">${place.location.split(' ')[0]}</span>
+        <span class="bf-place-loc">${(place.location||'').split(' ')[0]}</span>
       </div>`;
     }).join('');
 
@@ -1083,7 +1198,7 @@ kakao.maps.load(function () {
 
     panel.querySelectorAll('#bfPlaceList .bf-place-item').forEach(el => {
       el.addEventListener('click', () => {
-        const place = BARRIER_FREE_DATA.find(p => p.id === el.dataset.bfId);
+        const place = bfPlaces.find(p => p.id === el.dataset.bfId);
         if (place) { flyTo(place.lat, place.lng, 5); openBFPlace(place); }
       });
     });
@@ -1124,19 +1239,24 @@ kakao.maps.load(function () {
 
   // ── 계절 사이드패널 ──
   function renderSeasonPanel(activePlace) {
-    const panel  = document.getElementById('panelContent');
-    const lang   = L();
-    const trends = TREND_DATA[currentSeason] || [];
-    const top5   = PLACES.filter(p => p.seasons.includes(currentSeason)).slice(0, 5);
-    const sEmo   = SEASON_EMO[currentSeason];
-    const sName  = lang.seasonNames[currentSeason];
+    const panel     = document.getElementById('panelContent');
+    const lang      = L();
+    const apiPlaces = _seasonCache[currentSeason];
+    const curPlaces = apiPlaces || PLACES.filter(p => p.seasons.includes(currentSeason));
+    const top5      = curPlaces.slice(0, 5);
+    const sEmo      = SEASON_EMO[currentSeason];
+    const sName     = lang.seasonNames[currentSeason];
+
+    const trends = apiPlaces
+      ? apiPlaces.slice(0, 5).map(p => ({ keyword: p.name, placeId: p.id }))
+      : (TREND_DATA[currentSeason] || []);
 
     const trendRows = trends.map((item, i) => {
-      const p = PLACES.find(q => q.id === item.placeId);
+      const p = curPlaces.find(q => q.id == item.placeId) || PLACES.find(q => q.id === item.placeId);
       return `<div class="panel-item" data-id="${item.placeId}">
         <span class="panel-rank rank-${i+1}">${i+1}</span>
         <span class="panel-item-text">${item.keyword}</span>
-        ${p ? `<span class="panel-item-sub">${p.location.split(' ')[0]}</span>` : ''}
+        ${p ? `<span class="panel-item-sub">${(p.location||'').split(' ')[0]}</span>` : ''}
       </div>`;
     }).join('');
 
@@ -1188,13 +1308,17 @@ kakao.maps.load(function () {
 
     panel.querySelectorAll('#trendList .panel-item').forEach(el => {
       el.addEventListener('click', () => {
-        const place = PLACES.find(p => p.id === Number(el.dataset.id));
+        const id  = el.dataset.id;
+        const cur = _seasonCache[currentSeason] || PLACES.filter(p => p.seasons.includes(currentSeason));
+        const place = cur.find(p => p.id == id) || PLACES.find(p => p.id === Number(id));
         if (place) { flyTo(place.lat, place.lng); openPlace(place); }
       });
     });
     panel.querySelectorAll('#top5List .panel-item').forEach(el => {
       el.addEventListener('click', () => {
-        const place = PLACES.find(p => p.id === Number(el.dataset.id));
+        const id  = el.dataset.id;
+        const cur = _seasonCache[currentSeason] || PLACES.filter(p => p.seasons.includes(currentSeason));
+        const place = cur.find(p => p.id == id) || PLACES.find(p => p.id === Number(id));
         if (place) { flyTo(place.lat, place.lng); openPlace(place); }
       });
     });
@@ -1366,6 +1490,13 @@ kakao.maps.load(function () {
     document.getElementById('legend').classList.add('hidden');
     clearOverlays();
     addDramaPins(dramas || DRAMA_DATA);
+    if (_hallyuCache) {
+      _hallyuCache.forEach(place => {
+        addOverlay(place.lat, place.lng,
+          makePinEl('#a855f7', '🎬', () => openPlace(place))
+        );
+      });
+    }
     if (bfMode) addBFPins();
     renderDramaStrip(dramas || DRAMA_DATA);
     renderDramaPanel(searchLabel || null);
@@ -1427,7 +1558,7 @@ kakao.maps.load(function () {
   });
 
   // ── 무장애 토글 ──
-  document.getElementById('bfToggleBtn').addEventListener('click', () => {
+  document.getElementById('bfToggleBtn').addEventListener('click', async () => {
     bfMode = !bfMode;
     const btn          = document.getElementById('bfToggleBtn');
     const hint         = document.getElementById('bfToggleHint');
@@ -1435,6 +1566,11 @@ kakao.maps.load(function () {
     const lang         = L();
 
     if (bfMode) {
+      if (USE_REAL_API && !_bfCache) {
+        showSpinner();
+        try { await loadBFData(); } catch(e) { console.warn('무장애 API 실패, 더미 데이터 사용:', e); }
+        finally { hideSpinner(); }
+      }
       btn.classList.add('active');
       bfLegendRow.style.display = 'flex';
       hint.textContent = lang.bfHintActive;
@@ -1502,16 +1638,26 @@ kakao.maps.load(function () {
 
   // ── 탭 이벤트 ──
   document.querySelectorAll('.tab[data-s]').forEach(tab => {
-    tab.addEventListener('click', () => {
+    tab.addEventListener('click', async () => {
       if (tab.dataset.s === 'hallyu') {
         searchInput.value = ''; searchClear.style.display = 'none';
         activeDramaId = null; activeSiteId = null;
+        if (USE_REAL_API && !_hallyuCache) {
+          showSpinner();
+          try { await loadHallyuData(); } catch(e) { console.warn('한류 API 실패, 더미 데이터 사용:', e); }
+          finally { hideSpinner(); }
+        }
         enterHallyuMode(DRAMA_DATA, null);
       } else {
         searchInput.value = ''; searchClear.style.display = 'none';
         currentSeason = tab.dataset.s;
         document.querySelectorAll('.tab[data-s]').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
+        if (USE_REAL_API && !_seasonCache[currentSeason]) {
+          showSpinner();
+          try { await loadSeasonData(currentSeason); } catch(e) { console.warn(`${currentSeason} API 실패, 더미 데이터 사용:`, e); }
+          finally { hideSpinner(); }
+        }
         exitHallyuMode();
       }
     });
@@ -1528,11 +1674,26 @@ kakao.maps.load(function () {
     document.getElementById('sheet').classList.remove('open');
   });
 
-  // ── 초기 렌더링 ──
+  // ── 초기 렌더링 (더미 데이터로 즉시 표시) ──
   updateHPBanner();
   renderSeasonPins('spring');
   renderSeasonStrip('spring');
   renderSeasonPanel(null);
+
+  // ── 초기 API 로드 (spring, 백그라운드) ──
+  if (USE_REAL_API) {
+    showSpinner();
+    loadSeasonData('spring')
+      .then(() => {
+        if (!hallyuMode && currentSeason === 'spring') {
+          refreshPins();
+          renderSeasonStrip('spring');
+          renderSeasonPanel(null);
+        }
+      })
+      .catch(e => console.warn('초기 API 로드 실패, 더미 데이터 유지:', e))
+      .finally(() => hideSpinner());
+  }
 
 }); // kakao.maps.load 끝
 </script>
