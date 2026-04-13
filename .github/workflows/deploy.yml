@@ -27,8 +27,11 @@ jobs:
 
       - name: Inject API keys
         run: |
-          sed -i "s|__KAKAO_JS_KEY__|${{ secrets.KAKAO_JS_KEY }}|g" index.html
-          sed -i "s|__TOUR_API_KEY__|${{ secrets.TOUR_API_KEY }}|g" index.html
+          echo "KAKAO secret is set: ${{ secrets.KAKAO_JS_KEY != '' }}"
+          echo "TOUR secret is set: ${{ secrets.TOUR_API_KEY != '' }}"
+          sed -i "s|__KAKAO_JS_KEY__|${{ secrets.KAKAO_JS_KEY }}|g" ./index.html
+          sed -i "s|__TOUR_API_KEY__|${{ secrets.TOUR_API_KEY }}|g" ./index.html
+          grep -o "appkey=[^&\"]*" ./index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
