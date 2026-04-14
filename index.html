@@ -580,8 +580,13 @@ function isHalfPriceRegion(location) {
 // 한국관광공사 Tour API 4.0 연동
 // ════════════════════════════════════════════════════════════════
 const USE_REAL_API = true;
-const KTO_API_KEY  = 'd9f3c82a62d57914fce1896277180c3520d1e559137dd6e7d2d443e005e6d371';
-const KTO_BASE_URL = 'https://apis.data.go.kr/B551011/KorService1';
+const KTO_API_KEY   = 'd9f3c82a62d57914fce1896277180c3520d1e559137dd6e7d2d443e005e6d371';
+const KTO_BASE_URLS = {
+  ko: 'https://apis.data.go.kr/B551011/KorService1',
+  en: 'https://apis.data.go.kr/B551011/EngService1',
+  zh: 'https://apis.data.go.kr/B551011/ChsService1',
+  ja: 'https://apis.data.go.kr/B551011/JpnService1',
+};
 
 // 계절별 areaCode (관광지가 풍부한 지역 우선)
 const SEASON_AREA_CODES = {
@@ -609,20 +614,31 @@ let   _hallyuCache  = null;
 function showSpinner() { document.getElementById('apiSpinner').style.display = 'flex'; }
 function hideSpinner() { document.getElementById('apiSpinner').style.display = 'none'; }
 
-// ── API 공통 fetch ──
+// ── API 공통 fetch (언어별 다국어 서비스 자동 선택 + KO fallback) ──
 async function ktoFetch(endpoint, params = {}) {
-  const qs = new URLSearchParams({
+  const makeQs = () => new URLSearchParams({
     serviceKey: KTO_API_KEY,
     numOfRows: 20, pageNo: 1,
     MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
     ...params,
   });
-  const res = await fetch(`${KTO_BASE_URL}/${endpoint}?${qs}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data  = await res.json();
-  const items = data?.response?.body?.items?.item;
-  if (!items) return [];
-  return Array.isArray(items) ? items : [items];
+  const parseItems = async (res) => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data  = await res.json();
+    const items = data?.response?.body?.items?.item;
+    if (!items) return [];
+    return Array.isArray(items) ? items : [items];
+  };
+  const baseUrl = KTO_BASE_URLS[currentLang] || KTO_BASE_URLS.ko;
+  try {
+    return await parseItems(await fetch(`${baseUrl}/${endpoint}?${makeQs()}`));
+  } catch (e) {
+    if (currentLang !== 'ko') {
+      console.warn(`[SeasonRoad] 다국어 API(${currentLang}) 실패 → 한국어 fallback:`, e);
+      return await parseItems(await fetch(`${KTO_BASE_URLS.ko}/${endpoint}?${makeQs()}`));
+    }
+    throw e;
+  }
 }
 
 // ── 변환 함수 ──
@@ -1549,10 +1565,25 @@ kakao.maps.load(function () {
     }
   }
 
-  // ── 언어 버튼 이벤트 ──
+  // ── 언어 버튼 이벤트 (다국어 API 재조회 + KO fallback) ──
   document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
+      if (btn.dataset.lang === currentLang) return;
       currentLang = btn.dataset.lang;
+      // 캐시 초기화 → 새 언어 API로 재조회
+      Object.keys(_seasonCache).forEach(k => delete _seasonCache[k]);
+      _bfCache = null;
+      _hallyuCache = null;
+      if (USE_REAL_API) {
+        showSpinner();
+        try {
+          if (hallyuMode)      { await loadHallyuData(); }
+          else if (bfMode)     { await loadBFData(); }
+          else                 { await loadSeasonData(currentSeason); }
+        } catch(e) { console.warn('[SeasonRoad] 언어 전환 API 재조회 실패:', e); }
+        finally { hideSpinner(); }
+      }
+      refreshPins();
       applyLanguage();
     });
   });
