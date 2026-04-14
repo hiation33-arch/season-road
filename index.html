@@ -715,17 +715,26 @@ async function loadSeasonData(season) {
   return _seasonCache[season];
 }
 
-// ── 무장애 관광지 로드 (areaBasedList1) ──
+// ── 무장애 관광지 로드 (searchKeyword1 "열린관광지", 빈 결과 시 BARRIER_FREE_DATA fallback) ──
 async function loadBFData() {
-  if (_bfCache) return _bfCache;
-  const results = await Promise.all(
-    [1, 6, 39, 32].map(ac => ktoFetch('areaBasedList1', { areaCode: ac, contentTypeId: 12, numOfRows: 8 }))
-  );
-  const places = results.flat()
-    .filter(i => i.mapx && i.mapy)
-    .map(_ktoToBF)
-    .slice(0, 8);
-  _bfCache = places.length ? places : null;
+  if (_bfCache !== null) return _bfCache; // sentinel 포함, null만 재시도
+  try {
+    const items = await ktoFetch('searchKeyword1', { keyword: '열린관광지', numOfRows: 20 });
+    const places = items
+      .filter(i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0)
+      .map(_ktoToBF)
+      .slice(0, 16);
+    if (places.length) {
+      _bfCache = places;
+      console.info(`[SeasonRoad] 무장애 API(열린관광지) ${places.length}개 로드 완료`);
+    } else {
+      console.warn('[SeasonRoad] searchKeyword1("열린관광지") 결과 없음 → BARRIER_FREE_DATA 더미로 fallback');
+      _bfCache = BARRIER_FREE_DATA;
+    }
+  } catch(e) {
+    console.warn('[SeasonRoad] 무장애 API 호출 실패, BARRIER_FREE_DATA 더미로 fallback:', e);
+    _bfCache = BARRIER_FREE_DATA;
+  }
   return _bfCache;
 }
 
@@ -1767,7 +1776,7 @@ kakao.maps.load(function () {
     const lang         = L();
 
     if (bfMode) {
-      if (USE_REAL_API && !_bfCache) {
+      if (USE_REAL_API && _bfCache === null) {
         showSpinner();
         try { await loadBFData(); } catch(e) { console.warn('무장애 API 실패, 더미 데이터 사용:', e); }
         finally { hideSpinner(); }
