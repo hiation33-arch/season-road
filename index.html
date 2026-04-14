@@ -729,23 +729,63 @@ async function loadBFData() {
   return _bfCache;
 }
 
-// ── 한류 관광지 로드 (contentTypeId=85) ──
+// ── 한류 관광지 로드 (contentTypeId=85, 빈 결과 시 DRAMA_DATA 사이트 fallback) ──
 async function loadHallyuData() {
-  if (_hallyuCache) return _hallyuCache;
-  const items = await ktoFetch('areaBasedList1', { contentTypeId: 85, numOfRows: 20 });
-  const places = items
-    .filter(i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0)
-    .map(i => ({
-      id: i.contentid, name: i.title,
-      lat: parseFloat(i.mapy), lng: parseFloat(i.mapx),
-      type: 'hallyu', label: '한류 촬영지', color: '#a855f7',
-      seasons: ['spring','summer','autumn','winter'],
-      desc: i.addr1 || '', tags: ['#한류관광'],
-      duration: '반나절', location: i.addr1 || '',
-      i18n: { ko: i.title, en: i.title, zh: i.title, ja: i.title },
-      apiId: i.contentid, image: i.firstimage || '',
-    }));
-  _hallyuCache = places.length ? places : null;
+  if (_hallyuCache !== null) return _hallyuCache; // [] sentinel 포함, null만 재시도
+  try {
+    const items = await ktoFetch('areaBasedList1', { contentTypeId: 85, numOfRows: 20 });
+    const places = items
+      .filter(i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0)
+      .map(i => ({
+        id: i.contentid, name: i.title,
+        lat: parseFloat(i.mapy), lng: parseFloat(i.mapx),
+        type: 'hallyu', label: '한류 촬영지', color: '#a855f7',
+        seasons: ['spring','summer','autumn','winter'],
+        desc: i.addr1 || '',
+        descI18n: { ko: i.addr1 || '', en: '', zh: '', ja: '' },
+        tags: ['#한류관광'],
+        duration: '반나절', location: i.addr1 || '',
+        i18n: { ko: i.title, en: i.title, zh: i.title, ja: i.title },
+        apiId: i.contentid, image: i.firstimage || '',
+      }));
+    if (places.length) {
+      _hallyuCache = places;
+      console.info(`[SeasonRoad] 한류 API(contentTypeId=85) ${places.length}개 로드 완료`);
+    } else {
+      // contentTypeId=85 결과 없음 → DRAMA_DATA 촬영지를 장소 핀으로 변환해 fallback
+      console.warn('[SeasonRoad] contentTypeId=85 결과 없음 → DRAMA_DATA 더미로 fallback');
+      _hallyuCache = DRAMA_DATA.flatMap(drama =>
+        (drama.sites || []).map(site => ({
+          id: `dummy_${drama.id}_${site.name}`,
+          name: site.name,
+          lat: site.lat, lng: site.lng,
+          type: 'hallyu', label: '한류 촬영지', color: drama.pinColor || '#a855f7',
+          seasons: ['spring','summer','autumn','winter'],
+          desc: `${drama.title} 촬영지`,
+          descI18n: { ko: `${drama.title} 촬영지`, en: '', zh: '', ja: '' },
+          tags: ['#한류관광', `#${drama.title}`],
+          duration: '반나절', location: site.name,
+          i18n: { ko: site.name, en: site.name, zh: site.name, ja: site.name },
+        }))
+      );
+    }
+  } catch(e) {
+    console.warn('[SeasonRoad] 한류 API 호출 실패, DRAMA_DATA 더미로 fallback:', e);
+    _hallyuCache = DRAMA_DATA.flatMap(drama =>
+      (drama.sites || []).map(site => ({
+        id: `dummy_${drama.id}_${site.name}`,
+        name: site.name,
+        lat: site.lat, lng: site.lng,
+        type: 'hallyu', label: '한류 촬영지', color: drama.pinColor || '#a855f7',
+        seasons: ['spring','summer','autumn','winter'],
+        desc: `${drama.title} 촬영지`,
+        descI18n: { ko: `${drama.title} 촬영지`, en: '', zh: '', ja: '' },
+        tags: ['#한류관광', `#${drama.title}`],
+        duration: '반나절', location: site.name,
+        i18n: { ko: site.name, en: site.name, zh: site.name, ja: site.name },
+      }))
+    );
+  }
   return _hallyuCache;
 }
 
@@ -1803,7 +1843,7 @@ kakao.maps.load(function () {
       if (tab.dataset.s === 'hallyu') {
         searchInput.value = ''; searchClear.style.display = 'none';
         activeDramaId = null; activeSiteId = null;
-        if (USE_REAL_API && !_hallyuCache) {
+        if (USE_REAL_API && _hallyuCache === null) {
           showSpinner();
           try { await loadHallyuData(); } catch(e) { console.warn('한류 API 실패, 더미 데이터 사용:', e); }
           finally { hideSpinner(); }
