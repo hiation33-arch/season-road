@@ -1011,7 +1011,45 @@ const BADGE_STYLE = {
   hallyu:  { bg:'#f3e8ff', color:'#6b21a8' },
   bf:      { bg:'#fffbeb', color:'#92400e' },
 };
-const PIN_EMOJI  = { day:'🌿', '1night':'🌙', '2night':'⭐', hallyu:'🎬' };
+// ── 치비 스타일 핀 SVG ──
+const PIN_SVG = {
+  // 당일 코스 (초록) — 발자국 2개
+  day: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="19" height="19">
+    <ellipse cx="7.5" cy="12" rx="3" ry="4.5" fill="white" fill-opacity=".9"/>
+    <circle cx="5.8" cy="7.2" r="1.3" fill="white" fill-opacity=".9"/>
+    <circle cx="7.5" cy="6.8" r="1.3" fill="white" fill-opacity=".9"/>
+    <circle cx="9.2" cy="7.2" r="1.1" fill="white" fill-opacity=".9"/>
+    <ellipse cx="14.5" cy="15.5" rx="3" ry="4.5" fill="white" fill-opacity=".9"/>
+    <circle cx="12.8" cy="10.7" r="1.3" fill="white" fill-opacity=".9"/>
+    <circle cx="14.5" cy="10.3" r="1.3" fill="white" fill-opacity=".9"/>
+    <circle cx="16.2" cy="10.7" r="1.1" fill="white" fill-opacity=".9"/>
+  </svg>`,
+  // 1박 코스 (빨강) — 둥근 집 + 별 1개
+  '1night': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="19" height="19">
+    <path d="M2,11 Q2,6 11,2 Q20,6 20,11 Z" fill="white" fill-opacity=".9"/>
+    <rect x="3.5" y="10" width="15" height="7" rx="2" fill="white" fill-opacity=".9"/>
+    <rect x="8" y="11" width="6" height="4" rx="1" fill="rgba(0,0,0,.2)"/>
+    <path d="M11,18.2 L11.47,19.35 L12.71,19.44 L11.76,20.25 L12.06,21.46 L11,20.8 L9.94,21.46 L10.24,20.25 L9.29,19.44 L10.53,19.35 Z" fill="white" fill-opacity=".9"/>
+  </svg>`,
+  // 2박 코스 (파랑) — 둥근 집 + 별 2개
+  '2night': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="19" height="19">
+    <path d="M2,11 Q2,6 11,2 Q20,6 20,11 Z" fill="white" fill-opacity=".9"/>
+    <rect x="3.5" y="10" width="15" height="7" rx="2" fill="white" fill-opacity=".9"/>
+    <rect x="8" y="11" width="6" height="4" rx="1" fill="rgba(0,0,0,.2)"/>
+    <path d="M7.5,18.5 L7.91,19.43 L8.93,19.54 L8.17,20.22 L8.38,21.21 L7.5,20.7 L6.62,21.21 L6.83,20.22 L6.07,19.54 L7.09,19.43 Z" fill="white" fill-opacity=".9"/>
+    <path d="M14.5,18.5 L14.91,19.43 L15.93,19.54 L15.17,20.22 L15.38,21.21 L14.5,20.7 L13.62,21.21 L13.83,20.22 L13.07,19.54 L14.09,19.43 Z" fill="white" fill-opacity=".9"/>
+  </svg>`,
+  // 한류 (보라) — 치비 카메라 (렌즈 구멍 evenodd)
+  hallyu: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22" width="19" height="19">
+    <rect x="6" y="5" width="5" height="4" rx="1.5" fill="white" fill-opacity=".9"/>
+    <path fill-rule="evenodd" fill="white" fill-opacity=".9"
+      d="M5,8 Q2,8 2,11 L2,17 Q2,20 5,20 L17,20 Q20,20 20,17 L20,11 Q20,8 17,8 Z
+         M8.5,14 A3.5,3.5 0 1,0 15.5,14 A3.5,3.5 0 1,0 8.5,14"/>
+    <circle cx="12" cy="14" r="3.8" fill="none" stroke="white" stroke-width=".8" opacity=".5"/>
+    <circle cx="10.5" cy="12.5" r=".8" fill="white" opacity=".8"/>
+    <circle cx="17.5" cy="10" r="1.2" fill="white" opacity=".8"/>
+  </svg>`,
+};
 const SEASON_EMO = { spring:'🌸', summer:'🌿', autumn:'🍂', winter:'❄️' };
 
 // ── 현재 언어 상태 ──
@@ -1061,10 +1099,15 @@ kakao.maps.load(function () {
     overlays.push(o);
   }
 
-  function makePinEl(color, emoji, onClick, halfPrice = false) {
+  function makePinEl(color, icon, onClick, halfPrice = false) {
     const wrap   = document.createElement('div'); wrap.className = 'pin-wrap';
     const circle = document.createElement('div'); circle.className = 'pin-circle';
-    circle.style.background = color; circle.textContent = emoji;
+    circle.style.background = color;
+    if (typeof icon === 'string' && icon.trimStart().startsWith('<')) {
+      circle.innerHTML = icon;
+    } else {
+      circle.textContent = icon;
+    }
     const tail   = document.createElement('div'); tail.className = 'pin-tail';
     tail.style.borderTopColor = color;
     wrap.appendChild(circle); wrap.appendChild(tail);
@@ -1086,7 +1129,7 @@ kakao.maps.load(function () {
     const places = _seasonCache[season] || PLACES.filter(p => p.seasons.includes(season));
     places.forEach(place => {
       addOverlay(place.lat, place.lng,
-        makePinEl(place.color, PIN_EMOJI[place.type] || '📍', () => openPlace(place), isHalfPriceRegion(place.location))
+        makePinEl(place.color, PIN_SVG[place.type] || '📍', () => openPlace(place), isHalfPriceRegion(place.location))
       );
     });
   }
@@ -1095,7 +1138,7 @@ kakao.maps.load(function () {
     dramas.forEach(drama => {
       drama.sites.forEach(site => {
         addOverlay(site.lat, site.lng,
-          makePinEl(drama.pinColor, '🎬', () => openDramaSite(site, drama))
+          makePinEl(drama.pinColor, PIN_SVG.hallyu, () => openDramaSite(site, drama))
         );
       });
     });
@@ -1536,7 +1579,7 @@ kakao.maps.load(function () {
     if (_hallyuCache) {
       _hallyuCache.forEach(place => {
         addOverlay(place.lat, place.lng,
-          makePinEl('#a855f7', '🎬', () => openPlace(place))
+          makePinEl('#a855f7', PIN_SVG.hallyu, () => openPlace(place))
         );
       });
     }
