@@ -23,7 +23,7 @@
       --white: #ffffff;
       --header-h: 56px;
       --tab-h: 48px;
-      --bf-h: 40px;
+      --bf-h: 48px;
       --trend-h: 44px;
       --barrier-500: #f59e0b;
       --barrier-100: #fffbeb;
@@ -102,7 +102,7 @@
       position: fixed; top: calc(var(--header-h) + var(--tab-h));
       left: 0; right: 0; height: var(--bf-h);
       background: var(--white); border-bottom: 1px solid var(--gray-200);
-      display: flex; align-items: center; padding: 0 14px; gap: 10px; z-index: 295;
+      display: flex; align-items: center; padding: 0 12px; gap: 8px; z-index: 295;
     }
     .bf-toggle-btn {
       display: flex; align-items: center; gap: 6px;
@@ -124,7 +124,30 @@
     }
     .bf-toggle-hint {
       font-size: 11px; color: var(--gray-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: none; /* 모바일에서 공간 확보를 위해 숨김 */
     }
+    @media (min-width: 1024px) {
+      .bf-toggle-hint { display: block; }
+    }
+
+    /* ── 반값 여행 모바일 버튼 ── */
+    .hp-mobile-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 20px;
+      background: linear-gradient(135deg, #fef3c7, #fffbeb);
+      border: 1.5px solid var(--hp-500);
+      font-family: var(--font); font-size: 13px; font-weight: 700;
+      color: #92400e; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(245,158,11,0.2);
+      transition: all 0.2s ease;
+      min-height: 34px;
+    }
+    .hp-mobile-btn:hover {
+      box-shadow: 0 4px 12px rgba(245,158,11,0.35);
+      transform: translateY(-1px);
+    }
+    .hp-mobile-btn:active { transform: scale(0.96); }
     .bf-chip {
       display: flex; align-items: center; gap: 5px;
       background: var(--barrier-100); border-radius: 20px; padding: 5px 11px;
@@ -380,9 +403,12 @@
     @media (max-width: 380px) {
       .header { padding: 0 10px; gap: 7px; }
       .logo { font-size: 15px; }
-      .lang-btn { padding: 3px 5px; font-size: 10px; }
       .tab { font-size: 12px; }
-      .bf-toggle-btn { padding: 4px 10px; font-size: 12px; }
+      .bf-toggle-row { gap: 6px; padding: 0 10px; }
+      .bf-toggle-btn { padding: 4px 9px; font-size: 12px; }
+      .hp-mobile-btn { padding: 4px 9px; font-size: 12px; }
+      .lang-btn { padding: 3px 5px; font-size: 10px; }
+      .lang-selector { gap: 2px; }
     }
   </style>
 </head>
@@ -397,12 +423,6 @@
     <input type="text" id="searchInput" placeholder="드라마 제목으로 촬영지 검색" autocomplete="off" />
     <button class="search-clear" id="searchClear" aria-label="검색 초기화">✕</button>
   </div>
-  <div class="lang-selector" id="langSelector">
-    <button class="lang-btn active" data-lang="ko">KO</button>
-    <button class="lang-btn" data-lang="en">EN</button>
-    <button class="lang-btn" data-lang="zh">ZH</button>
-    <button class="lang-btn" data-lang="ja">JA</button>
-  </div>
 </header>
 
 <nav class="season-tabs" id="seasonTabs">
@@ -415,7 +435,14 @@
 
 <div class="bf-toggle-row">
   <button class="bf-toggle-btn" id="bfToggleBtn">♿ 무장애 여행</button>
-  <span class="bf-toggle-hint" id="bfToggleHint">시니어·장애인 모두 이용 가능한 여행지</span>
+  <a class="hp-mobile-btn" id="hpMobileBtn" href="https://korean.visitkorea.or.kr" target="_blank" rel="noopener">💰 반값 여행</a>
+  <span class="bf-toggle-hint" id="bfToggleHint" aria-live="polite">시니어·장애인 모두 이용 가능한 여행지</span>
+  <div class="lang-selector" id="langSelector" style="margin-left:auto">
+    <button class="lang-btn active" data-lang="ko">KO</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="zh">ZH</button>
+    <button class="lang-btn" data-lang="ja">JA</button>
+  </div>
 </div>
 
 <div class="trend-strip" id="trendStrip"></div>
