@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600&display=swap');
     :root {
       --primary-500: #22c55e;
       --primary-400: #4ade80;
@@ -413,6 +414,230 @@
   </style>
 </head>
 <body>
+
+<!-- ══ 랜딩 히어로 섹션 ══ -->
+<section id="landing-hero">
+  <div class="hero-bg" id="heroBg">
+    <div class="hero-glow" id="heroGlow"></div>
+  </div>
+  <div class="hero-content">
+    <h1 class="hero-title">시즌로드</h1>
+    <p class="hero-subtitle">계절별 여행 코스 · 한류 촬영지 · 무장애 여행</p>
+    <p class="hero-slogan">지금 이 계절, 어디로 떠나실건가요?</p>
+    <div class="hero-season-tabs">
+      <button class="hero-stab active" data-season="spring">봄</button>
+      <button class="hero-stab" data-season="summer">여름</button>
+      <button class="hero-stab" data-season="autumn">가을</button>
+      <button class="hero-stab" data-season="winter">겨울</button>
+    </div>
+    <button class="hero-cta" id="heroCtaBtn">여행 시작하기 →</button>
+  </div>
+</section>
+
+<style>
+  /* ── 랜딩 히어로 ── */
+  #landing-hero {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.6s ease;
+  }
+  #landing-hero.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* 배경 이미지 레이어 */
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: url('./images/봄.png');
+    background-size: cover;
+    background-position: center;
+    transition: opacity 0.6s ease;
+  }
+  .hero-bg.summer { background-image: url('./images/여름.png'); }
+  .hero-bg.autumn { background-image: url('./images/가을.png'); }
+  .hero-bg.winter { background-image: url('./images/겨울.png'); }
+  .hero-bg.spring { background-image: url('./images/봄.png'); }
+
+  /* 텍스트 가독성용 어두운 오버레이 */
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  /* 콘텐츠 */
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .hero-title {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 600;
+    font-size: 4rem;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    color: var(--white);
+    text-shadow: 0 2px 24px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.12);
+    line-height: 1.1;
+  }
+  .hero-subtitle {
+    font-family: var(--font);
+    font-size: clamp(11px, 3vw, 14px);
+    font-weight: 600;
+    color: rgba(255,255,255,0.82);
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.14);
+  }
+  .hero-slogan {
+    font-family: var(--font);
+    font-size: clamp(15px, 4vw, 21px);
+    font-weight: 500;
+    color: rgba(255,255,255,0.95);
+    text-shadow: 0 1px 10px rgba(0,0,0,0.18);
+    line-height: 1.5;
+    margin-top: 2px;
+  }
+
+  /* 계절 탭 */
+  .hero-season-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 50px;
+    border: 1px solid rgba(255,255,255,0.35);
+    margin-top: 4px;
+  }
+  .hero-stab {
+    padding: 7px 16px;
+    border: 1.5px solid transparent;
+    border-radius: 50px;
+    background: transparent;
+    color: rgba(255,255,255,0.72);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    white-space: nowrap;
+  }
+  .hero-stab:hover {
+    background: rgba(255,255,255,0.2);
+    color: var(--white);
+  }
+  .hero-stab.active {
+    background: rgba(255,255,255,0.32);
+    color: var(--white);
+    border-color: rgba(255,255,255,0.5);
+  }
+
+  /* CTA 버튼 */
+  .hero-cta {
+    margin-top: 10px;
+    padding: 15px 40px;
+    border-radius: 50px;
+    background: transparent;
+    color: var(--white);
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.75);
+    letter-spacing: 0.4px;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.18s ease, box-shadow 0.25s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  .hero-cta:hover {
+    background: rgba(255,255,255,0.9);
+    color: #d46b8a;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  #landing-hero[data-season="summer"] .hero-cta:hover { color: #1a7fa8; }
+  #landing-hero[data-season="autumn"] .hero-cta:hover { color: #c05a10; }
+  #landing-hero[data-season="winter"] .hero-cta:hover { color: #2a7aab; }
+  .hero-cta:active { transform: scale(0.97); }
+
+  /* 모바일 */
+  @media (max-width: 380px) {
+    .hero-season-tabs { gap: 4px; padding: 5px 8px; }
+    .hero-stab { padding: 6px 11px; font-size: 12px; }
+    .hero-cta { padding: 13px 28px; font-size: 15px; }
+  }
+</style>
+
+<script>
+(function () {
+  var SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+  var bg   = document.getElementById('heroBg');
+  var tabs = document.querySelectorAll('.hero-stab');
+  var cta  = document.getElementById('heroCtaBtn');
+  var current = 0;
+  var timer;
+
+  function setSeason(season) {
+    bg.className = 'hero-bg ' + season;
+    document.getElementById('landing-hero').dataset.season = season;
+    tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.season === season); });
+    current = SEASONS.indexOf(season);
+  }
+
+  function autoNext() {
+    current = (current + 1) % SEASONS.length;
+    setSeason(SEASONS[current]);
+  }
+
+  function startAuto() {
+    clearInterval(timer);
+    timer = setInterval(autoNext, 5000);
+  }
+
+  setSeason('spring');
+  startAuto();
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      setSeason(tab.dataset.season);
+      startAuto();
+    });
+  });
+
+  cta.addEventListener('click', function() {
+    var hero = document.getElementById('landing-hero');
+    var app  = document.getElementById('app-wrapper');
+    if (app) app.style.display = 'block';
+    hero.classList.add('fade-out');
+    setTimeout(function() { hero.style.display = 'none'; }, 600);
+    setTimeout(function() {
+      if (window.kakaoMap) {
+        window.kakaoMap.relayout();
+        window.kakaoMap.setCenter(new kakao.maps.LatLng(36.5, 127.5));
+        window.kakaoMap.setLevel(13);
+      }
+    }, 300);
+  });
+})();
+</script>
+
+<div id="app-wrapper" style="display:none">
 
 <header class="header">
   <div class="logo">🗺 Season<span>Road</span></div>
@@ -1164,6 +1389,7 @@ kakao.maps.load(function () {
   const map = new kakao.maps.Map(document.getElementById('map'), {
     center: new kakao.maps.LatLng(36.5, 127.8), level: 7,
   });
+  window.kakaoMap = map;
   map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.RIGHT);
 
   // ── 상태 ──
@@ -1907,5 +2133,7 @@ kakao.maps.load(function () {
 
 }); // kakao.maps.load 끝
 </script>
+
+</div><!-- /app-wrapper -->
 </body>
 </html>
