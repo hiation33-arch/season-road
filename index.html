@@ -575,7 +575,12 @@
   #landing-hero[data-season="winter"] .hero-cta:hover { color: #2a7aab; }
   .hero-cta:active { transform: scale(0.97); }
 
-  /* 모바일 */
+  /* 모바일 배경 위치 */
+  @media (max-width: 768px) {
+    .hero-bg { background-position: center 40%; }
+  }
+
+  /* 모바일 소형 */
   @media (max-width: 380px) {
     .hero-season-tabs { gap: 4px; padding: 5px 8px; }
     .hero-stab { padding: 6px 11px; font-size: 12px; }
