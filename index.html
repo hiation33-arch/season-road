@@ -236,6 +236,23 @@
     .trend-rank.rank-3 { color: #eab308; }
     .trend-rank.rank-4, .trend-rank.rank-5 { color: var(--gray-400); }
 
+    /* ── 모바일(≤768px) bf-toggle-row 2단 레이아웃 ── */
+    @media (max-width: 768px) {
+      :root { --bf-h: 88px; }
+      .bf-toggle-row {
+        height: var(--bf-h);
+        flex-wrap: wrap;
+        align-content: center;
+        row-gap: 6px;
+      }
+      .lang-selector {
+        flex-basis: 100%;
+        justify-content: flex-end;
+        margin-left: 0 !important;
+        flex-shrink: 0;
+      }
+    }
+
     /* ── 모바일(≤768px) 트렌드 아코디언 ── */
     @media (max-width: 768px) {
       .trend-strip {
@@ -765,6 +782,7 @@ const I18N = {
     bfHintActive: '무장애 여행지가 지도에 표시됩니다',
     searchPlaceholder: '드라마 제목으로 촬영지 검색',
     trendTitle: '🔥 지금 뜨는 여행지 TOP5',
+    trendStripLabel: '🔥 트렌드',
     seasonTop5: (emo, name) => `${emo} ${name} 추천 여행지 TOP5`,
     dramaTop5: '🎬 지금 뜨는 드라마 TOP5',
     bfCoursesTitle: '♿ 추천 무장애 코스',
@@ -791,6 +809,7 @@ const I18N = {
     bfHintActive: 'Accessible spots shown on map',
     searchPlaceholder: 'Search filming locations by drama title',
     trendTitle: '🔥 Trending Destinations TOP5',
+    trendStripLabel: '🔥 Trending',
     seasonTop5: (emo, name) => `${emo} ${name} Top 5 Picks`,
     dramaTop5: '🎬 Trending K-Dramas TOP5',
     bfCoursesTitle: '♿ Accessible Tour Courses',
@@ -817,6 +836,7 @@ const I18N = {
     bfHintActive: '无障碍景点已在地图上显示',
     searchPlaceholder: '搜索拍摄地点',
     trendTitle: '🔥 热门目的地 TOP5',
+    trendStripLabel: '🔥 热门趋势',
     seasonTop5: (emo, name) => `${emo} ${name}推荐景点 TOP5`,
     dramaTop5: '🎬 热门韩剧 TOP5',
     bfCoursesTitle: '♿ 无障碍推荐路线',
@@ -843,6 +863,7 @@ const I18N = {
     bfHintActive: 'バリアフリースポットを地図に表示中',
     searchPlaceholder: 'ドラマタイトルで撮影地を検索',
     trendTitle: '🔥 トレンド旅行先 TOP5',
+    trendStripLabel: '🔥 トレンド',
     seasonTop5: (emo, name) => `${emo} ${name} おすすめ TOP5`,
     dramaTop5: '🎬 人気韓国ドラマ TOP5',
     bfCoursesTitle: '♿ バリアフリーコース',
@@ -1573,7 +1594,7 @@ kakao.maps.load(function () {
     const body  = document.getElementById('trendBody');
     const label = document.getElementById('trendLabel');
     if (!body) return;
-    if (label) label.textContent = '🔥 트렌드';
+    if (label) label.textContent = L().trendStripLabel;
     body.innerHTML = '';
     collapseTrendStrip();
     const apiPlaces = _seasonCache[season];
