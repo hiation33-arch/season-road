@@ -736,11 +736,11 @@
 <div id="map"></div>
 
 <div class="legend" id="legend">
-  <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div>당일 코스</div>
-  <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div>1박 코스</div>
-  <div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div>2박 코스</div>
-  <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div>한류 촬영지</div>
-  <div class="legend-row" id="bfLegendRow" style="display:none"><div class="legend-dot" style="background:#f59e0b"></div>무장애 여행지</div>
+  <div class="legend-row"><div class="legend-dot" style="background:#22c55e"></div><span id="legendDay">당일 코스</span></div>
+  <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div><span id="legendOneNight">1박 코스</span></div>
+  <div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div><span id="legendTwoNight">2박 코스</span></div>
+  <div class="legend-row"><div class="legend-dot" style="background:#a855f7"></div><span id="legendHallyu">한류 촬영지</span></div>
+  <div class="legend-row" id="bfLegendRow" style="display:none"><div class="legend-dot" style="background:#f59e0b"></div><span id="legendBF">무장애 여행지</span></div>
 </div>
 
 <aside class="side-panel" id="sidePanel">
@@ -783,6 +783,11 @@ const I18N = {
     searchPlaceholder: '드라마 제목으로 촬영지 검색',
     trendTitle: '🔥 지금 뜨는 여행지 TOP5',
     trendStripLabel: '🔥 트렌드',
+    bfStripLabel: '♿ 무장애',
+    dramaStripLabel: '🎬 드라마',
+    legend: { day:'당일 코스', oneNight:'1박 코스', twoNight:'2박 코스', hallyu:'한류 촬영지', bf:'무장애 여행지' },
+    sheetEmptyTitle: '여행지를 선택하세요',
+    sheetEmptyDesc: '지도의 핀을 클릭하면 정보가 표시됩니다.',
     seasonTop5: (emo, name) => `${emo} ${name} 추천 여행지 TOP5`,
     dramaTop5: '🎬 지금 뜨는 드라마 TOP5',
     bfCoursesTitle: '♿ 추천 무장애 코스',
@@ -810,6 +815,11 @@ const I18N = {
     searchPlaceholder: 'Search filming locations by drama title',
     trendTitle: '🔥 Trending Destinations TOP5',
     trendStripLabel: '🔥 Trending',
+    bfStripLabel: '♿ Accessible',
+    dramaStripLabel: '🎬 Drama',
+    legend: { day:'Day Trip', oneNight:'1-Night', twoNight:'2-Night', hallyu:'K-Drama Filming Site', bf:'Accessible Destination' },
+    sheetEmptyTitle: 'Select a destination',
+    sheetEmptyDesc: 'Tap a pin on the map to see details',
     seasonTop5: (emo, name) => `${emo} ${name} Top 5 Picks`,
     dramaTop5: '🎬 Trending K-Dramas TOP5',
     bfCoursesTitle: '♿ Accessible Tour Courses',
@@ -837,6 +847,11 @@ const I18N = {
     searchPlaceholder: '搜索拍摄地点',
     trendTitle: '🔥 热门目的地 TOP5',
     trendStripLabel: '🔥 热门趋势',
+    bfStripLabel: '♿ 无障碍',
+    dramaStripLabel: '🎬 韩剧',
+    legend: { day:'当日往返', oneNight:'1晚行程', twoNight:'2晚行程', hallyu:'韩流拍摄地', bf:'无障碍旅游地' },
+    sheetEmptyTitle: '请选择旅游地',
+    sheetEmptyDesc: '点击地图上的图钉查看详情',
     seasonTop5: (emo, name) => `${emo} ${name}推荐景点 TOP5`,
     dramaTop5: '🎬 热门韩剧 TOP5',
     bfCoursesTitle: '♿ 无障碍推荐路线',
@@ -864,6 +879,11 @@ const I18N = {
     searchPlaceholder: 'ドラマタイトルで撮影地を検索',
     trendTitle: '🔥 トレンド旅行先 TOP5',
     trendStripLabel: '🔥 トレンド',
+    bfStripLabel: '♿ バリアフリー',
+    dramaStripLabel: '🎬 ドラマ',
+    legend: { day:'日帰りコース', oneNight:'1泊コース', twoNight:'2泊コース', hallyu:'韓流ロケ地', bf:'バリアフリー旅行地' },
+    sheetEmptyTitle: '旅行先を選択してください',
+    sheetEmptyDesc: '地図のピンをタップすると情報が表示されます',
     seasonTop5: (emo, name) => `${emo} ${name} おすすめ TOP5`,
     dramaTop5: '🎬 人気韓国ドラマ TOP5',
     bfCoursesTitle: '♿ バリアフリーコース',
@@ -1470,6 +1490,7 @@ kakao.maps.load(function () {
   let activeBFId     = null;
   let _pinClicked    = false;
   let _searchTimer   = null;
+  let _sheetEmpty    = true;
 
   // ── 지도 이동 ──
   function flyTo(lat, lng, level = 5) {
@@ -1623,7 +1644,7 @@ kakao.maps.load(function () {
     const body  = document.getElementById('trendBody');
     const label = document.getElementById('trendLabel');
     if (!body) return;
-    if (label) label.textContent = '🎬 드라마';
+    if (label) label.textContent = L().dramaStripLabel;
     body.innerHTML = '';
     collapseTrendStrip();
     dramas.forEach((d, i) => {
@@ -1643,7 +1664,7 @@ kakao.maps.load(function () {
     const body  = document.getElementById('trendBody');
     const label = document.getElementById('trendLabel');
     if (!body) return;
-    if (label) label.textContent = '♿ 무장애';
+    if (label) label.textContent = L().bfStripLabel;
     body.innerHTML = '';
     collapseTrendStrip();
     bfPlaces.forEach(place => {
@@ -1714,6 +1735,7 @@ kakao.maps.load(function () {
 
   // ── 무장애 장소 상세 ──
   function openBFPlace(place) {
+    _sheetEmpty = false;
     activeBFId = place.id;
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
     document.getElementById('sheetPlace').textContent = name;
@@ -1938,6 +1960,7 @@ kakao.maps.load(function () {
 
   // ── 장소 상세 (계절) ──
   function openPlace(place) {
+    _sheetEmpty = false;
     const bs   = BADGE_STYLE[place.type] || {};
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
     document.getElementById('sheetPlace').textContent = name;
@@ -1964,6 +1987,7 @@ kakao.maps.load(function () {
 
   // ── 촬영지 상세 (드라마) ──
   function openDramaSite(site, drama) {
+    _sheetEmpty = false;
     activeSiteId = site.id;
     const siteName = site.i18n ? (site.i18n[currentLang] || site.name) : site.name;
     document.getElementById('sheetPlace').textContent = siteName;
@@ -2047,6 +2071,18 @@ kakao.maps.load(function () {
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.lang === currentLang);
     });
+    // 핀 범례
+    const leg = lang.legend;
+    document.getElementById('legendDay').textContent      = leg.day;
+    document.getElementById('legendOneNight').textContent = leg.oneNight;
+    document.getElementById('legendTwoNight').textContent = leg.twoNight;
+    document.getElementById('legendHallyu').textContent   = leg.hallyu;
+    document.getElementById('legendBF').textContent       = leg.bf;
+    // 시트 초기 안내문구 (장소 미선택 상태)
+    if (_sheetEmpty) {
+      document.getElementById('sheetPlace').textContent = lang.sheetEmptyTitle;
+      document.getElementById('sheetBody').innerHTML = `<p class="sheet-desc">${lang.sheetEmptyDesc}</p>`;
+    }
     // 반값 배너
     updateHPBanner();
     // 패널 재렌더
