@@ -214,8 +214,12 @@
       display: flex; align-items: center; padding: 0 12px; gap: 8px;
       overflow-x: auto; overflow-y: hidden; scrollbar-width: none; z-index: 290;
       -webkit-overflow-scrolling: touch;
+      transition: height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .trend-strip::-webkit-scrollbar { display: none; }
+    .trend-strip-header { display: none; }
+    .trend-body { display: contents; }
+    .trend-arrow { font-size: 10px; color: var(--gray-400); transition: transform 0.25s ease; flex-shrink: 0; }
     .trend-label { font-size: 11px; font-weight: 700; color: var(--gray-400); white-space: nowrap; flex-shrink: 0; }
     .trend-chip {
       display: flex; align-items: center; gap: 5px;
@@ -231,6 +235,36 @@
     .trend-rank.rank-2 { color: #f97316; }
     .trend-rank.rank-3 { color: #eab308; }
     .trend-rank.rank-4, .trend-rank.rank-5 { color: var(--gray-400); }
+
+    /* ── 모바일(≤768px) 트렌드 아코디언 ── */
+    @media (max-width: 768px) {
+      .trend-strip {
+        flex-direction: column; align-items: stretch;
+        overflow: hidden; padding: 0; gap: 0;
+      }
+      .trend-strip-header {
+        display: flex; align-items: center; justify-content: space-between;
+        height: 44px; padding: 0 12px;
+        cursor: pointer; flex-shrink: 0; user-select: none;
+      }
+      .trend-strip.expanded .trend-arrow { transform: rotate(180deg); }
+      .trend-body {
+        display: flex; flex-direction: column;
+        border-top: 1px solid var(--gray-100); overflow: hidden;
+      }
+      .trend-chip {
+        border-radius: 0; background: var(--white);
+        padding: 9px 12px 9px 16px; border-bottom: 1px solid var(--gray-100);
+        flex-shrink: 0; font-size: 13px; gap: 10px;
+      }
+      .trend-chip:last-child { border-bottom: none; }
+      .trend-chip.drama-chip { background: var(--white); color: var(--hallyu-900); }
+      .trend-chip:active { background: var(--gray-100); transform: none; }
+      .trend-body .bf-chip {
+        width: 100%; justify-content: flex-start; border-radius: 8px;
+        margin: 3px 8px 0; width: calc(100% - 16px);
+      }
+    }
 
     /* ── 지도 ── */
     #map {
@@ -674,7 +708,13 @@
   </div>
 </div>
 
-<div class="trend-strip" id="trendStrip"></div>
+<div class="trend-strip" id="trendStrip">
+  <div class="trend-strip-header" id="trendStripHeader">
+    <span class="trend-label" id="trendLabel">🔥 트렌드</span>
+    <span class="trend-arrow" id="trendArrow">▼</span>
+  </div>
+  <div class="trend-body" id="trendBody"></div>
+</div>
 
 <div id="map"></div>
 
@@ -720,6 +760,7 @@ const I18N = {
   ko: {
     tabs: { spring:'🌸 봄', summer:'🌿 여름', autumn:'🍂 가을', winter:'❄️ 겨울', hallyu:'🎬 한류' },
     bfToggle: '♿ 무장애 여행',
+    hpMobile: '💰 반값 여행',
     bfHint: '시니어·장애인 모두 이용 가능한 여행지',
     bfHintActive: '무장애 여행지가 지도에 표시됩니다',
     searchPlaceholder: '드라마 제목으로 촬영지 검색',
@@ -745,6 +786,7 @@ const I18N = {
   en: {
     tabs: { spring:'🌸 Spring', summer:'🌿 Summer', autumn:'🍂 Autumn', winter:'❄️ Winter', hallyu:'🎬 K-Drama' },
     bfToggle: '♿ Accessible Travel',
+    hpMobile: '💰 Half-Price Travel',
     bfHint: 'Travel destinations for seniors & people with disabilities',
     bfHintActive: 'Accessible spots shown on map',
     searchPlaceholder: 'Search filming locations by drama title',
@@ -770,6 +812,7 @@ const I18N = {
   zh: {
     tabs: { spring:'🌸 春季', summer:'🌿 夏季', autumn:'🍂 秋季', winter:'❄️ 冬季', hallyu:'🎬 韩流' },
     bfToggle: '♿ 无障碍旅行',
+    hpMobile: '💰 半价旅行',
     bfHint: '老年人·残疾人均可游览的目的地',
     bfHintActive: '无障碍景点已在地图上显示',
     searchPlaceholder: '搜索拍摄地点',
@@ -795,6 +838,7 @@ const I18N = {
   ja: {
     tabs: { spring:'🌸 春', summer:'🌿 夏', autumn:'🍂 秋', winter:'❄️ 冬', hallyu:'🎬 韓流' },
     bfToggle: '♿ バリアフリー旅行',
+    hpMobile: '💰 半額旅行',
     bfHint: 'シニア・障害者も利用できる旅行地',
     bfHintActive: 'バリアフリースポットを地図に表示中',
     searchPlaceholder: 'ドラマタイトルで撮影地を検索',
@@ -1133,32 +1177,32 @@ const PLACES = [
 // ── 트렌드 데이터 ──
 const TREND_DATA = {
   spring: [
-    { keyword:{ ko:'경복궁 벚꽃 나들이', en:'경복궁 벚꽃 나들이', zh:'경복궁 벚꽃 나들이', ja:'경복궁 벚꽃 나들이' }, placeId:1 },
-    { keyword:{ ko:'전주 한옥마을', en:'전주 한옥마을', zh:'전주 한옥마을', ja:'전주 한옥마을' }, placeId:4 },
-    { keyword:{ ko:'담양 죽녹원', en:'담양 죽녹원', zh:'담양 죽녹원', ja:'담양 죽녹원' }, placeId:15 },
-    { keyword:{ ko:'강릉 경포 벚꽃', en:'강릉 경포 벚꽃', zh:'강릉 경포 벚꽃', ja:'강릉 경포 벚꽃' }, placeId:10 },
-    { keyword:{ ko:'남이섬 봄소풍', en:'남이섬 봄소풍', zh:'남이섬 봄소풍', ja:'남이섬 봄소풍' }, placeId:5 },
+    { keyword:{ ko:'경복궁 벚꽃 나들이', en:'Gyeongbokgung Cherry Blossoms', zh:'景福宫赏樱', ja:'景福宮の花見' }, placeId:1 },
+    { keyword:{ ko:'전주 한옥마을', en:'Jeonju Hanok Village', zh:'全州韩屋村', ja:'全州韓屋村' }, placeId:4 },
+    { keyword:{ ko:'담양 죽녹원', en:'Damyang Bamboo Forest', zh:'潭阳竹绿苑', ja:'潭陽竹林' }, placeId:15 },
+    { keyword:{ ko:'강릉 경포 벚꽃', en:'Gangneung Gyeongpo Cherry Blossoms', zh:'江陵镜浦樱花', ja:'江陵鏡浦の桜' }, placeId:10 },
+    { keyword:{ ko:'남이섬 봄소풍', en:'Nami Island Spring Picnic', zh:'南怡岛春游', ja:'ナミ島春のピクニック' }, placeId:5 },
   ],
   summer: [
-    { keyword:{ ko:'해운대 피서', en:'해운대 피서', zh:'해운대 피서', ja:'해운대 피서' }, placeId:2 },
-    { keyword:{ ko:'광안리 야경 카페', en:'광안리 야경 카페', zh:'광안리 야경 카페', ja:'광안리 야경 카페' }, placeId:9 },
-    { keyword:{ ko:'여수 낭만포차', en:'여수 낭만포차', zh:'여수 낭만포차', ja:'여수 낭만포차' }, placeId:11 },
-    { keyword:{ ko:'강릉 경포해변', en:'강릉 경포해변', zh:'강릉 경포해변', ja:'강릉 경포해변' }, placeId:10 },
-    { keyword:{ ko:'담양 죽녹원 힐링', en:'담양 죽녹원 힐링', zh:'담양 죽녹원 힐링', ja:'담양 죽녹원 힐링' }, placeId:15 },
+    { keyword:{ ko:'해운대 피서', en:'Haeundae Beach Summer Escape', zh:'海云台避暑', ja:'海雲台で夏を満喫' }, placeId:2 },
+    { keyword:{ ko:'광안리 야경 카페', en:'Gwangalli Night View Cafés', zh:'广安里夜景咖啡厅', ja:'広安里夜景カフェ' }, placeId:9 },
+    { keyword:{ ko:'여수 낭만포차', en:'Yeosu Romantic Street Food', zh:'丽水浪漫夜市', ja:'麗水ロマン屋台' }, placeId:11 },
+    { keyword:{ ko:'강릉 경포해변', en:'Gangneung Gyeongpo Beach', zh:'江陵镜浦海滩', ja:'江陵鏡浦海水浴場' }, placeId:10 },
+    { keyword:{ ko:'담양 죽녹원 힐링', en:'Damyang Bamboo Healing Retreat', zh:'潭阳竹林疗愈', ja:'潭陽竹林のヒーリング' }, placeId:15 },
   ],
   autumn: [
-    { keyword:{ ko:'설악산 단풍 등산', en:'설악산 단풍 등산', zh:'설악산 단풍 등산', ja:'설악산 단풍 등산' }, placeId:8 },
-    { keyword:{ ko:'경주 불국사', en:'경주 불국사', zh:'경주 불국사', ja:'경주 불국사' }, placeId:6 },
-    { keyword:{ ko:'안동 하회마을', en:'안동 하회마을', zh:'안동 하회마을', ja:'안동 하회마을' }, placeId:13 },
-    { keyword:{ ko:'남이섬 단풍', en:'남이섬 단풍', zh:'남이섬 단풍', ja:'남이섬 단풍' }, placeId:5 },
-    { keyword:{ ko:'여수 가을 여행', en:'여수 가을 여행', zh:'여수 가을 여행', ja:'여수 가을 여행' }, placeId:11 },
+    { keyword:{ ko:'설악산 단풍 등산', en:'Seoraksan Autumn Foliage Hike', zh:'雪岳山秋叶登山', ja:'雪岳山の紅葉登山' }, placeId:8 },
+    { keyword:{ ko:'경주 불국사', en:'Gyeongju Bulguksa Temple', zh:'庆州佛国寺', ja:'慶州仏国寺' }, placeId:6 },
+    { keyword:{ ko:'안동 하회마을', en:'Andong Hahoe Village', zh:'安东河回村', ja:'安東河回村' }, placeId:13 },
+    { keyword:{ ko:'남이섬 단풍', en:'Nami Island Autumn Foliage', zh:'南怡岛红叶', ja:'ナミ島の紅葉' }, placeId:5 },
+    { keyword:{ ko:'여수 가을 여행', en:'Yeosu Autumn Trip', zh:'丽水秋季旅行', ja:'麗水の秋旅' }, placeId:11 },
   ],
   winter: [
-    { keyword:{ ko:'한라산 눈꽃 트레킹', en:'한라산 눈꽃 트레킹', zh:'한라산 눈꽃 트레킹', ja:'한라산 눈꽃 트레킹' }, placeId:12 },
-    { keyword:{ ko:'설악산 설경', en:'설악산 설경', zh:'설악산 설경', ja:'설악산 설경' }, placeId:8 },
-    { keyword:{ ko:'대관령 양떼목장 눈꽃', en:'대관령 양떼목장 눈꽃', zh:'대관령 양떼목장 눈꽃', ja:'대관령 양떼목장 눈꽃' }, placeId:14 },
-    { keyword:{ ko:'성산일출봉 일출', en:'성산일출봉 일출', zh:'성산일출봉 일출', ja:'성산일출봉 일출' }, placeId:3 },
-    { keyword:{ ko:'인사동 연말 나들이', en:'인사동 연말 나들이', zh:'인사동 연말 나들이', ja:'인사동 연말 나들이' }, placeId:7 },
+    { keyword:{ ko:'한라산 눈꽃 트레킹', en:'Hallasan Snow Flower Trek', zh:'汉拿山雪花徒步', ja:'漢拏山の雪景色トレッキング' }, placeId:12 },
+    { keyword:{ ko:'설악산 설경', en:'Seoraksan Winter Snowscape', zh:'雪岳山雪景', ja:'雪岳山の雪景色' }, placeId:8 },
+    { keyword:{ ko:'대관령 양떼목장 눈꽃', en:'Daegwallyeong Sheep Farm in Snow', zh:'大关岭羊群牧场雪景', ja:'大関嶺羊牧場の雪' }, placeId:14 },
+    { keyword:{ ko:'성산일출봉 일출', en:'Seongsan Sunrise Peak', zh:'城山日出峰看日出', ja:'城山日出峰の日の出' }, placeId:3 },
+    { keyword:{ ko:'인사동 연말 나들이', en:'Insadong Year-End Stroll', zh:'仁寺洞年末游', ja:'仁寺洞の年末散歩' }, placeId:7 },
   ],
 };
 
@@ -1515,17 +1559,30 @@ kakao.maps.load(function () {
       <div class="hp-banner-link">${hp.link}</div>`;
   }
 
+  // ── 트렌드 스트립 접기/펼치기 (모바일 전용) ──
+  function collapseTrendStrip() {
+    const strip = document.getElementById('trendStrip');
+    if (!strip) return;
+    strip.classList.remove('expanded');
+    document.documentElement.style.setProperty('--trend-h', '44px');
+    setTimeout(() => { map.relayout(); }, 300);
+  }
+
   // ── 모바일 스트립 ──
   function renderSeasonStrip(season) {
-    const strip = document.getElementById('trendStrip');
-    strip.innerHTML = '<span class="trend-label">🔥 트렌드</span>';
+    const body  = document.getElementById('trendBody');
+    const label = document.getElementById('trendLabel');
+    if (!body) return;
+    if (label) label.textContent = '🔥 트렌드';
+    body.innerHTML = '';
+    collapseTrendStrip();
     const apiPlaces = _seasonCache[season];
     if (apiPlaces && apiPlaces.length) {
       apiPlaces.slice(0, 5).forEach((place, i) => {
         const chip = document.createElement('div'); chip.className = 'trend-chip';
         chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${place.name}`;
         chip.addEventListener('click', () => { flyTo(place.lat, place.lng); openPlace(place); });
-        strip.appendChild(chip);
+        body.appendChild(chip);
       });
     } else {
       (TREND_DATA[season] || []).forEach((item, i) => {
@@ -1536,14 +1593,18 @@ kakao.maps.load(function () {
           const place = PLACES.find(p => p.id === item.placeId);
           if (place) { flyTo(place.lat, place.lng); openPlace(place); }
         });
-        strip.appendChild(chip);
+        body.appendChild(chip);
       });
     }
   }
 
   function renderDramaStrip(dramas) {
-    const strip = document.getElementById('trendStrip');
-    strip.innerHTML = '<span class="trend-label">🎬 드라마</span>';
+    const body  = document.getElementById('trendBody');
+    const label = document.getElementById('trendLabel');
+    if (!body) return;
+    if (label) label.textContent = '🎬 드라마';
+    body.innerHTML = '';
+    collapseTrendStrip();
     dramas.forEach((d, i) => {
       const chip = document.createElement('div'); chip.className = 'trend-chip drama-chip';
       chip.innerHTML = `<span class="trend-rank rank-${Math.min(i+1,5)}">${i+1}</span>${d.title}`;
@@ -1552,19 +1613,23 @@ kakao.maps.load(function () {
         renderDramaPins([d]); fitBounds(d.sites);
         renderDramaPanel();
       });
-      strip.appendChild(chip);
+      body.appendChild(chip);
     });
   }
 
   function renderBFStrip() {
     const bfPlaces = _bfCache || BARRIER_FREE_DATA;
-    const strip = document.getElementById('trendStrip');
-    strip.innerHTML = '<span class="trend-label">♿ 무장애</span>';
+    const body  = document.getElementById('trendBody');
+    const label = document.getElementById('trendLabel');
+    if (!body) return;
+    if (label) label.textContent = '♿ 무장애';
+    body.innerHTML = '';
+    collapseTrendStrip();
     bfPlaces.forEach(place => {
       const chip = document.createElement('div'); chip.className = 'bf-chip';
       chip.textContent = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       chip.addEventListener('click', () => { flyTo(place.lat, place.lng, 5); openBFPlace(place); });
-      strip.appendChild(chip);
+      body.appendChild(chip);
     });
   }
 
@@ -1953,6 +2018,8 @@ kakao.maps.load(function () {
     // 무장애 버튼 + 힌트
     document.getElementById('bfToggleBtn').textContent = lang.bfToggle;
     document.getElementById('bfToggleHint').textContent = bfMode ? lang.bfHintActive : lang.bfHint;
+    // 반값 여행 버튼
+    document.getElementById('hpMobileBtn').textContent = lang.hpMobile;
     // 검색 placeholder
     document.getElementById('searchInput').placeholder = lang.searchPlaceholder;
     // 언어 버튼 active 상태
@@ -1995,6 +2062,22 @@ kakao.maps.load(function () {
       refreshPins();
       applyLanguage();
     });
+  });
+
+  // ── 트렌드 아코디언 토글 (모바일) ──
+  document.getElementById('trendStripHeader').addEventListener('click', () => {
+    if (window.innerWidth > 768) return;
+    const strip = document.getElementById('trendStrip');
+    const body  = document.getElementById('trendBody');
+    if (!strip || !body) return;
+    if (strip.classList.contains('expanded')) {
+      collapseTrendStrip();
+    } else {
+      strip.classList.add('expanded');
+      const totalH = 44 + body.scrollHeight + 2;
+      document.documentElement.style.setProperty('--trend-h', totalH + 'px');
+      setTimeout(() => { map.relayout(); }, 300);
+    }
   });
 
   // ── 무장애 토글 ──
@@ -2071,8 +2154,11 @@ kakao.maps.load(function () {
       clearOverlays();
       document.getElementById('panelContent').innerHTML =
         `<div class="empty-state">🔍 "${q}"에 해당하는<br>드라마를 찾을 수 없습니다.<br><br>다른 키워드로 검색해보세요.</div>`;
-      document.getElementById('trendStrip').innerHTML =
-        `<span class="trend-label">검색 결과 없음</span>`;
+      const _noLabel = document.getElementById('trendLabel');
+      const _noBody  = document.getElementById('trendBody');
+      if (_noLabel) _noLabel.textContent = '검색 결과 없음';
+      if (_noBody)  _noBody.innerHTML = '';
+      collapseTrendStrip();
     }
   }
 
