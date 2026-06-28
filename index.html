@@ -788,6 +788,10 @@ const I18N = {
     legend: { day:'당일 코스', oneNight:'1박 코스', twoNight:'2박 코스', hallyu:'한류 촬영지', bf:'무장애 여행지' },
     sheetEmptyTitle: '여행지를 선택하세요',
     sheetEmptyDesc: '지도의 핀을 클릭하면 정보가 표시됩니다.',
+    fieldCourseType: '코스 유형', fieldDuration: '소요 기간', fieldLocation: '위치',
+    fieldGenre: '장르', fieldOtt: 'OTT 플랫폼',
+    courseTypeLabel: { day:'당일 코스', '1night':'1박 코스', '2night':'2박 코스', hallyu:'한류 촬영지' },
+    durationLabel:   { day:'당일', '1night':'1박 2일', '2night':'2박 3일', hallyu:'반나절' },
     seasonTop5: (emo, name) => `${emo} ${name} 추천 여행지 TOP5`,
     dramaTop5: '🎬 지금 뜨는 드라마 TOP5',
     bfCoursesTitle: '♿ 추천 무장애 코스',
@@ -820,6 +824,10 @@ const I18N = {
     legend: { day:'Day Trip', oneNight:'1-Night', twoNight:'2-Night', hallyu:'K-Drama Filming Site', bf:'Accessible Destination' },
     sheetEmptyTitle: 'Select a destination',
     sheetEmptyDesc: 'Tap a pin on the map to see details',
+    fieldCourseType: 'Course Type', fieldDuration: 'Duration', fieldLocation: 'Location',
+    fieldGenre: 'Genre', fieldOtt: 'Platform',
+    courseTypeLabel: { day:'Day Trip', '1night':'1-Night', '2night':'2-Night', hallyu:'K-Drama Site' },
+    durationLabel:   { day:'Day Trip', '1night':'1 Night 2 Days', '2night':'2 Nights 3 Days', hallyu:'Half Day' },
     seasonTop5: (emo, name) => `${emo} ${name} Top 5 Picks`,
     dramaTop5: '🎬 Trending K-Dramas TOP5',
     bfCoursesTitle: '♿ Accessible Tour Courses',
@@ -852,6 +860,10 @@ const I18N = {
     legend: { day:'当日往返', oneNight:'1晚行程', twoNight:'2晚行程', hallyu:'韩流拍摄地', bf:'无障碍旅游地' },
     sheetEmptyTitle: '请选择旅游地',
     sheetEmptyDesc: '点击地图上的图钉查看详情',
+    fieldCourseType: '行程类型', fieldDuration: '所需时间', fieldLocation: '地点',
+    fieldGenre: '类型', fieldOtt: '平台',
+    courseTypeLabel: { day:'当日往返', '1night':'1晚行程', '2night':'2晚行程', hallyu:'韩流拍摄地' },
+    durationLabel:   { day:'当日', '1night':'1晚2天', '2night':'2晚3天', hallyu:'半天' },
     seasonTop5: (emo, name) => `${emo} ${name}推荐景点 TOP5`,
     dramaTop5: '🎬 热门韩剧 TOP5',
     bfCoursesTitle: '♿ 无障碍推荐路线',
@@ -884,6 +896,10 @@ const I18N = {
     legend: { day:'日帰りコース', oneNight:'1泊コース', twoNight:'2泊コース', hallyu:'韓流ロケ地', bf:'バリアフリー旅行地' },
     sheetEmptyTitle: '旅行先を選択してください',
     sheetEmptyDesc: '地図のピンをタップすると情報が表示されます',
+    fieldCourseType: 'コースタイプ', fieldDuration: '所要時間', fieldLocation: '場所',
+    fieldGenre: 'ジャンル', fieldOtt: 'プラットフォーム',
+    courseTypeLabel: { day:'日帰りコース', '1night':'1泊コース', '2night':'2泊コース', hallyu:'韓流ロケ地' },
+    durationLabel:   { day:'日帰り', '1night':'1泊2日', '2night':'2泊3日', hallyu:'半日' },
     seasonTop5: (emo, name) => `${emo} ${name} おすすめ TOP5`,
     dramaTop5: '🎬 人気韓国ドラマ TOP5',
     bfCoursesTitle: '♿ バリアフリーコース',
@@ -1119,99 +1135,118 @@ async function loadHallyuData() {
 const PLACES = [
   { id:1,  name:'경복궁',          lat:37.5796, lng:126.9770, type:'hallyu', label:'한류 촬영지', color:'#a855f7', seasons:['spring','autumn'],
     desc:'조선 왕조의 법궁. 드라마 〈미스터 션샤인〉·〈킹덤〉 촬영지. 북촌 한옥마을과 연계 반나절 코스 추천.',
-    descI18n:{ ko:'조선 왕조의 법궁. 드라마 〈미스터 션샤인〉·〈킹덤〉 촬영지. 북촌 한옥마을과 연계 반나절 코스 추천.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'조선 왕조의 법궁. 드라마 〈미스터 션샤인〉·〈킹덤〉 촬영지. 북촌 한옥마을과 연계 반나절 코스 추천.', en:'The main royal palace of the Joseon Dynasty. Filming site for K-dramas Mr. Sunshine and Kingdom. Best combined with Bukchon Hanok Village for a half-day itinerary.', zh:'朝鲜王朝正宫，韩剧《阳光先生》和《王国》的取景地。可与北村韩屋村连游，打造充实的半日路线。', ja:'朝鮮王朝の正宮。ドラマ『ミスター・サンシャイン』と『キングダム』のロケ地。北村韓屋村と組み合わせた半日コースがおすすめです。' },
     tags:['#궁궐','#한복체험','#드라마촬영지'], duration:'반나절', location:'서울 종로구',
+    tagsI18n:{ ko:['#궁궐','#한복체험','#드라마촬영지'], en:['#Palace','#HanbokExperience','#KDramaFilming'], zh:['#宫殿','#韩服体验','#韩剧取景地'], ja:['#宮殿','#韓服体験','#韓国ドラマロケ地'] },
     i18n:{ ko:'경복궁', en:'Gyeongbokgung Palace', zh:'景福宫', ja:'景福宮' }, apiId:'264540' },
   { id:2,  name:'해운대 해수욕장', lat:35.1587, lng:129.1603, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['summer'],
     desc:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.',
-    descI18n:{ ko:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.', en:"Korea's most iconic beach resort. A classic 1-night itinerary links Haeundae, Gwangalli, and Centum City — the after-dark skyline is unmissable.", zh:'韩国最具代表性的海水浴场。推荐海云台→广安里→新世界CENTUM 1晚2天行程，夜景格外迷人。', ja:'韓国を代表するビーチ。海雲台→広安里→センタムシティを巡る1泊2日コースがおすすめ。夜景が特に美しいです。' },
     tags:['#해변','#야경','#부산여행'], duration:'1박 2일', location:'부산 해운대구',
+    tagsI18n:{ ko:['#해변','#야경','#부산여행'], en:['#Beach','#NightView','#Busan'], zh:['#海滩','#夜景','#釜山旅行'], ja:['#ビーチ','#夜景','#釜山旅行'] },
     i18n:{ ko:'해운대 해수욕장', en:'Haeundae Beach', zh:'海云台海水浴场', ja:'海雲台海水浴場' }, apiId:'264570' },
   { id:3,  name:'성산일출봉',      lat:33.4582, lng:126.9428, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','summer','autumn','winter'],
     desc:'유네스코 세계자연유산. 제주 동부 2박 3일 코스의 하이라이트. 우도·만장굴과 연계 추천.',
-    descI18n:{ ko:'유네스코 세계자연유산. 제주 동부 2박 3일 코스의 하이라이트. 우도·만장굴과 연계 추천.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'유네스코 세계자연유산. 제주 동부 2박 3일 코스의 하이라이트. 우도·만장굴과 연계 추천.', en:'A UNESCO World Natural Heritage site rising from the sea off eastern Jeju. The highlight of a 2-night east Jeju itinerary — best paired with Udo Island and Manjanggul Cave.', zh:'联合国教科文组织世界自然遗产，屹立于济州东部海岸。建议与牛岛、万丈窟联游，打造精彩的2晚3天东济州行程。', ja:'ユネスコ世界自然遺産に登録された済州東部の名所。牛島・万丈窟とセットで巡る2泊3日東済州コースのハイライトです。' },
     tags:['#제주','#유네스코','#일출'], duration:'2박 3일', location:'제주 서귀포시',
+    tagsI18n:{ ko:['#제주','#유네스코','#일출'], en:['#Jeju','#UNESCO','#Sunrise'], zh:['#济州','#联合国教科文组织','#日出'], ja:['#済州','#ユネスコ','#日の出'] },
     i18n:{ ko:'성산일출봉', en:'Seongsan Ilchulbong', zh:'城山日出峰', ja:'城山日出峰' }, apiId:'264571' },
   { id:4,  name:'전주 한옥마을',   lat:35.8150, lng:127.1530, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','autumn'],
     desc:'700여 채 한옥이 모인 전통문화 거리. 한복 체험과 전통 음식 투어를 함께 즐길 수 있습니다.',
-    descI18n:{ ko:'700여 채 한옥이 모인 전통문화 거리. 한복 체험과 전통 음식 투어를 함께 즐길 수 있습니다.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'700여 채 한옥이 모인 전통문화 거리. 한복 체험과 전통 음식 투어를 함께 즐길 수 있습니다.', en:'A street of over 700 traditional hanok houses. Rent a hanbok, stroll the alleys, and indulge in local street food — a perfect day-trip package.', zh:'汇聚700余栋韩屋的传统文化街区。穿着韩服体验传统文化，品尝传统美食，一日游乐趣十足。', ja:'700棟以上の韓屋が連なる伝統文化の街。韓服体験や伝統料理めぐりを楽しめる充実の日帰りコースです。' },
     tags:['#한옥','#비빔밥','#전통문화'], duration:'당일', location:'전북 전주시',
+    tagsI18n:{ ko:['#한옥','#비빔밥','#전통문화'], en:['#Hanok','#Bibimbap','#TraditionalCulture'], zh:['#韩屋','#拌饭','#传统文化'], ja:['#韓屋','#ビビンバ','#伝統文化'] },
     i18n:{ ko:'전주 한옥마을', en:'Jeonju Hanok Village', zh:'全州韩屋村', ja:'全州韓屋村' }, apiId:'264572' },
   { id:5,  name:'남이섬',          lat:37.7905, lng:127.5260, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','autumn'],
     desc:'드라마 〈겨울연가〉 촬영지. 사계절 아름다운 메타세쿼이아 길이 유명. 가평 일대 1박 코스.',
-    descI18n:{ ko:'드라마 〈겨울연가〉 촬영지. 사계절 아름다운 메타세쿼이아 길이 유명. 가평 일대 1박 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'드라마 〈겨울연가〉 촬영지. 사계절 아름다운 메타세쿼이아 길이 유명. 가평 일대 1박 코스.', en:'Filming location for the K-drama Winter Sonata. The metasequoia-lined avenue is stunning in every season — best enjoyed on a 1-night Gapyeong getaway.', zh:'韩剧《冬日恋歌》的取景地。四季皆美的水杉大道令人陶醉，结合加平地区可打造经典1晚2天行程。', ja:'韓国ドラマ『冬のソナタ』のロケ地。四季折々のメタセコイア並木道が有名で、加平エリアを巡る1泊2日コースがおすすめです。' },
     tags:['#겨울연가','#단풍','#가평'], duration:'1박 2일', location:'강원 춘천시',
+    tagsI18n:{ ko:['#겨울연가','#단풍','#가평'], en:['#WinterSonata','#AutumnLeaves','#Gapyeong'], zh:['#冬日恋歌','#红叶','#加平'], ja:['#冬のソナタ','#紅葉','#加平'] },
     i18n:{ ko:'남이섬', en:'Nami Island', zh:'南怡岛', ja:'ナミ島' }, apiId:'264573' },
   { id:6,  name:'불국사',          lat:35.7902, lng:129.3317, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','autumn'],
     desc:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.',
-    descI18n:{ ko:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.', en:'The pinnacle of Silla-era Buddhist art. Pair it with Seokguram Grotto, Cheomseongdae Observatory, and Anapji Pond for an immersive 2-night Gyeongju history trip.', zh:'新罗千年佛教艺术的瑰宝。与石窟庵、瞻星台、雁鸭池联游，尽享2晚3天庆州历史之旅。', ja:'新羅千年の仏教芸術の結晶。石窟庵・瞻星台・雁鴨池と組み合わせた2泊3日慶州歴史旅行がおすすめです。' },
     tags:['#경주','#유네스코','#역사여행'], duration:'2박 3일', location:'경북 경주시',
+    tagsI18n:{ ko:['#경주','#유네스코','#역사여행'], en:['#Gyeongju','#UNESCO','#HistoryTrip'], zh:['#庆州','#联合国教科文组织','#历史之旅'], ja:['#慶州','#ユネスコ','#歴史旅行'] },
     i18n:{ ko:'불국사', en:'Bulguksa Temple', zh:'佛国寺', ja:'仏国寺' }, apiId:'264574' },
   { id:7,  name:'인사동',          lat:37.5743, lng:126.9850, type:'hallyu', label:'한류 촬영지', color:'#a855f7', seasons:['spring','summer','autumn','winter'],
     desc:'전통 공예·갤러리·찻집이 모인 서울의 문화 거리. 다수의 K-드라마 로케이션 촬영 장소.',
-    descI18n:{ ko:'전통 공예·갤러리·찻집이 모인 서울의 문화 거리. 다수의 K-드라마 로케이션 촬영 장소.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'전통 공예·갤러리·찻집이 모인 서울의 문화 거리. 다수의 K-드라마 로케이션 촬영 장소.', en:"Seoul's cultural heartbeat — lined with traditional craft shops, galleries, and teahouses. A beloved backdrop for countless K-drama shoots.", zh:'汇聚传统工艺、画廊与茶室的首尔文化大街，也是众多韩剧的取景地。', ja:'ソウルの文化の中心地。伝統工芸・ギャラリー・茶房が集まり、数多くの韓国ドラマのロケ地としても知られています。' },
     tags:['#갤러리','#전통차','#쇼핑'], duration:'반나절', location:'서울 종로구',
+    tagsI18n:{ ko:['#갤러리','#전통차','#쇼핑'], en:['#Gallery','#TraditionalTea','#Shopping'], zh:['#画廊','#传统茶','#购物'], ja:['#ギャラリー','#伝統茶','#ショッピング'] },
     i18n:{ ko:'인사동', en:'Insadong', zh:'仁寺洞', ja:'仁寺洞' }, apiId:'264575' },
   { id:8,  name:'설악산 국립공원', lat:38.1196, lng:128.4655, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['autumn','winter'],
     desc:'한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.',
-    descI18n:{ ko:'한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.', en:"Korea's answer to the Alps. Autumn foliage and winter snowscapes are breathtaking — hike to Daecheongbong Peak or take the cable car up to Gwongeumseong Fortress.", zh:'有"韩国阿尔卑斯"之称的名山。秋天红叶、冬季雪景令人叹为观止，可攀登大青峰或乘缆车游览权金城。', ja:'「韓国のアルプス」とも呼ばれる名峰。秋の紅葉と冬の雪景色は圧巻で、大清峰登山や権金城ケーブルカーコースが人気です。' },
     tags:['#등산','#단풍','#설경'], duration:'2박 3일', location:'강원 속초시',
+    tagsI18n:{ ko:['#등산','#단풍','#설경'], en:['#Hiking','#AutumnLeaves','#WinterSnow'], zh:['#登山','#红叶','#雪景'], ja:['#登山','#紅葉','#雪景'] },
     i18n:{ ko:'설악산 국립공원', en:'Seoraksan National Park', zh:'雪岳山国立公园', ja:'雪岳山国立公園' }, apiId:'264576' },
   { id:9,  name:'광안리 해수욕장', lat:35.1532, lng:129.1186, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['summer'],
     desc:'광안대교 야경이 아름다운 부산의 힙한 해변. 카페·맛집 밀집 지역으로 당일 코스로 추천.',
-    descI18n:{ ko:'광안대교 야경이 아름다운 부산의 힙한 해변. 카페·맛집 밀집 지역으로 당일 코스로 추천.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'광안대교 야경이 아름다운 부산의 힙한 해변. 카페·맛집 밀집 지역으로 당일 코스로 추천.', en:"Busan's hippest beach, with the illuminated Gwangan Bridge dominating the night sky. Packed with trendy cafés and restaurants — a great day trip.", zh:'釜山最时髦的海滩，广安大桥夜景绝美。咖啡厅和美食餐厅鳞次栉比，是当日往返的绝佳选择。', ja:'釜山で最もトレンディなビーチ。広安大橋の夜景が格別で、カフェや飲食店も充実した日帰りスポットです。' },
     tags:['#야경','#광안대교','#카페'], duration:'당일', location:'부산 수영구',
+    tagsI18n:{ ko:['#야경','#광안대교','#카페'], en:['#NightView','#GwanganBridge','#Café'], zh:['#夜景','#广安大桥','#咖啡厅'], ja:['#夜景','#広安大橋','#カフェ'] },
     i18n:{ ko:'광안리 해수욕장', en:'Gwangalli Beach', zh:'广安里海水浴场', ja:'広安里海水浴場' }, apiId:'264577' },
   { id:10, name:'강릉 경포대',     lat:37.7967, lng:128.9059, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','summer'],
     desc:'동해 최대 석호와 넓은 해변이 어우러진 강원 대표 관광지. 오죽헌·정동진과 연계 1박 코스.',
-    descI18n:{ ko:'동해 최대 석호와 넓은 해변이 어우러진 강원 대표 관광지. 오죽헌·정동진과 연계 1박 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'동해 최대 석호와 넓은 해변이 어우러진 강원 대표 관광지. 오죽헌·정동진과 연계 1박 코스.', en:"Gangwon's premier coastal destination, where East Sea lagoon meets a wide sandy beach. Pair it with Ojukheon Mansion and Jeongdongjin for a scenic 1-night escape.", zh:'江原道代表性海滨景区，东海最大湖泊与宽阔海滩交相辉映。可与乌竹轩、正东津联游，打造1晚2天行程。', ja:'東海最大の潟湖と広大なビーチが広がる江原道を代表する観光地。烏竹軒・正東津とセットで巡る1泊2日コースがおすすめです。' },
     tags:['#동해','#해돋이','#강원여행'], duration:'1박 2일', location:'강원 강릉시',
+    tagsI18n:{ ko:['#동해','#해돋이','#강원여행'], en:['#EastSea','#Sunrise','#Gangwon'], zh:['#东海','#日出','#江原道旅行'], ja:['#東海','#日の出','#江原道旅行'] },
     i18n:{ ko:'강릉 경포대', en:'Gangneung Gyeongpodae', zh:'江陵镜浦台', ja:'江陵鏡浦台' }, apiId:'264578' },
   { id:11, name:'여수 오동도',     lat:34.7420, lng:127.7539, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','summer','autumn'],
     desc:'동백꽃 군락지로 유명한 여수 대표 섬. 낭만포차·돌산도·향일암과 함께 1박 여수 낭만 코스.',
-    descI18n:{ ko:'동백꽃 군락지로 유명한 여수 대표 섬. 낭만포차·돌산도·향일암과 함께 1박 여수 낭만 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'동백꽃 군락지로 유명한 여수 대표 섬. 낭만포차·돌산도·향일암과 함께 1박 여수 낭만 코스.', en:"Yeosu's beloved island, famous for its camellia groves. Combine with the romantic street food scene, Dolsan Island, and Hyangilam Temple for a dreamy 1-night trip.", zh:'以茶花群落闻名的丽水代表性小岛。结合浪漫夜市、突山岛与向日庵，打造绝美的1晚2天丽水浪漫之旅。', ja:'椿の群生地として有名な麗水の名島。浪漫屋台・突山島・向日庵と組み合わせた1泊2日麗水ロマンコースがおすすめです。' },
     tags:['#동백꽃','#낭만포차','#여수밤바다'], duration:'1박 2일', location:'전남 여수시',
+    tagsI18n:{ ko:['#동백꽃','#낭만포차','#여수밤바다'], en:['#Camellia','#StreetFood','#YeosuNight'], zh:['#茶花','#浪漫夜市','#丽水夜海'], ja:['#椿','#屋台','#麗水の夜海'] },
     i18n:{ ko:'여수 오동도', en:'Yeosu Odongdo', zh:'丽水梧桐岛', ja:'麗水梧桐島' }, apiId:'264579' },
   { id:12, name:'한라산',          lat:33.3617, lng:126.5292, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['winter'],
     desc:'한국 최고봉 1,947m. 겨울 눈꽃 트레킹이 압도적. 영실·어리목·성판악 코스 중 선택 가능.',
-    descI18n:{ ko:'한국 최고봉 1,947m. 겨울 눈꽃 트레킹이 압도적. 영실·어리목·성판악 코스 중 선택 가능.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'한국 최고봉 1,947m. 겨울 눈꽃 트레킹이 압도적. 영실·어리목·성판악 코스 중 선택 가능.', en:"South Korea's highest peak at 1,947 m. Winter snowflower trekking is truly spectacular — choose from the Yeongsil, Eorimok, or Seongpanak trails.", zh:'韩国最高峰，海拔1,947米。冬日雪花徒步体验令人震撼，可选择灵室、御里牧或城板岳路线登顶。', ja:'標高1,947mの韓国最高峰。冬の雪花トレッキングは圧巻で、霊室・御里牧・城板岳コースからお好みのルートを選べます。' },
     tags:['#등산','#눈꽃','#제주'], duration:'2박 3일', location:'제주특별자치도',
+    tagsI18n:{ ko:['#등산','#눈꽃','#제주'], en:['#Hiking','#SnowFlowers','#Jeju'], zh:['#登山','#雪花','#济州'], ja:['#登山','#雪の花','#済州'] },
     i18n:{ ko:'한라산', en:'Hallasan Mountain', zh:'汉拿山', ja:'漢拏山' }, apiId:'264580' },
   { id:13, name:'안동 하회마을',   lat:36.5352, lng:128.5207, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['autumn'],
     desc:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.',
-    descI18n:{ ko:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.', en:'A UNESCO World Heritage village cradled by a bend in the Nakdong River. Watch the Hahoe Mask Dance and soak in the panoramic view from Buyongdae Cliff — a rewarding day trip.', zh:'洛东江环绕的联合国教科文组织世界文化遗产村落。观看河回假面舞、登上芙蓉台俯瞰全景，历史文化一日游值得回味。', ja:'洛東江が集落を囲むユネスコ世界文化遺産。河回仮面劇の観覧や芙蓉台からの絶景を楽しめる充実の日帰り歴史旅行です。' },
     tags:['#유네스코','#탈춤','#한옥'], duration:'당일', location:'경북 안동시',
+    tagsI18n:{ ko:['#유네스코','#탈춤','#한옥'], en:['#UNESCO','#MaskDance','#Hanok'], zh:['#联合国教科文组织','#假面舞','#韩屋'], ja:['#ユネスコ','#仮面劇','#韓屋'] },
     i18n:{ ko:'안동 하회마을', en:'Andong Hahoe Village', zh:'安东河回村', ja:'安東河回村' }, apiId:'264581' },
   { id:14, name:'대관령 양떼목장', lat:37.7063, lng:128.7473, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['winter','spring'],
     desc:'해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.',
-    descI18n:{ ko:'해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.', en:'A highland sheep farm at 850 m elevation, blanketed in snow in winter. Strolling among fluffy sheep amid snow-covered hills is an unforgettable day-trip experience.', zh:'海拔850米高原上的雪原牧场。冬日白雪皑皑，与羊群近距离接触是别具一格的当日往返体验。', ja:'標高850mの高原に広がる雪原牧場。雪景色の中でふわふわの羊たちと触れ合えるユニークな日帰りコースです。' },
     tags:['#눈꽃','#양떼','#고원'], duration:'당일', location:'강원 평창군',
+    tagsI18n:{ ko:['#눈꽃','#양떼','#고원'], en:['#SnowFlowers','#Sheep','#Highland'], zh:['#雪花','#羊群','#高原'], ja:['#雪の花','#羊','#高原'] },
     i18n:{ ko:'대관령 양떼목장', en:'Daegwallyeong Sheep Farm', zh:'大关岭羊群牧场', ja:'大関嶺羊牧場' }, apiId:'264582' },
   { id:15, name:'담양 죽녹원',     lat:35.3217, lng:126.9878, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','summer'],
     desc:'31만㎡ 울창한 대나무 숲이 만드는 천연 에어컨. 메타세쿼이아 가로수길과 함께하는 힐링 당일 코스.',
-    descI18n:{ ko:'31만㎡ 울창한 대나무 숲이 만드는 천연 에어컨. 메타세쿼이아 가로수길과 함께하는 힐링 당일 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'31만㎡ 울창한 대나무 숲이 만드는 천연 에어컨. 메타세쿼이아 가로수길과 함께하는 힐링 당일 코스.', en:"A 310,000㎡ bamboo grove that acts as nature's own air conditioner. Stroll the nearby metasequoia avenue for the ultimate healing day trip.", zh:'310,000㎡的茂密竹林，堪称天然空调。与水杉大道相连，打造治愈系当日往返之旅。', ja:'31万㎡の鬱蒼とした竹林は天然のエアコン。近くのメタセコイア並木道とセットで巡るヒーリング日帰りコースです。' },
     tags:['#대나무숲','#힐링','#담양'], duration:'당일', location:'전남 담양군',
+    tagsI18n:{ ko:['#대나무숲','#힐링','#담양'], en:['#BambooForest','#Healing','#Damyang'], zh:['#竹林','#治愈','#潭阳'], ja:['#竹林','#ヒーリング','#潭陽'] },
     i18n:{ ko:'담양 죽녹원', en:'Damyang Juknokwon', zh:'潭阳竹绿苑', ja:'潭陽竹緑苑' }, apiId:'264583' },
   // 반값 여행 대상 지역 추가 명소
   { id:16, name:'남해 독일마을',   lat:34.8161, lng:127.9228, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','summer','autumn'],
     desc:'독일 파독 근로자들이 정착한 이국적 마을. 남해 바다 전망과 유럽풍 건축이 어우러진 이색 1박 코스.',
-    descI18n:{ ko:'독일 파독 근로자들이 정착한 이국적 마을. 남해 바다 전망과 유럽풍 건축이 어우러진 이색 1박 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'독일 파독 근로자들이 정착한 이국적 마을. 남해 바다 전망과 유럽풍 건축이 어우러진 이색 1박 코스.', en:'A charming village built by Korean migrant workers who returned from Germany. European-style architecture meets stunning sea views for a unique 1-night getaway on Namhae Island.', zh:'由旅德归国劳工定居后建成的异域村落，欧式建筑与南海海景交相辉映，是别具一格的1晚2天特色之旅。', ja:'ドイツからの帰国労働者が築いた異国情緒あふれる村。ヨーロッパ風建築と南海の絶景が融合した個性的な1泊2日コースです。' },
     tags:['#독일마을','#남해','#이색여행'], duration:'1박 2일', location:'경남 남해군',
+    tagsI18n:{ ko:['#독일마을','#남해','#이색여행'], en:['#GermanVillage','#Namhae','#UniqueTravel'], zh:['#德国村','#南海','#特色旅行'], ja:['#ドイツ村','#南海','#ユニーク旅行'] },
     i18n:{ ko:'남해 독일마을', en:'Namhae German Village', zh:'南海德国村', ja:'南海ドイツ村' }, apiId:'264584' },
   { id:17, name:'해남 땅끝마을',   lat:34.2913, lng:126.5324, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['autumn','winter'],
     desc:'한반도 최남단. 땅끝탑·땅끝해수욕장·달마산 미황사를 잇는 당일 코스. 일몰이 장관.',
-    descI18n:{ ko:'한반도 최남단. 땅끝탑·땅끝해수욕장·달마산 미황사를 잇는 당일 코스. 일몰이 장관.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'한반도 최남단. 땅끝탑·땅끝해수욕장·달마산 미황사를 잇는 당일 코스. 일몰이 장관.', en:"The southernmost tip of the Korean Peninsula. Connect the Land's End Monument, the beach, and Mihwangsa Temple on Dalmasan Mountain — the sunset is glorious.", zh:'朝鲜半岛最南端。游览陆地尽头纪念塔、尽头海水浴场、达摩山美黄寺，串联成一条绝美日落当日游路线。', ja:'朝鮮半島最南端の地。땅끝タワー・땅끝ビーチ・達磨山美黄寺を巡る日帰りコースで、夕日の絶景が堪能できます。' },
     tags:['#땅끝','#일몰','#해남'], duration:'당일', location:'전남 해남군',
+    tagsI18n:{ ko:['#땅끝','#일몰','#해남'], en:['#LandsEnd','#Sunset','#Haenam'], zh:['#陆地尽头','#日落','#海南'], ja:['#陸の果て','#夕日','#海南'] },
     i18n:{ ko:'해남 땅끝마을', en:'Haenam Land\'s End Village', zh:'海南陆地尽头村', ja:'海南땅끝마을' }, apiId:'264585' },
   { id:18, name:'영월 청령포',     lat:37.1768, lng:128.4651, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','autumn'],
     desc:'단종의 유배지. 삼면이 강으로 둘러싸인 천혜의 명소. 선돌·별마로천문대와 연계 당일 코스.',
-    descI18n:{ ko:'단종의 유배지. 삼면이 강으로 둘러싸인 천혜의 명소. 선돌·별마로천문대와 연계 당일 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'단종의 유배지. 삼면이 강으로 둘러싸인 천혜의 명소. 선돌·별마로천문대와 연계 당일 코스.', en:'The riverside exile site of Joseon King Danjong, naturally surrounded by water on three sides. Combine with Seondol Rock and Byeolmaaro Observatory for a scenic day trip.', zh:'端宗的流放之地，三面环江，景色天成。结合孤石奇岩与별마로天文台，打造历史与自然兼备的当日行程。', ja:'朝鮮王朝・端宗の流配地。三方を川に囲まれた絶景スポットで、ソンドル奇岩とビョルマロ天文台とセットで巡る日帰りコースがおすすめです。' },
     tags:['#청령포','#단종','#영월'], duration:'당일', location:'강원 영월군',
+    tagsI18n:{ ko:['#청령포','#단종','#영월'], en:['#Cheongnyeongpo','#KingDanjong','#Yeongwol'], zh:['#清泠浦','#端宗','#宁越'], ja:['#清泠浦','#端宗','#寧越'] },
     i18n:{ ko:'영월 청령포', en:'Yeongwol Cheongnyeongpo', zh:'宁越清泠浦', ja:'寧越清泠浦' }, apiId:'264586' },
   { id:19, name:'하동 화개장터',   lat:35.0682, lng:127.6001, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','autumn'],
     desc:'벚꽃 십리길로 유명한 전통 장터. 쌍계사·최참판댁·악양 들판과 함께하는 봄·가을 당일 코스.',
-    descI18n:{ ko:'벚꽃 십리길로 유명한 전통 장터. 쌍계사·최참판댁·악양 들판과 함께하는 봄·가을 당일 코스.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'벚꽃 십리길로 유명한 전통 장터. 쌍계사·최참판댁·악양 들판과 함께하는 봄·가을 당일 코스.', en:'A traditional market famous for its 4 km cherry blossom boulevard. Perfect for spring and autumn — combine with Ssanggyesa Temple, Choi Champan-daek, and the Agyang plains.', zh:'以十里樱花路闻名的传统集市。结合双磎寺、崔参判宅、岳阳田野，打造春秋两季精彩当日游。', ja:'桜の十里道で知られる伝統的な市場。双磎寺・崔参判宅・岳陽の田園と組み合わせた春・秋の日帰りコースが人気です。' },
     tags:['#벚꽃','#장터','#하동'], duration:'당일', location:'경남 하동군',
+    tagsI18n:{ ko:['#벚꽃','#장터','#하동'], en:['#CherryBlossom','#TraditionalMarket','#Hadong'], zh:['#樱花','#传统集市','#河东'], ja:['#桜','#伝統市場','#河東'] },
     i18n:{ ko:'하동 화개장터', en:'Hadong Hwagae Market', zh:'河东花开场', ja:'河東花開場' }, apiId:'264587' },
 ];
 
@@ -1348,50 +1383,58 @@ const DRAMA_DATA = [
 const BARRIER_FREE_DATA = [
   { id:'bf1', name:'국립중앙박물관', lat:37.5237, lng:126.9804, type:'day', label:'당일 코스', duration:'당일', location:'서울 용산구',
     desc:'국내 최대 박물관. 전 구역 휠체어 접근 가능, 시각장애인 오디오 가이드 제공.',
-    descI18n:{ ko:'국내 최대 박물관. 전 구역 휠체어 접근 가능, 시각장애인 오디오 가이드 제공.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'국내 최대 박물관. 전 구역 휠체어 접근 가능, 시각장애인 오디오 가이드 제공.', en:"Korea's largest museum. Fully wheelchair-accessible throughout, with audio guides available for visitors with visual impairments.", zh:'韩国最大博物馆，全区域轮椅可通行，并为视障人士提供语音导览服务。', ja:'韓国最大の博物館。全エリアが車椅子でアクセス可能で、視覚障害者向けオーディオガイドも提供しています。' },
     tags:['#박물관','#시니어','#가족여행'],
+    tagsI18n:{ ko:['#박물관','#시니어','#가족여행'], en:['#Museum','#Senior','#FamilyTrip'], zh:['#博物馆','#老年友好','#家庭旅行'], ja:['#博物館','#シニア','#家族旅行'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'국립중앙박물관', en:'National Museum of Korea', zh:'国立中央博物馆', ja:'国立中央博物館' }, apiId:'264590' },
   { id:'bf2', name:'경복궁', lat:37.5796, lng:126.9770, type:'day', label:'당일 코스', duration:'반나절', location:'서울 종로구',
     desc:'전동 휠체어 대여 서비스 운영. 무장애 관람 경로 전용 지도 배포.',
-    descI18n:{ ko:'전동 휠체어 대여 서비스 운영. 무장애 관람 경로 전용 지도 배포.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'전동 휠체어 대여 서비스 운영. 무장애 관람 경로 전용 지도 배포.', en:'Electric wheelchair rental service available on-site. Dedicated barrier-free visitor maps are distributed at the entrance.', zh:'宫内提供电动轮椅租借服务，入口处发放无障碍参观专用地图。', ja:'電動車椅子の貸し出しサービスを実施。バリアフリー観覧専用マップも配布しています。' },
     tags:['#궁궐','#역사','#무장애'],
+    tagsI18n:{ ko:['#궁궐','#역사','#무장애'], en:['#Palace','#History','#AccessibleTravel'], zh:['#宫殿','#历史','#无障碍旅行'], ja:['#宮殿','#歴史','#バリアフリー'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'경복궁', en:'Gyeongbokgung Palace', zh:'景福宫', ja:'景福宮' }, apiId:'264540' },
   { id:'bf3', name:'한강공원 여의도', lat:37.5285, lng:126.9326, type:'day', label:'당일 코스', duration:'당일', location:'서울 영등포구',
     desc:'평탄한 자전거·산책로 7.2km. 휠체어·유모차 이동 편리.',
-    descI18n:{ ko:'평탄한 자전거·산책로 7.2km. 휠체어·유모차 이동 편리.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'평탄한 자전거·산책로 7.2km. 휠체어·유모차 이동 편리.', en:'A flat 7.2 km cycling and walking path along the Han River. Fully accessible for wheelchairs and strollers throughout.', zh:'沿汉江延伸的7.2公里平坦自行车与步行道，全程轮椅及婴儿车可通行。', ja:'漢江沿いに広がる全長7.2kmのフラットなサイクリング・散策路。車椅子・ベビーカーでも快適に移動できます。' },
     tags:['#공원','#산책','#피크닉'],
+    tagsI18n:{ ko:['#공원','#산책','#피크닉'], en:['#Park','#Walk','#Picnic'], zh:['#公园','#散步','#野餐'], ja:['#公園','#散歩','#ピクニック'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
     i18n:{ ko:'한강공원 여의도', en:'Yeouido Han River Park', zh:'汝矣岛汉江公园', ja:'汝矣島漢江公園' }, apiId:'264591' },
   { id:'bf4', name:'제주 사려니숲길', lat:33.4304, lng:126.6623, type:'1night', label:'1박 코스', duration:'1박 2일', location:'제주 제주시',
     desc:'포장된 숲길 구간(2.4km) 전동 휠체어 통행 가능.',
-    descI18n:{ ko:'포장된 숲길 구간(2.4km) 전동 휠체어 통행 가능.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'포장된 숲길 구간(2.4km) 전동 휠체어 통행 가능.', en:'A 2.4 km paved forest trail section is fully accessible for electric wheelchairs, offering a serene woodland experience in Jeju.', zh:'2.4公里的铺装森林小道段落可供电动轮椅通行，在济州享受宁静的森林体验。', ja:'舗装された森林路(2.4km区間)は電動車椅子での通行が可能で、済州の静かな森林を楽しめます。' },
     tags:['#숲길','#제주','#힐링'],
+    tagsI18n:{ ko:['#숲길','#제주','#힐링'], en:['#ForestTrail','#Jeju','#Healing'], zh:['#森林小道','#济州','#治愈'], ja:['#森の道','#済州','#ヒーリング'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
     i18n:{ ko:'제주 사려니숲길', en:'Jeju Saryeoni Forest Trail', zh:'济州思连伊林荫道', ja:'済州サリョニ森の道' }, apiId:'264592' },
   { id:'bf5', name:'순천만 국가정원', lat:34.9178, lng:127.4923, type:'1night', label:'1박 코스', duration:'1박 2일', location:'전남 순천시',
     desc:'전 구간 평탄 포장로. 전동 보조 수레 무료 대여.',
-    descI18n:{ ko:'전 구간 평탄 포장로. 전동 보조 수레 무료 대여.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'전 구간 평탄 포장로. 전동 보조 수레 무료 대여.', en:'Flat paved paths throughout the entire garden. Free electric mobility scooters are available to borrow.', zh:'园内全程平坦铺装道路，免费提供电动辅助车租借服务。', ja:'全エリアフラットな舗装路で、電動補助カートの無料貸し出しサービスも利用できます。' },
     tags:['#국가정원','#생태','#시니어'],
+    tagsI18n:{ ko:['#국가정원','#생태','#시니어'], en:['#NationalGarden','#Ecology','#Senior'], zh:['#国家庭院','#生态','#老年友好'], ja:['#国家庭園','#エコロジー','#シニア'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'순천만 국가정원', en:'Suncheon Bay National Garden', zh:'顺天湾国家庭院', ja:'順天湾国家庭園' }, apiId:'264593' },
   { id:'bf6', name:'불국사', lat:35.7902, lng:129.3317, type:'2night', label:'2박 코스', duration:'2박 3일', location:'경북 경주시',
     desc:'무장애 탐방로 조성. 점자 유물 안내판 운영.',
-    descI18n:{ ko:'무장애 탐방로 조성. 점자 유물 안내판 운영.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'무장애 탐방로 조성. 점자 유물 안내판 운영.', en:'A dedicated barrier-free trail runs through the temple grounds. Tactile braille information panels are available for visitors with visual impairments.', zh:'寺内设有无障碍参观步道，并设置盲文文物说明牌，为视障访客提供贴心服务。', ja:'バリアフリー参拝路が整備されており、点字の遺物案内板も設置されています。' },
     tags:['#사찰','#경주','#역사'],
+    tagsI18n:{ ko:['#사찰','#경주','#역사'], en:['#Temple','#Gyeongju','#History'], zh:['#寺庙','#庆州','#历史'], ja:['#寺院','#慶州','#歴史'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'불국사', en:'Bulguksa Temple', zh:'佛国寺', ja:'仏国寺' }, apiId:'264574' },
   { id:'bf7', name:'해운대 해수욕장', lat:35.1587, lng:129.1603, type:'1night', label:'1박 코스', duration:'1박 2일', location:'부산 해운대구',
     desc:'수상 휠체어 대여(하계). 해안산책로 전 구간 포장.',
-    descI18n:{ ko:'수상 휠체어 대여(하계). 해안산책로 전 구간 포장.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'수상 휠체어 대여(하계). 해안산책로 전 구간 포장.', en:'Aquatic wheelchairs available for rent in summer. The entire beachside promenade is paved and accessible.', zh:'夏季提供水上轮椅租借服务，沿海步道全程铺装，无障碍通行。', ja:'夏季は水上車椅子の貸し出しあり。海岸沿いの散策路は全区間舗装済みでアクセスしやすい環境です。' },
     tags:['#해변','#여름','#수상휠체어'],
+    tagsI18n:{ ko:['#해변','#여름','#수상휠체어'], en:['#Beach','#Summer','#AquaticWheelchair'], zh:['#海滩','#夏天','#水上轮椅'], ja:['#ビーチ','#夏','#水上車椅子'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
     i18n:{ ko:'해운대 해수욕장', en:'Haeundae Beach', zh:'海云台海水浴场', ja:'海雲台海水浴場' }, apiId:'264570' },
   { id:'bf8', name:'전주 한옥마을', lat:35.8150, lng:127.1530, type:'day', label:'당일 코스', duration:'당일', location:'전북 전주시',
     desc:'무장애 한복 체험관 운영. 관광안내소 점자 지도 비치.',
-    descI18n:{ ko:'무장애 한복 체험관 운영. 관광안내소 점자 지도 비치.', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'무장애 한복 체험관 운영. 관광안내소 점자 지도 비치.', en:'A barrier-free hanbok experience center is available. Tactile braille maps are provided at the tourist information office.', zh:'设有无障碍韩服体验馆，旅游服务中心提供盲文地图。', ja:'バリアフリー韓服体験館を運営。観光案内所には点字マップも設置されています。' },
     tags:['#한옥','#전통','#무장애체험'],
+    tagsI18n:{ ko:['#한옥','#전통','#무장애체험'], en:['#Hanok','#Tradition','#AccessibleExperience'], zh:['#韩屋','#传统','#无障碍体验'], ja:['#韓屋','#伝統','#バリアフリー体験'] },
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'전주 한옥마을', en:'Jeonju Hanok Village', zh:'全州韩屋村', ja:'全州韓屋村' }, apiId:'264572' },
 ];
@@ -1401,24 +1444,49 @@ const BF_COURSES = [
     name:'서울 문화 당일 코스',
     nameI18n:{ ko:'서울 문화 당일 코스', en:'Seoul Culture Day Trip', zh:'首尔文化当日游', ja:'ソウル文化日帰りコース' },
     desc:'국립중앙박물관 → 경복궁 → 한강공원 여의도',
-    descI18n:{ ko:'국립중앙박물관 → 경복궁 → 한강공원 여의도', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'국립중앙박물관 → 경복궁 → 한강공원 여의도', en:'National Museum of Korea → Gyeongbokgung Palace → Yeouido Han River Park', zh:'国立中央博物馆 → 景福宫 → 汝矣岛汉江公园', ja:'国立中央博物館 → 景福宮 → 汝矣島漢江公園' },
     placeIds:['bf1','bf2','bf3'], type:'day' },
   { id:'bfc2',
     name:'제주·순천 힐링 1박 코스',
     nameI18n:{ ko:'제주·순천 힐링 1박 코스', en:'Jeju·Suncheon Healing Overnight Course', zh:'济州·顺天疗愈一日一夜游', ja:'済州・順天ヒーリング1泊コース' },
     desc:'제주 사려니숲길 → 순천만 국가정원',
-    descI18n:{ ko:'제주 사려니숲길 → 순천만 국가정원', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'제주 사려니숲길 → 순천만 국가정원', en:'Jeju Saryeoni Forest Trail → Suncheon Bay National Garden', zh:'济州思连伊林荫道 → 顺天湾国家庭院', ja:'済州サリョニ森の道 → 順天湾国家庭園' },
     placeIds:['bf4','bf5'], type:'1night' },
   { id:'bfc3',
     name:'경주·부산 역사 2박 코스',
     nameI18n:{ ko:'경주·부산 역사 2박 코스', en:'Gyeongju·Busan History 2-Night Course', zh:'庆州·釜山历史两晚三日游', ja:'慶州・釜山歴史2泊コース' },
     desc:'불국사 → 해운대 해수욕장',
-    descI18n:{ ko:'불국사 → 해운대 해수욕장', en:'', zh:'', ja:'' },
+    descI18n:{ ko:'불국사 → 해운대 해수욕장', en:'Bulguksa Temple → Haeundae Beach', zh:'佛国寺 → 海云台海水浴场', ja:'仏国寺 → 海雲台海水浴場' },
     placeIds:['bf6','bf7'], type:'2night' },
 ];
 
 const ACC_LABELS = {
   wheelchair:'휠체어 접근', toilet:'장애인 화장실', ramp:'경사로', braille:'점자 안내', parking:'장애인 주차',
+};
+
+const LOCATION_I18N = {
+  '서울 종로구':    { en:'Jongno-gu, Seoul',                   zh:'首尔市钟路区',         ja:'ソウル市鍾路区' },
+  '서울 용산구':    { en:'Yongsan-gu, Seoul',                   zh:'首尔市龙山区',         ja:'ソウル市龍山区' },
+  '서울 영등포구':  { en:'Yeongdeungpo-gu, Seoul',              zh:'首尔市永登浦区',        ja:'ソウル市永登浦区' },
+  '부산 해운대구':  { en:'Haeundae-gu, Busan',                  zh:'釜山市海云台区',        ja:'釜山市海雲台区' },
+  '부산 수영구':    { en:'Suyeong-gu, Busan',                   zh:'釜山市水营区',         ja:'釜山市水営区' },
+  '제주 서귀포시':  { en:'Seogwipo, Jeju',                      zh:'济州西归浦市',         ja:'済州市西帰浦市' },
+  '제주 제주시':    { en:'Jeju City, Jeju',                     zh:'济州市',              ja:'済州市' },
+  '제주특별자치도': { en:'Jeju Special Self-Governing Province', zh:'济州特别自治道',        ja:'済州特別自治道' },
+  '전북 전주시':    { en:'Jeonju, North Jeolla',                zh:'全罗北道全州市',        ja:'全羅北道全州市' },
+  '전남 여수시':    { en:'Yeosu, South Jeolla',                 zh:'全罗南道丽水市',        ja:'全羅南道麗水市' },
+  '전남 담양군':    { en:'Damyang, South Jeolla',               zh:'全罗南道潭阳郡',        ja:'全羅南道潭陽郡' },
+  '전남 해남군':    { en:'Haenam, South Jeolla',                zh:'全罗南道海南郡',        ja:'全羅南道海南郡' },
+  '전남 순천시':    { en:'Suncheon, South Jeolla',              zh:'全罗南道顺天市',        ja:'全羅南道順天市' },
+  '경북 경주시':    { en:'Gyeongju, North Gyeongsang',          zh:'庆尚北道庆州市',        ja:'慶尚北道慶州市' },
+  '경북 안동시':    { en:'Andong, North Gyeongsang',            zh:'庆尚北道安东市',        ja:'慶尚北道安東市' },
+  '경남 남해군':    { en:'Namhae, South Gyeongsang',            zh:'庆尚南道南海郡',        ja:'慶尚南道南海郡' },
+  '경남 하동군':    { en:'Hadong, South Gyeongsang',            zh:'庆尚南道河东郡',        ja:'慶尚南道河東郡' },
+  '강원 춘천시':    { en:'Chuncheon, Gangwon',                  zh:'江原道春川市',         ja:'江原道春川市' },
+  '강원 속초시':    { en:'Sokcho, Gangwon',                     zh:'江原道束草市',         ja:'江原道束草市' },
+  '강원 강릉시':    { en:'Gangneung, Gangwon',                  zh:'江原道江陵市',         ja:'江原道江陵市' },
+  '강원 평창군':    { en:'Pyeongchang, Gangwon',                zh:'江原道平昌郡',         ja:'江原道平昌郡' },
+  '강원 영월군':    { en:'Yeongwol, Gangwon',                   zh:'江原道宁越郡',         ja:'江原道寧越郡' },
 };
 
 const BADGE_STYLE = {
@@ -1737,10 +1805,14 @@ kakao.maps.load(function () {
   function openBFPlace(place) {
     _sheetEmpty = false;
     activeBFId = place.id;
+    const lang = L();
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
     document.getElementById('sheetPlace').textContent = name;
     const badge = document.getElementById('sheetBadge');
-    badge.textContent = place.label;
+    const courseLabel = lang.courseTypeLabel[place.type] || place.label;
+    const durLabel    = lang.durationLabel[place.type]   || place.duration;
+    const locLabel    = LOCATION_I18N[place.location]?.[currentLang] || place.location;
+    badge.textContent = courseLabel;
     badge.style.background = '#fffbeb';
     badge.style.color = '#92400e';
 
@@ -1753,11 +1825,11 @@ kakao.maps.load(function () {
 
     document.getElementById('sheetBody').innerHTML = `
       <p class="sheet-desc">${place.descI18n?.[currentLang] || place.desc}</p>
-      <div class="tag-row">${place.tags.map(t=>`<span class="tag" style="background:#fffbeb;color:#92400e">${t}</span>`).join('')}</div>
+      <div class="tag-row">${(place.tagsI18n?.[currentLang] || place.tags).map(t=>`<span class="tag" style="background:#fffbeb;color:#92400e">${t}</span>`).join('')}</div>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">코스 유형</div><div class="info-val">${place.label}</div></div>
-        <div class="info-card"><div class="info-label">소요 기간</div><div class="info-val">${place.duration}</div></div>
-        <div class="info-card col-2"><div class="info-label">위치</div><div class="info-val">${place.location}</div></div>
+        <div class="info-card"><div class="info-label">${lang.fieldCourseType}</div><div class="info-val">${courseLabel}</div></div>
+        <div class="info-card"><div class="info-label">${lang.fieldDuration}</div><div class="info-val">${durLabel}</div></div>
+        <div class="info-card col-2"><div class="info-label">${lang.fieldLocation}</div><div class="info-val">${locLabel}</div></div>
       </div>
       <div class="i18n-section">
         <div class="i18n-title">${L().accessibility}</div>
@@ -1814,15 +1886,15 @@ kakao.maps.load(function () {
           ${hpBadge}
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <span style="font-size:17px;font-weight:700">${name}</span>
-            <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:${bs.bg};color:${bs.color}">${activePlace.label}</span>
+            <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:${bs.bg};color:${bs.color}">${lang.courseTypeLabel[activePlace.type] || activePlace.label}</span>
           </div>
           <p style="font-size:14px;color:#4b5563;line-height:1.65;margin-bottom:10px">${activePlace.descI18n?.[currentLang] || activePlace.desc}</p>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-            ${activePlace.tags.map(t=>`<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
+            ${(activePlace.tagsI18n?.[currentLang] || activePlace.tags).map(t=>`<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">소요 기간</div><div style="font-size:14px;font-weight:600">${activePlace.duration}</div></div>
-            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">위치</div><div style="font-size:14px;font-weight:600">${activePlace.location}</div></div>
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">${lang.fieldDuration}</div><div style="font-size:14px;font-weight:600">${lang.durationLabel[activePlace.type] || activePlace.duration}</div></div>
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">${lang.fieldLocation}</div><div style="font-size:14px;font-weight:600">${LOCATION_I18N[activePlace.location]?.[currentLang] || activePlace.location}</div></div>
           </div>
         </div>`;
     })() : '';
@@ -1961,25 +2033,29 @@ kakao.maps.load(function () {
   // ── 장소 상세 (계절) ──
   function openPlace(place) {
     _sheetEmpty = false;
+    const lang = L();
     const bs   = BADGE_STYLE[place.type] || {};
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
     document.getElementById('sheetPlace').textContent = name;
     const badge = document.getElementById('sheetBadge');
-    badge.textContent = place.label;
+    const courseLabel = lang.courseTypeLabel[place.type] || place.label;
+    const durLabel    = lang.durationLabel[place.type]   || place.duration;
+    const locLabel    = LOCATION_I18N[place.location]?.[currentLang] || place.location;
+    badge.textContent = courseLabel;
     badge.style.background = bs.bg || '#f3f4f6';
     badge.style.color      = bs.color || '#374151';
 
     const hpBadge = isHalfPriceRegion(place.location)
-      ? `<div class="hp-sheet-badge">${L().halfPrice.badge}</div>` : '';
+      ? `<div class="hp-sheet-badge">${lang.halfPrice.badge}</div>` : '';
 
     document.getElementById('sheetBody').innerHTML = `
       ${hpBadge}
       <p class="sheet-desc">${place.descI18n?.[currentLang] || place.desc}</p>
-      <div class="tag-row">${place.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      <div class="tag-row">${(place.tagsI18n?.[currentLang] || place.tags).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">코스 유형</div><div class="info-val">${place.label}</div></div>
-        <div class="info-card"><div class="info-label">소요 기간</div><div class="info-val">${place.duration}</div></div>
-        <div class="info-card col-2"><div class="info-label">위치</div><div class="info-val">${place.location}</div></div>
+        <div class="info-card"><div class="info-label">${lang.fieldCourseType}</div><div class="info-val">${courseLabel}</div></div>
+        <div class="info-card"><div class="info-label">${lang.fieldDuration}</div><div class="info-val">${durLabel}</div></div>
+        <div class="info-card col-2"><div class="info-label">${lang.fieldLocation}</div><div class="info-val">${locLabel}</div></div>
       </div>`;
     document.getElementById('sheet').classList.add('open');
     renderSeasonPanel(place);
@@ -1995,15 +2071,16 @@ kakao.maps.load(function () {
     badge.textContent = drama.title;
     badge.style.background = '#faf5ff';
     badge.style.color = '#6b21a8';
+    const lang = L();
     document.getElementById('sheetBody').innerHTML = `
       <p class="sheet-desc">${site.scene}</p>
       <div class="info-grid">
-        <div class="info-card"><div class="info-label">위치</div><div class="info-val">${site.location}</div></div>
-        <div class="info-card"><div class="info-label">장르</div><div class="info-val">${drama.genre}</div></div>
-        <div class="info-card col-2"><div class="info-label">OTT 플랫폼</div><div class="info-val">${drama.ott}</div></div>
+        <div class="info-card"><div class="info-label">${lang.fieldLocation}</div><div class="info-val">${site.location}</div></div>
+        <div class="info-card"><div class="info-label">${lang.fieldGenre}</div><div class="info-val">${drama.genre}</div></div>
+        <div class="info-card col-2"><div class="info-label">${lang.fieldOtt}</div><div class="info-val">${drama.ott}</div></div>
       </div>
       <div class="i18n-section">
-        <div class="i18n-title">${L().multiLang}</div>
+        <div class="i18n-title">${lang.multiLang}</div>
         <div class="i18n-grid">
           <div class="i18n-item"><span class="i18n-lang">한국어</span><span class="i18n-text">${site.i18n.ko}</span></div>
           <div class="i18n-item"><span class="i18n-lang">English</span><span class="i18n-text">${site.i18n.en}</span></div>
