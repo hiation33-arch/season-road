@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Season Road — 계절로 떠나는 여행 코스</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
@@ -791,10 +791,14 @@ const I18N = {
     durationLabel:   { day:'당일', '1night':'1박 2일', '2night':'2박 3일', hallyu:'반나절' },
     seasonTop5: (emo, name) => `${emo} ${name} 추천 여행지 TOP5`,
     dramaTop5: '🎬 지금 뜨는 드라마 TOP5',
+    searchResultTitle: '🔍 검색 결과:',
+    searchNoResult: (q) => `🔍 "${q}"에 해당하는 드라마를 찾을 수 없습니다. 다른 키워드로 검색해보세요.`,
+    searchNoResultLabel: '검색 결과 없음',
     bfCoursesTitle: '♿ 추천 무장애 코스',
     bfPlaceListTitle: '📍 무장애 여행지 목록',
     allDramas: '← 전체 드라마 보기',
     filmingSites: '📍 촬영지 목록',
+    filmingSiteCount: (n) => `📍 촬영지 ${n}곳`,
     multiLang: '🌏 다국어 안내',
     accessibility: '♿ 접근성 정보',
     seasonNames: { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' },
@@ -827,10 +831,14 @@ const I18N = {
     durationLabel:   { day:'Day Trip', '1night':'1 Night 2 Days', '2night':'2 Nights 3 Days', hallyu:'Half Day' },
     seasonTop5: (emo, name) => `${emo} ${name} Top 5 Picks`,
     dramaTop5: '🎬 Trending K-Dramas TOP5',
+    searchResultTitle: '🔍 Search Results:',
+    searchNoResult: (q) => `🔍 No dramas found for "${q}". Try a different keyword.`,
+    searchNoResultLabel: 'No Results',
     bfCoursesTitle: '♿ Accessible Tour Courses',
     bfPlaceListTitle: '📍 Accessible Destinations',
     allDramas: '← All Dramas',
     filmingSites: '📍 Filming Locations',
+    filmingSiteCount: (n) => `📍 ${n} filming sites`,
     multiLang: '🌏 Multilingual Info',
     accessibility: '♿ Accessibility Info',
     seasonNames: { spring:'Spring', summer:'Summer', autumn:'Autumn', winter:'Winter' },
@@ -863,10 +871,14 @@ const I18N = {
     durationLabel:   { day:'当日', '1night':'1晚2天', '2night':'2晚3天', hallyu:'半天' },
     seasonTop5: (emo, name) => `${emo} ${name}推荐景点 TOP5`,
     dramaTop5: '🎬 热门韩剧 TOP5',
+    searchResultTitle: '🔍 搜索结果:',
+    searchNoResult: (q) => `🔍 未找到与"${q}"相关的韩剧，请尝试其他关键词。`,
+    searchNoResultLabel: '无搜索结果',
     bfCoursesTitle: '♿ 无障碍推荐路线',
     bfPlaceListTitle: '📍 无障碍旅游地',
     allDramas: '← 全部剧集',
     filmingSites: '📍 拍摄地列表',
+    filmingSiteCount: (n) => `📍 ${n}个拍摄地`,
     multiLang: '🌏 多语言说明',
     accessibility: '♿ 无障碍信息',
     seasonNames: { spring:'春季', summer:'夏季', autumn:'秋季', winter:'冬季' },
@@ -899,10 +911,14 @@ const I18N = {
     durationLabel:   { day:'日帰り', '1night':'1泊2日', '2night':'2泊3日', hallyu:'半日' },
     seasonTop5: (emo, name) => `${emo} ${name} おすすめ TOP5`,
     dramaTop5: '🎬 人気韓国ドラマ TOP5',
+    searchResultTitle: '🔍 検索結果:',
+    searchNoResult: (q) => `🔍 「${q}」に該当するドラマが見つかりません。別のキーワードでお試しください。`,
+    searchNoResultLabel: '検索結果なし',
     bfCoursesTitle: '♿ バリアフリーコース',
     bfPlaceListTitle: '📍 バリアフリー旅行地',
     allDramas: '← 全ドラマ一覧',
     filmingSites: '📍 撮影地リスト',
+    filmingSiteCount: (n) => `📍 ロケ地${n}ヶ所`,
     multiLang: '🌏 多言語案内',
     accessibility: '♿ アクセシビリティ情報',
     seasonNames: { spring:'春', summer:'夏', autumn:'秋', winter:'冬' },
@@ -1540,6 +1556,7 @@ kakao.maps.load(function () {
   let _pinClicked    = false;
   let _searchTimer   = null;
   let _sheetEmpty    = true;
+  let _lastOpened    = null; // { kind:'place'|'bf'|'drama', data, drama? }
 
   // ── 지도 이동 ──
   function flyTo(lat, lng, level = 5) {
@@ -1728,7 +1745,7 @@ kakao.maps.load(function () {
       return `<div class="bf-course-card" data-course-id="${c.id}">
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
           <span class="bf-course-title">${cName}</span>
-          <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${bs.bg};color:${bs.color};white-space:nowrap">${c.type==='day'?'당일':c.type==='1night'?'1박 2일':'2박 3일'}</span>
+          <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${bs.bg};color:${bs.color};white-space:nowrap">${lang.durationLabel[c.type]}</span>
         </div>
         <div class="bf-course-desc">${cDesc}</div>
       </div>`;
@@ -1776,6 +1793,7 @@ kakao.maps.load(function () {
   // ── 무장애 장소 상세 ──
   function openBFPlace(place) {
     _sheetEmpty = false;
+    _lastOpened = { kind: 'bf', data: place };
     activeBFId = place.id;
     const lang = L();
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
@@ -1844,7 +1862,7 @@ kakao.maps.load(function () {
       return `<div class="panel-item" data-id="${place.id}" ${isActive?'style="background:var(--gray-100)"':''}>
         <span class="panel-rank rank-${i+1}">${i+1}</span>
         <span class="panel-item-text">${name}</span>
-        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${bs.bg};color:${bs.color}">${place.label}</span>
+        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${bs.bg};color:${bs.color}">${lang.courseTypeLabel[place.type] || place.label}</span>
       </div>`;
     }).join('');
 
@@ -1921,7 +1939,7 @@ kakao.maps.load(function () {
           <div class="drama-card-meta">
             <span>${d.genre}</span>
             <span class="drama-ott-badge">${d.ott}</span>
-            <span class="drama-site-count">📍 ${d.sites.length}개 촬영지</span>
+            <span class="drama-site-count">${lang.filmingSiteCount(d.sites.length)}</span>
           </div>
         </div>
       </div>`;
@@ -1950,7 +1968,7 @@ kakao.maps.load(function () {
     }
 
     const title = searchLabel
-      ? `🔍 검색 결과: <span style="color:var(--hallyu-500)">${searchLabel}</span>`
+      ? `${lang.searchResultTitle} <span style="color:var(--hallyu-500)">${searchLabel}</span>`
       : lang.dramaTop5;
 
     panel.innerHTML = `
@@ -2005,6 +2023,7 @@ kakao.maps.load(function () {
   // ── 장소 상세 (계절) ──
   function openPlace(place) {
     _sheetEmpty = false;
+    _lastOpened = { kind: 'place', data: place };
     const lang = L();
     const bs   = BADGE_STYLE[place.type] || {};
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
@@ -2036,6 +2055,7 @@ kakao.maps.load(function () {
   // ── 촬영지 상세 (드라마) ──
   function openDramaSite(site, drama) {
     _sheetEmpty = false;
+    _lastOpened = { kind: 'drama', data: site, drama };
     activeSiteId = site.id;
     const siteName = site.i18n ? (site.i18n[currentLang] || site.name) : site.name;
     document.getElementById('sheetPlace').textContent = siteName;
@@ -2131,6 +2151,11 @@ kakao.maps.load(function () {
     if (_sheetEmpty) {
       document.getElementById('sheetPlace').textContent = lang.sheetEmptyTitle;
       document.getElementById('sheetBody').innerHTML = `<p class="sheet-desc">${lang.sheetEmptyDesc}</p>`;
+    } else if (_lastOpened && document.getElementById('sheet').classList.contains('open')) {
+      // 열려있는 바텀시트를 새 언어로 재렌더
+      if (_lastOpened.kind === 'place')       openPlace(_lastOpened.data);
+      else if (_lastOpened.kind === 'bf')     openBFPlace(_lastOpened.data);
+      else if (_lastOpened.kind === 'drama')  openDramaSite(_lastOpened.data, _lastOpened.drama);
     }
     // 반값 배너
     updateHPBanner();
@@ -2259,10 +2284,10 @@ kakao.maps.load(function () {
       enterHallyuMode([], q);
       clearOverlays();
       document.getElementById('panelContent').innerHTML =
-        `<div class="empty-state">🔍 "${q}"에 해당하는<br>드라마를 찾을 수 없습니다.<br><br>다른 키워드로 검색해보세요.</div>`;
+        `<div class="empty-state">${L().searchNoResult(q)}</div>`;
       const _noLabel = document.getElementById('trendLabel');
       const _noBody  = document.getElementById('trendBody');
-      if (_noLabel) _noLabel.textContent = '검색 결과 없음';
+      if (_noLabel) _noLabel.textContent = L().searchNoResultLabel;
       if (_noBody)  _noBody.innerHTML = '';
       collapseTrendStrip();
     }
