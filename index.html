@@ -952,10 +952,10 @@ function isHalfPriceRegion(location) {
 const USE_REAL_API = true;
 const KTO_API_KEY   = 'd9f3c82a62d57914fce1896277180c3520d1e559137dd6e7d2d443e005e6d371';
 const KTO_BASE_URLS = {
-  ko: 'https://apis.data.go.kr/B551011/KorService1',
-  en: 'https://apis.data.go.kr/B551011/EngService1',
-  zh: 'https://apis.data.go.kr/B551011/ChsService1',
-  ja: 'https://apis.data.go.kr/B551011/JpnService1',
+  ko: 'https://apis.data.go.kr/B551011/KorService2',
+  en: 'https://apis.data.go.kr/B551011/EngService2',
+  zh: 'https://apis.data.go.kr/B551011/ChsService2',
+  ja: 'https://apis.data.go.kr/B551011/JpnService2',
 };
 
 // 계절별 areaCode (관광지가 풍부한 지역 우선)
@@ -1039,7 +1039,7 @@ function _ktoToBF(item) {
   };
 }
 
-// ── 계절 관광지 로드 (areaBasedList1 + searchFestival1) ──
+// ── 계절 관광지 로드 (areaBasedList2 + searchFestival2) ──
 async function loadSeasonData(season) {
   if (_seasonCache[season]) return _seasonCache[season];
   const SEASON_START = {
@@ -1047,8 +1047,8 @@ async function loadSeasonData(season) {
   };
   const areaCodes = SEASON_AREA_CODES[season] || [1];
   const [spotResults, festivalItems] = await Promise.all([
-    Promise.all(areaCodes.map(ac => ktoFetch('areaBasedList1', { areaCode: ac, contentTypeId: 12 }))),
-    ktoFetch('searchFestival1', { eventStartDate: SEASON_START[season], contentTypeId: 15, numOfRows: 10 }),
+    Promise.all(areaCodes.map(ac => ktoFetch('areaBasedList2', { areaCode: ac, contentTypeId: 12 }))),
+    ktoFetch('searchFestival2', { eventStartDate: SEASON_START[season], numOfRows: 10 }),
   ]);
   const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
   const spots     = spotResults.flat().filter(valid).map(i => _ktoToPlace(i, season));
@@ -1058,11 +1058,11 @@ async function loadSeasonData(season) {
   return _seasonCache[season];
 }
 
-// ── 무장애 관광지 로드 (searchKeyword1 "열린관광지", 빈 결과 시 BARRIER_FREE_DATA fallback) ──
+// ── 무장애 관광지 로드 (searchKeyword2 "열린관광지", 빈 결과 시 BARRIER_FREE_DATA fallback) ──
 async function loadBFData() {
   if (_bfCache !== null) return _bfCache; // sentinel 포함, null만 재시도
   try {
-    const items = await ktoFetch('searchKeyword1', { keyword: '열린관광지', numOfRows: 20 });
+    const items = await ktoFetch('searchKeyword2', { keyword: '열린관광지', numOfRows: 20 });
     const places = items
       .filter(i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0)
       .map(_ktoToBF)
@@ -1071,7 +1071,7 @@ async function loadBFData() {
       _bfCache = places;
       console.info(`[SeasonRoad] 무장애 API(열린관광지) ${places.length}개 로드 완료`);
     } else {
-      console.warn('[SeasonRoad] searchKeyword1("열린관광지") 결과 없음 → BARRIER_FREE_DATA 더미로 fallback');
+      console.warn('[SeasonRoad] searchKeyword2("열린관광지") 결과 없음 → BARRIER_FREE_DATA 더미로 fallback');
       _bfCache = BARRIER_FREE_DATA;
     }
   } catch(e) {
@@ -1085,7 +1085,7 @@ async function loadBFData() {
 async function loadHallyuData() {
   if (_hallyuCache !== null) return _hallyuCache; // [] sentinel 포함, null만 재시도
   try {
-    const items = await ktoFetch('areaBasedList1', { contentTypeId: 85, numOfRows: 20 });
+    const items = await ktoFetch('areaBasedList2', { contentTypeId: 85, numOfRows: 20 });
     const places = items
       .filter(i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0)
       .map(i => ({
