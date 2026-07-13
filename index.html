@@ -164,6 +164,7 @@
     }
     .acc-item .acc-icon { font-size: 14px; flex-shrink: 0; }
     .acc-label { font-size: 11px; color: var(--gray-600); }
+    .acc-note { font-size: 10px; color: var(--gray-400); line-height: 1.35; margin-top: 2px; }
     .bf-course-card {
       border: 1.5px solid #fed7aa; border-radius: 12px; padding: 12px 14px;
       margin-bottom: 8px; cursor: pointer;
@@ -808,6 +809,7 @@ const I18N = {
     filmingSiteCount: (n) => `📍 촬영지 ${n}곳`,
     multiLang: '🌏 다국어 안내',
     accessibility: '♿ 접근성 정보',
+    bfNoAccData: '접근성 상세 정보를 불러오지 못했습니다',
     seasonNames: { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' },
     halfPrice: {
       title: '💰 지역사랑 휴가지원 (반값 여행)',
@@ -849,6 +851,7 @@ const I18N = {
     filmingSiteCount: (n) => `📍 ${n} filming sites`,
     multiLang: '🌏 Multilingual Info',
     accessibility: '♿ Accessibility Info',
+    bfNoAccData: 'Could not load accessibility details',
     seasonNames: { spring:'Spring', summer:'Summer', autumn:'Autumn', winter:'Winter' },
     halfPrice: {
       title: '💰 Half-Price Travel Support',
@@ -890,6 +893,7 @@ const I18N = {
     filmingSiteCount: (n) => `📍 ${n}个拍摄地`,
     multiLang: '🌏 多语言说明',
     accessibility: '♿ 无障碍信息',
+    bfNoAccData: '无法加载无障碍详细信息',
     seasonNames: { spring:'春季', summer:'夏季', autumn:'秋季', winter:'冬季' },
     halfPrice: {
       title: '💰 半价旅游支援',
@@ -931,6 +935,7 @@ const I18N = {
     filmingSiteCount: (n) => `📍 ロケ地${n}ヶ所`,
     multiLang: '🌏 多言語案内',
     accessibility: '♿ アクセシビリティ情報',
+    bfNoAccData: 'アクセシビリティ詳細情報を取得できませんでした',
     seasonNames: { spring:'春', summer:'夏', autumn:'秋', winter:'冬' },
     halfPrice: {
       title: '💰 半額旅行支援',
@@ -967,6 +972,12 @@ const KTO_BASE_URLS = {
   zh: 'https://apis.data.go.kr/B551011/ChsService2',
   ja: 'https://apis.data.go.kr/B551011/JpnService2',
 };
+
+// 무장애 여행정보 서비스 (실측 확인됨: base는 KorWithService2, 오퍼레이션명은 areaBasedList2/searchKeyword2/
+// detailWithTour2로 KorService2와 동일 체계. EngWithService2 등 다국어 버전은 404/500 — 한국어 전용 서비스임)
+const KTO_BF_BASE_URL = 'https://apis.data.go.kr/B551011/KorWithService2';
+// 무장애 후보 지역(전국 분산): 서울/부산/제주/경북/강원
+const BF_AREA_CODES = [1, 6, 39, 35, 32];
 
 // 언어별 contentTypeId 매핑 (국문/외국어 서비스가 서로 다른 코드 체계 사용, 실측 확인됨)
 // 관광지: 국문 12 / 외국어(Eng·Chs·Jpn 공통) 76
@@ -1057,6 +1068,65 @@ async function loadPlaceDetail(contentId) {
   return _detailCache[cacheKey];
 }
 
+// ── 무장애 API 공통 fetch (KorWithService2 전용, 다국어 버전 없음 — 항상 한국어) ──
+async function bfFetch(endpoint, params = {}) {
+  const qs = new URLSearchParams({
+    serviceKey: KTO_API_KEY, numOfRows: 20, pageNo: 1,
+    MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+    ...params,
+  });
+  const res = await fetch(`${KTO_BF_BASE_URL}/${endpoint}?${qs}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data  = await res.json();
+  const items = data?.response?.body?.items?.item;
+  if (!items) return [];
+  return Array.isArray(items) ? items : [items];
+}
+
+// ── 무장애 접근성 상세조회 (detailWithTour2, contentId 기준 캐시) ──
+// 실측 확인: contentTypeId를 넘기면 INVALID_REQUEST_PARAMETER_ERROR(contentTypeId) 발생 — contentId만 전달.
+const _bfDetailCache = {}; // key: contentId → detailWithTour2 응답 item (없으면 null)
+async function loadBFDetail(contentId) {
+  if (contentId in _bfDetailCache) return _bfDetailCache[contentId];
+  try {
+    const items = await bfFetch('detailWithTour2', { contentId });
+    _bfDetailCache[contentId] = items[0] || null;
+  } catch (e) {
+    console.warn(`[SeasonRoad] 무장애 상세조회(detailWithTour2) 실패 contentId=${contentId}:`, e);
+    _bfDetailCache[contentId] = null;
+  }
+  return _bfDetailCache[contentId];
+}
+
+// detailWithTour2 응답 필드 → 기존 accessibility 구조로 변환
+// 실측: 값은 boolean이 아니라 설명 텍스트(예: "대여가능", "장애인 전용 화장실 있음(1층)")이며, 빈 문자열이면 정보 없음.
+// 기존 렌더링(값이 truthy면 ✅)과 호환되도록 빈 문자열/텍스트 그대로 유지.
+function _bfDetailToAccessibility(detail) {
+  if (!detail) return null;
+  return {
+    wheelchair:    detail.wheelchair || '',
+    toilet:        detail.restroom || '',
+    ramp:          detail.exit || '',
+    braille:       detail.braileblock || detail.brailepromotion || '',
+    parking:       detail.parking || '',
+    stroller:      detail.stroller || '',
+    lactationroom: detail.lactationroom || '',
+  };
+}
+
+// accessibility 객체(boolean 또는 텍스트 값 혼용) → acc-grid HTML
+function _renderAccGrid(accessibility) {
+  const labels = ACC_LABELS[currentLang] || ACC_LABELS.ko;
+  return Object.entries(accessibility).map(([key, val]) => {
+    const has  = typeof val === 'string' ? val.length > 0 : !!val;
+    const note = typeof val === 'string' && val ? `<div class="acc-note">${val}</div>` : '';
+    return `<div class="acc-item">
+      <span class="acc-icon">${has ? '✅' : '❌'}</span>
+      <div><span class="acc-label">${labels[key] || key}</span>${note}</div>
+    </div>`;
+  }).join('');
+}
+
 // ── 변환 함수 ──
 function _ktoToPlace(item, season) {
   const t = _TC[Math.abs(parseInt(item.contentid, 10) || 0) % 3];
@@ -1080,9 +1150,9 @@ function _ktoToBF(item) {
     type: 'day', label: '당일 코스', duration: '당일',
     location: item.addr1 || '', desc: item.addr1 || '',
     tags: ['#무장애', '#접근가능'],
-    accessibility: { wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
+    accessibility: null, // lazy: openBFPlace 클릭 시 detailWithTour2로 로드
     i18n: { ko: item.title, en: item.title, zh: item.title, ja: item.title },
-    apiId: item.contentid, image: item.firstimage || '',
+    apiId: item.contentid, image: item.firstimage || '', _fromApi: true,
   };
 }
 
@@ -1106,20 +1176,30 @@ async function loadSeasonData(season) {
   return _seasonCache[season];
 }
 
-// ── 무장애 관광지 로드 (searchKeyword2 "열린관광지", 빈 결과 시 BARRIER_FREE_DATA fallback) ──
+// ── 무장애 관광지 로드 (KorWithService2: searchKeyword2("무장애") + 지역별 areaBasedList2 병합) ──
+// 실측: searchKeyword2("무장애")는 전국 4건("무장애숲길/나눔길" 등 전용 코스)뿐이라 지역별 일반 관광지로 보강.
+// (실측: 표본 관광지들의 detailWithTour2 응답 대부분에 접근성 정보가 채워져 있음을 확인)
+// 결과가 없거나 실패 시 BARRIER_FREE_DATA 더미로 fallback (기존 패턴 동일).
 async function loadBFData() {
   if (_bfCache !== null) return _bfCache; // sentinel 포함, null만 재시도
   try {
-    const items = await ktoFetch('searchKeyword2', { keyword: '열린관광지', numOfRows: 20 });
-    const places = items
-      .filter(i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0)
-      .map(_ktoToBF)
-      .slice(0, 16);
+    const [keywordItems, areaResults] = await Promise.all([
+      bfFetch('searchKeyword2', { keyword: '무장애', numOfRows: 20 }),
+      Promise.all(BF_AREA_CODES.map(ac => bfFetch('areaBasedList2', { areaCode: ac, contentTypeId: 12, numOfRows: 6 }))),
+    ]);
+    const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
+    const seen  = new Set();
+    const merged = [...keywordItems, ...areaResults.flat()].filter(i => {
+      if (!valid(i) || seen.has(i.contentid)) return false;
+      seen.add(i.contentid);
+      return true;
+    });
+    const places = merged.map(_ktoToBF).slice(0, 16);
     if (places.length) {
       _bfCache = places;
-      console.info(`[SeasonRoad] 무장애 API(열린관광지) ${places.length}개 로드 완료`);
+      console.info(`[SeasonRoad] 무장애 API(KorWithService2) ${places.length}개 로드 완료`);
     } else {
-      console.warn('[SeasonRoad] searchKeyword2("열린관광지") 결과 없음 → BARRIER_FREE_DATA 더미로 fallback');
+      console.warn('[SeasonRoad] 무장애 API 결과 없음 → BARRIER_FREE_DATA 더미로 fallback');
       _bfCache = BARRIER_FREE_DATA;
     }
   } catch(e) {
@@ -1485,8 +1565,13 @@ const BF_COURSES = [
     placeIds:['bf6','bf7'], type:'2night' },
 ];
 
+// 접근성 항목 라벨 (4개 언어). wheelchair/toilet/ramp/braille/parking은 기존 더미 데이터도 사용하는 필드,
+// stroller/lactationroom은 무장애 API(detailWithTour2) 실데이터 연동으로 추가된 필드.
 const ACC_LABELS = {
-  wheelchair:'휠체어 접근', toilet:'장애인 화장실', ramp:'경사로', braille:'점자 안내', parking:'장애인 주차',
+  ko: { wheelchair:'휠체어 접근', toilet:'장애인 화장실', ramp:'경사로', braille:'점자 안내', parking:'장애인 주차', stroller:'유모차 대여', lactationroom:'수유실' },
+  en: { wheelchair:'Wheelchair Access', toilet:'Accessible Restroom', ramp:'Ramp', braille:'Braille Guide', parking:'Accessible Parking', stroller:'Stroller Rental', lactationroom:'Nursing Room' },
+  zh: { wheelchair:'轮椅通道', toilet:'无障碍卫生间', ramp:'坡道', braille:'盲文引导', parking:'无障碍停车位', stroller:'婴儿车租赁', lactationroom:'哺乳室' },
+  ja: { wheelchair:'車椅子アクセス', toilet:'障害者用トイレ', ramp:'スロープ', braille:'点字案内', parking:'障害者用駐車場', stroller:'ベビーカー貸出', lactationroom:'授乳室' },
 };
 
 const LOCATION_I18N = {
@@ -1818,14 +1903,18 @@ kakao.maps.load(function () {
     badge.style.background = '#fffbeb';
     badge.style.color = '#92400e';
 
-    const accItems = Object.entries(place.accessibility).map(([key, val]) => {
-      return `<div class="acc-item">
-        <span class="acc-icon">${val ? '✅' : '❌'}</span>
-        <span class="acc-label">${ACC_LABELS[key] || key}</span>
-      </div>`;
-    }).join('');
+    // API 로드 장소만 detailCommon2(이미지·개요) 상세조회 대상 (더미 데이터는 apiId가 실제 콘텐츠ID가 아니므로 제외)
+    const detailSlot = place._fromApi
+      ? `${_sheetImageHtml(place.image)}<div class="sheet-detail-loading" id="sheetDetailLoading">${lang.detailLoading}</div>`
+      : _sheetImageHtml(place.image);
+
+    // accessibility가 null이면(API 장소, 아직 미로드) 로딩 표시 후 detailWithTour2로 lazy 로드
+    const accHtml = place.accessibility
+      ? _renderAccGrid(place.accessibility)
+      : `<div class="sheet-detail-loading" id="bfAccLoading">${lang.detailLoading}</div>`;
 
     document.getElementById('sheetBody').innerHTML = `
+      <div id="sheetDetailSlot">${detailSlot}</div>
       <p class="sheet-desc">${place.descI18n?.[currentLang] || place.desc}</p>
       <div class="tag-row">${(place.tagsI18n?.[currentLang] || place.tags).map(t=>`<span class="tag" style="background:#fffbeb;color:#92400e">${t}</span>`).join('')}</div>
       <div class="info-grid">
@@ -1834,11 +1923,45 @@ kakao.maps.load(function () {
         <div class="info-card col-2"><div class="info-label">${lang.fieldLocation}</div><div class="info-val">${locLabel}</div></div>
       </div>
       <div class="i18n-section">
-        <div class="i18n-title">${L().accessibility}</div>
-        <div class="acc-grid">${accItems}</div>
+        <div class="i18n-title">${lang.accessibility}</div>
+        <div class="acc-grid" id="bfAccGrid">${accHtml}</div>
       </div>`;
     document.getElementById('sheet').classList.add('open');
     if (bfMode && !hallyuMode) renderBFPanel();
+
+    if (place._fromApi && place.apiId) {
+      // 이미지·개요 (detailCommon2, openPlace와 동일 패턴)
+      loadPlaceDetail(place.apiId).then(detail => {
+        if (_lastOpened.kind !== 'bf' || _lastOpened.data !== place) return; // stale 응답 방지
+        const slot = document.getElementById('sheetDetailSlot');
+        if (!slot) return;
+        const imgUrl   = place.image || detail?.firstimage || '';
+        const overview = detail?.overview || '';
+        if (!imgUrl && !overview) { slot.innerHTML = ''; return; }
+        slot.innerHTML = `
+          ${_sheetImageHtml(imgUrl)}
+          ${overview ? `<p class="sheet-overview" id="sheetOverviewText">${overview}</p>
+          <button class="sheet-more-btn" id="sheetMoreBtn">${lang.readMore}</button>` : ''}`;
+        const moreBtn = document.getElementById('sheetMoreBtn');
+        if (moreBtn) {
+          moreBtn.addEventListener('click', () => {
+            const p = document.getElementById('sheetOverviewText');
+            const expanded = p.classList.toggle('expanded');
+            moreBtn.textContent = expanded ? lang.readLess : lang.readMore;
+          });
+        }
+      });
+
+      // 접근성 상세 (detailWithTour2, lazy — 목록 전체가 아닌 클릭한 장소만 호출)
+      loadBFDetail(place.apiId).then(detail => {
+        if (_lastOpened.kind !== 'bf' || _lastOpened.data !== place) return; // stale 응답 방지
+        const grid = document.getElementById('bfAccGrid');
+        if (!grid) return;
+        const acc = _bfDetailToAccessibility(detail);
+        place.accessibility = acc; // 재방문 시 재사용
+        grid.innerHTML = acc ? _renderAccGrid(acc) : `<div class="sheet-detail-loading">${lang.bfNoAccData}</div>`;
+      });
+    }
   }
 
   // ── 계절 사이드패널 ──
