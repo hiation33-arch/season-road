@@ -1127,15 +1127,27 @@ function _renderAccGrid(accessibility) {
   }).join('');
 }
 
+// 관광공사 서비스분류코드(cat2) → 한글 이름. 실측 응답에 자주 나오는 코드 위주로만 등재.
+// 매핑에 없는 코드는 해시태그를 표시하지 않는다(코드 그대로 노출 금지).
+// ko만 지원(분량상 EN/ZH/JA는 미번역) — 해당 언어 모드에서는 이 해시태그 자체를 숨김.
+const KTO_CATEGORY_LABELS = {
+  A0101:'자연관광지', A0102:'관광자원',
+  A0201:'역사관광지', A0202:'휴양관광지', A0203:'체험관광지', A0204:'산업관광지',
+  A0205:'건축/조형물', A0206:'문화시설', A0207:'축제', A0208:'공연/행사',
+  A0301:'레포츠', A0302:'육상레포츠', A0303:'수상레포츠', A0304:'항공레포츠', A0305:'복합레포츠',
+  A0401:'쇼핑', A0502:'음식점',
+};
+
 // ── 변환 함수 ──
 function _ktoToPlace(item, season) {
   const t = _TC[Math.abs(parseInt(item.contentid, 10) || 0) % 3];
+  const catLabel = KTO_CATEGORY_LABELS[item.cat2];
   return {
     id: item.contentid, name: item.title,
     lat: parseFloat(item.mapy), lng: parseFloat(item.mapx),
     type: t, label: _TL[t], color: _TK[t],
     seasons: [season], desc: item.addr1 || '',
-    tags: item.cat2 ? [`#${item.cat2}`] : ['#관광지'],
+    tags: (currentLang === 'ko' && catLabel) ? [`#${catLabel}`] : [],
     duration: _TD[t], location: item.addr1 || '',
     i18n: { ko: item.title, en: item.title, zh: item.title, ja: item.title },
     apiId: item.contentid, image: item.firstimage || '',
@@ -1915,7 +1927,7 @@ kakao.maps.load(function () {
 
     document.getElementById('sheetBody').innerHTML = `
       <div id="sheetDetailSlot">${detailSlot}</div>
-      <p class="sheet-desc">${place.descI18n?.[currentLang] || place.desc}</p>
+      <p class="sheet-desc" id="sheetDescText">${place.descI18n?.[currentLang] || place.desc}</p>
       <div class="tag-row">${(place.tagsI18n?.[currentLang] || place.tags).map(t=>`<span class="tag" style="background:#fffbeb;color:#92400e">${t}</span>`).join('')}</div>
       <div class="info-grid">
         <div class="info-card"><div class="info-label">${lang.fieldCourseType}</div><div class="info-val">${courseLabel}</div></div>
@@ -1949,6 +1961,11 @@ kakao.maps.load(function () {
             const expanded = p.classList.toggle('expanded');
             moreBtn.textContent = expanded ? lang.readLess : lang.readMore;
           });
+        }
+        // 개요가 성공적으로 로드되면 주소 텍스트(desc)는 위치 카드와 중복이므로 제거
+        if (overview) {
+          const descEl = document.getElementById('sheetDescText');
+          if (descEl) descEl.remove();
         }
       });
 
@@ -2186,7 +2203,7 @@ kakao.maps.load(function () {
     document.getElementById('sheetBody').innerHTML = `
       <div id="sheetDetailSlot">${detailSlot}</div>
       ${hpBadge}
-      <p class="sheet-desc">${place.descI18n?.[currentLang] || place.desc}</p>
+      <p class="sheet-desc" id="sheetDescText">${place.descI18n?.[currentLang] || place.desc}</p>
       <div class="tag-row">${(place.tagsI18n?.[currentLang] || place.tags).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
       <div class="info-grid">
         <div class="info-card"><div class="info-label">${lang.fieldCourseType}</div><div class="info-val">${courseLabel}</div></div>
@@ -2216,6 +2233,11 @@ kakao.maps.load(function () {
             const expanded = p.classList.toggle('expanded');
             moreBtn.textContent = expanded ? lang.readLess : lang.readMore;
           });
+        }
+        // 개요가 성공적으로 로드되면 주소 텍스트(desc)는 위치 카드와 중복이므로 제거
+        if (overview) {
+          const descEl = document.getElementById('sheetDescText');
+          if (descEl) descEl.remove();
         }
       });
     }
