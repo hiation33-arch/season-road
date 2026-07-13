@@ -365,6 +365,13 @@
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 1px 4px rgba(0,0,0,0.28);
     }
+    .pin-festival-badge {
+      position: absolute; top: -5px; left: -6px;
+      font-size: 11px; background: white; border-radius: 50%;
+      width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.28);
+    }
 
     /* ── 사이드패널 공통 ── */
     .panel-section { margin-bottom: 20px; }
@@ -810,6 +817,7 @@ const I18N = {
     multiLang: '🌏 다국어 안내',
     accessibility: '♿ 접근성 정보',
     bfNoAccData: '접근성 상세 정보를 불러오지 못했습니다',
+    festivalBadge: '🎉 지금 열리는 축제·행사',
     seasonNames: { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' },
     halfPrice: {
       title: '💰 지역사랑 휴가지원 (반값 여행)',
@@ -852,6 +860,7 @@ const I18N = {
     multiLang: '🌏 Multilingual Info',
     accessibility: '♿ Accessibility Info',
     bfNoAccData: 'Could not load accessibility details',
+    festivalBadge: '🎉 Festival/Event happening now',
     seasonNames: { spring:'Spring', summer:'Summer', autumn:'Autumn', winter:'Winter' },
     halfPrice: {
       title: '💰 Half-Price Travel Support',
@@ -894,6 +903,7 @@ const I18N = {
     multiLang: '🌏 多语言说明',
     accessibility: '♿ 无障碍信息',
     bfNoAccData: '无法加载无障碍详细信息',
+    festivalBadge: '🎉 正在举行的节庆·活动',
     seasonNames: { spring:'春季', summer:'夏季', autumn:'秋季', winter:'冬季' },
     halfPrice: {
       title: '💰 半价旅游支援',
@@ -936,6 +946,7 @@ const I18N = {
     multiLang: '🌏 多言語案内',
     accessibility: '♿ アクセシビリティ情報',
     bfNoAccData: 'アクセシビリティ詳細情報を取得できませんでした',
+    festivalBadge: '🎉 開催中の祭り・イベント',
     seasonNames: { spring:'春', summer:'夏', autumn:'秋', winter:'冬' },
     halfPrice: {
       title: '💰 半額旅行支援',
@@ -1139,7 +1150,7 @@ const KTO_CATEGORY_LABELS = {
 };
 
 // ── 변환 함수 ──
-function _ktoToPlace(item, season) {
+function _ktoToPlace(item, season, isFestival = false) {
   const t = _TC[Math.abs(parseInt(item.contentid, 10) || 0) % 3];
   const catLabel = KTO_CATEGORY_LABELS[item.cat2];
   return {
@@ -1152,6 +1163,7 @@ function _ktoToPlace(item, season) {
     i18n: { ko: item.title, en: item.title, zh: item.title, ja: item.title },
     apiId: item.contentid, image: item.firstimage || '',
     _fromApi: true, // detailCommon2 상세조회 대상 여부 (더미 PLACES와 구분용, apiId는 더미도 갖고 있어 구분 불가)
+    isFestival, // searchFestival2 출처 여부 (지도 핀 뱃지 구분용)
   };
 }
 
@@ -1182,7 +1194,7 @@ async function loadSeasonData(season) {
   ]);
   const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
   const spots     = spotResults.flat().filter(valid).map(i => _ktoToPlace(i, season));
-  const festivals = festivalItems.filter(valid).map(i => _ktoToPlace(i, season));
+  const festivals = festivalItems.filter(valid).map(i => _ktoToPlace(i, season, true));
   const all = [...spots, ...festivals];
   _seasonCache[season] = all.length ? all : null;
   return _seasonCache[season];
@@ -1693,12 +1705,17 @@ kakao.maps.load(function () {
     overlays.push(o);
   }
 
-  function makePinEl(color, onClick, halfPrice = false) {
+  function makePinEl(color, onClick, halfPrice = false, isFestival = false) {
     const wrap = document.createElement('div'); wrap.className = 'pin-wrap';
     wrap.innerHTML = pinMarkerSVG(halfPrice ? '#eab308' : color);
     if (halfPrice) {
       const badge = document.createElement('div'); badge.className = 'pin-hp-badge';
       badge.textContent = '💰';
+      wrap.appendChild(badge);
+    }
+    if (isFestival) {
+      const badge = document.createElement('div'); badge.className = 'pin-festival-badge';
+      badge.textContent = '🎉';
       wrap.appendChild(badge);
     }
     wrap.addEventListener('click', (e) => {
@@ -1714,7 +1731,7 @@ kakao.maps.load(function () {
     const places = _seasonCache[season] || PLACES.filter(p => p.seasons.includes(season));
     places.forEach(place => {
       addOverlay(place.lat, place.lng,
-        makePinEl(place.color, () => openPlace(place), isHalfPriceRegion(place.location))
+        makePinEl(place.color, () => openPlace(place), isHalfPriceRegion(place.location), place.isFestival)
       );
     });
   }
@@ -2194,6 +2211,8 @@ kakao.maps.load(function () {
 
     const hpBadge = isHalfPriceRegion(place.location)
       ? `<div class="hp-sheet-badge">${lang.halfPrice.badge}</div>` : '';
+    const festivalBadge = place.isFestival
+      ? `<div class="hp-sheet-badge" style="background:linear-gradient(90deg,#f3e8ff,#faf5ff);border-color:var(--hallyu-500);color:var(--hallyu-900)">${lang.festivalBadge}</div>` : '';
 
     // API 로드 장소만 detailCommon2 상세조회 대상 (더미 PLACES의 apiId는 실제 콘텐츠ID가 아니므로 제외)
     const detailSlot = place._fromApi
@@ -2203,6 +2222,7 @@ kakao.maps.load(function () {
     document.getElementById('sheetBody').innerHTML = `
       <div id="sheetDetailSlot">${detailSlot}</div>
       ${hpBadge}
+      ${festivalBadge}
       <p class="sheet-desc" id="sheetDescText">${place.descI18n?.[currentLang] || place.desc}</p>
       <div class="tag-row">${(place.tagsI18n?.[currentLang] || place.tags).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
       <div class="info-grid">
