@@ -218,37 +218,51 @@ Season Road는 공공데이터포털(data.go.kr)의 TourAPI를 활용해 계절 
 
 ## 개발자 정보
 
-### GitHub Secrets 등록 방법
+### TourAPI 키 관리 — Cloudflare Workers 프록시
 
-GitHub Actions를 통해 API 키를 안전하게 관리합니다. `main` 브랜치에 push하면 자동으로 키가 주입되어 GitHub Pages에 배포됩니다.
+TourAPI 서비스키는 클라이언트(`index.html`)에 절대 두지 않습니다. 대신 `worker/` 디렉토리의 Cloudflare Workers 프록시(`seasonroad-api`)가 서버 사이드 시크릿으로 키를 보관하고, 공공데이터포털 요청에 주입해 대신 호출합니다.
 
-#### 등록 경로
+```
+index.html  →  https://seasonroad-api.<subdomain>.workers.dev/:base/:endpoint  →  apis.data.go.kr (serviceKey 주입)
+```
 
-`GitHub 저장소 → Settings → Secrets and variables → Actions → New repository secret`
+- `base`: `ko` / `en` / `zh` / `ja` / `bf`(무장애 여행정보)
+- `endpoint`: `areaBasedList2`, `searchFestival2`, `detailCommon2`, `searchKeyword2`, `detailWithTour2` 등
+
+#### 프록시 배포 방법
+
+```bash
+cd worker
+npx wrangler login              # Cloudflare 계정 인증 (최초 1회, 이메일 인증 필요)
+npx wrangler deploy             # seasonroad-api 워커 배포
+npx wrangler secret put KTO_API_KEY   # 프롬프트에 TourAPI 서비스키 입력
+```
+
+배포 후 발급되는 워커 주소(`https://seasonroad-api.<subdomain>.workers.dev`)를 `index.html`의 `API_PROXY_BASE` 상수에 반영합니다.
 
 #### 등록할 Secrets
 
-| Secret 이름 | 설명 | 발급처 |
-|------------|------|--------|
-| `KAKAO_JS_KEY` | 카카오 JavaScript 앱 키 | https://developers.kakao.com |
-| `TOUR_API_KEY` | 공공데이터포털 TourAPI 서비스 키 | https://api.visitkorea.or.kr |
+| 이름 | 위치 | 설명 | 발급처 |
+|------|------|------|--------|
+| `KTO_API_KEY` | Cloudflare Workers 시크릿 (`wrangler secret put`) | 공공데이터포털 TourAPI 서비스 키 | https://api.visitkorea.or.kr |
+| `KAKAO_JS_KEY` | `index.html`에 직접 설정 | 카카오 JavaScript 앱 키 (도메인 제한으로 클라이언트 노출 허용) | https://developers.kakao.com |
 
-> **주의**: `index.html`에는 실제 키 대신 `__KAKAO_JS_KEY__`, `__TOUR_API_KEY__` 플레이스홀더가 들어 있으며, 배포 시 GitHub Actions가 자동으로 교체합니다. 실제 키를 코드에 직접 커밋하지 마세요.
+> 카카오맵 키는 Kakao Developers 콘솔에서 등록 도메인을 제한하는 방식으로 보호하며, TourAPI 키만 완전히 서버 사이드로 격리합니다.
 
 ### 공공데이터포털 TourAPI 연동
 
 계절 관광지·축제·무장애 여행 정보는 실제 API로 연동되어 있으며(자세한 목록은 [활용 OpenAPI](#활용-openapi) 참고), 응답이 없거나 실패할 경우에만 더미 데이터로 자동 전환됩니다. 한류 촬영지는 대응하는 콘텐츠타입이 없어 더미 데이터(`DRAMA_DATA`)로 렌더링합니다.
 
 - API 키 발급: https://api.visitkorea.or.kr
-- GitHub Secret `TOUR_API_KEY`에 등록하면 자동 적용
+- 발급받은 키는 Cloudflare Workers 시크릿(`KTO_API_KEY`)에만 등록 (코드에 직접 커밋 금지)
 
 ### 기술 스택
 
 - 순수 HTML/CSS/JavaScript (빌드 도구 불필요)
 - 카카오맵 API
 - Pretendard 폰트 (CDN)
-- 공공데이터포털 TourAPI 4.0 연동
-- GitHub Actions / GitHub Pages (자동 배포)
+- 공공데이터포털 TourAPI 4.0 연동 (Cloudflare Workers 프록시 경유)
+- GitHub Pages (배포)
 
 ---
 

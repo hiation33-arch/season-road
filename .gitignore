@@ -13,3 +13,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Cloudflare Workers local cache
+worker/.wrangler/
+worker/node_modules/

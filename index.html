@@ -976,17 +976,19 @@ function isHalfPriceRegion(location) {
 // 한국관광공사 Tour API 4.0 연동
 // ════════════════════════════════════════════════════════════════
 const USE_REAL_API = true;
-const KTO_API_KEY   = 'd9f3c82a62d57914fce1896277180c3520d1e559137dd6e7d2d443e005e6d371';
+// TourAPI 서비스키는 클라이언트에 두지 않고 Cloudflare Workers 프록시(seasonroad-api)가 서버 사이드에서 주입한다.
+// 프록시 라우트: /:base/:endpoint  (base = ko|en|zh|ja|bf)  → worker/index.js 참고
+const API_PROXY_BASE = 'https://seasonroad-api.hiation33.workers.dev';
 const KTO_BASE_URLS = {
-  ko: 'https://apis.data.go.kr/B551011/KorService2',
-  en: 'https://apis.data.go.kr/B551011/EngService2',
-  zh: 'https://apis.data.go.kr/B551011/ChsService2',
-  ja: 'https://apis.data.go.kr/B551011/JpnService2',
+  ko: `${API_PROXY_BASE}/ko`,
+  en: `${API_PROXY_BASE}/en`,
+  zh: `${API_PROXY_BASE}/zh`,
+  ja: `${API_PROXY_BASE}/ja`,
 };
 
 // 무장애 여행정보 서비스 (실측 확인됨: base는 KorWithService2, 오퍼레이션명은 areaBasedList2/searchKeyword2/
 // detailWithTour2로 KorService2와 동일 체계. EngWithService2 등 다국어 버전은 404/500 — 한국어 전용 서비스임)
-const KTO_BF_BASE_URL = 'https://apis.data.go.kr/B551011/KorWithService2';
+const KTO_BF_BASE_URL = `${API_PROXY_BASE}/bf`;
 // 무장애 후보 지역(전국 분산): 서울/부산/제주/경북/강원
 const BF_AREA_CODES = [1, 6, 39, 35, 32];
 
@@ -1030,7 +1032,6 @@ function hideSpinner() { document.getElementById('apiSpinner').style.display = '
 // ── API 공통 fetch (언어별 다국어 서비스 자동 선택 + KO fallback) ──
 async function ktoFetch(endpoint, params = {}) {
   const makeQs = () => new URLSearchParams({
-    serviceKey: KTO_API_KEY,
     numOfRows: 20, pageNo: 1,
     MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
     ...params,
@@ -1061,7 +1062,7 @@ async function loadPlaceDetail(contentId) {
   const cacheKey = `${currentLang}_${contentId}`;
   if (cacheKey in _detailCache) return _detailCache[cacheKey];
   const qs = new URLSearchParams({
-    serviceKey: KTO_API_KEY, contentId,
+    contentId,
     MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
   });
   const baseUrl = KTO_BASE_URLS[currentLang] || KTO_BASE_URLS.ko;
@@ -1082,7 +1083,7 @@ async function loadPlaceDetail(contentId) {
 // ── 무장애 API 공통 fetch (KorWithService2 전용, 다국어 버전 없음 — 항상 한국어) ──
 async function bfFetch(endpoint, params = {}) {
   const qs = new URLSearchParams({
-    serviceKey: KTO_API_KEY, numOfRows: 20, pageNo: 1,
+    numOfRows: 20, pageNo: 1,
     MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
     ...params,
   });
