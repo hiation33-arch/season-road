@@ -37,6 +37,10 @@
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; font-family: var(--font); background: var(--gray-100); color: var(--gray-900); overflow: hidden; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
 
     /* ── 헤더 ── */
     .header {
@@ -712,6 +716,8 @@
 
 <div id="app-wrapper" style="display:none">
 
+<div id="a11yStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
 <header class="header">
   <div class="logo">🗺 Season<span>Road</span></div>
   <div class="search-bar" id="searchBar">
@@ -751,7 +757,7 @@
   <div class="trend-body" id="trendBody"></div>
 </div>
 
-<div id="map"></div>
+<div id="map" role="main" aria-label="여행지 지도"></div>
 
 <div class="legend" id="legend">
   <div class="legend-row"><div class="legend-dot" data-pin-color="#22c55e"></div><span id="legendDay">당일 코스</span></div>
@@ -1667,6 +1673,14 @@ const SEASON_EMO = { spring:'🌸', summer:'🌿', autumn:'🍂', winter:'❄️
 let currentLang = 'ko';
 function L() { return I18N[currentLang]; }
 
+// ── 스크린리더용 짧은 변경 안내 (콘텐츠 전체가 아닌 요약만 aria-live로 전달) ──
+function announce(msg) {
+  const el = document.getElementById('a11yStatus');
+  if (!el) return;
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
 // ── 바텀시트 열림 상태 전환 (aria-expanded 동기화) ──
 function setSheetOpen(open) {
   document.getElementById('sheet').classList.toggle('open', open);
@@ -1942,12 +1956,12 @@ kakao.maps.load(function () {
 
     panel.innerHTML = `
       <div class="panel-section">
-        <div class="panel-section-title">${lang.bfCoursesTitle}</div>
+        <h2 class="panel-section-title">${lang.bfCoursesTitle}</h2>
         ${courseCards}
       </div>
       <div class="panel-divider"></div>
       <div class="panel-section">
-        <div class="panel-section-title">${lang.bfPlaceListTitle}</div>
+        <h2 class="panel-section-title">${lang.bfPlaceListTitle}</h2>
         <div id="bfPlaceList">${placeItems}</div>
       </div>`;
 
@@ -1977,6 +1991,7 @@ kakao.maps.load(function () {
     const lang = L();
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
     document.getElementById('sheetPlace').textContent = name;
+    announce(`${name} 정보를 표시합니다`);
     const badge = document.getElementById('sheetBadge');
     const courseLabel = lang.courseTypeLabel[place.type] || place.label;
     const durLabel    = lang.durationLabel[place.type]   || place.duration;
@@ -1987,8 +2002,8 @@ kakao.maps.load(function () {
 
     // API 로드 장소만 detailCommon2(이미지·개요) 상세조회 대상 (더미 데이터는 apiId가 실제 콘텐츠ID가 아니므로 제외)
     const detailSlot = place._fromApi
-      ? `${_sheetImageHtml(place.image)}<div class="sheet-detail-loading" id="sheetDetailLoading">${lang.detailLoading}</div>`
-      : _sheetImageHtml(place.image);
+      ? `${_sheetImageHtml(place.image, name)}<div class="sheet-detail-loading" id="sheetDetailLoading">${lang.detailLoading}</div>`
+      : _sheetImageHtml(place.image, name);
 
     // accessibility가 null이면(API 장소, 아직 미로드) 로딩 표시 후 detailWithTour2로 lazy 로드
     const accHtml = place.accessibility
@@ -2021,7 +2036,7 @@ kakao.maps.load(function () {
         const overview = detail?.overview || '';
         if (!imgUrl && !overview) { slot.innerHTML = ''; return; }
         slot.innerHTML = `
-          ${_sheetImageHtml(imgUrl)}
+          ${_sheetImageHtml(imgUrl, name)}
           ${overview ? `<p class="sheet-overview" id="sheetOverviewText">${overview}</p>
           <button class="sheet-more-btn" id="sheetMoreBtn">${lang.readMore}</button>` : ''}`;
         const moreBtn = document.getElementById('sheetMoreBtn');
@@ -2113,12 +2128,12 @@ kakao.maps.load(function () {
 
     panel.innerHTML = `
       <div class="panel-section">
-        <div class="panel-section-title">${lang.trendTitle}</div>
+        <h2 class="panel-section-title">${lang.trendTitle}</h2>
         <div class="panel-list" id="trendList">${trendRows}</div>
       </div>
       <div class="panel-divider"></div>
       <div class="panel-section">
-        <div class="panel-section-title">${lang.seasonTop5(sEmo, sName)}</div>
+        <h2 class="panel-section-title">${lang.seasonTop5(sEmo, sName)}</h2>
         <div class="panel-list" id="top5List">${top5Rows}</div>
       </div>
       ${placeCard}`;
@@ -2183,7 +2198,7 @@ kakao.maps.load(function () {
         }).join('');
         siteList = `<div class="panel-divider"></div>
           <div class="panel-section">
-            <div class="panel-section-title">${lang.filmingSites}</div>
+            <h2 class="panel-section-title">${lang.filmingSites}</h2>
             <div id="siteList">${items}</div>
           </div>`;
       }
@@ -2195,7 +2210,7 @@ kakao.maps.load(function () {
 
     panel.innerHTML = `
       <div class="panel-section">
-        <div class="panel-section-title">${title}</div>
+        <h2 class="panel-section-title">${title}</h2>
         ${resetBtn}
         <div id="dramaCardList">${dramaCards}</div>
       </div>
@@ -2243,8 +2258,8 @@ kakao.maps.load(function () {
   }
 
   // ── 장소 상세 (계절) ──
-  function _sheetImageHtml(url) {
-    return url ? `<img class="sheet-image" src="${url}" alt="" loading="lazy" />` : '';
+  function _sheetImageHtml(url, name) {
+    return url ? `<img class="sheet-image" src="${url}" alt="${name || ''}" loading="lazy" />` : '';
   }
 
   function openPlace(place) {
@@ -2254,6 +2269,7 @@ kakao.maps.load(function () {
     const bs   = BADGE_STYLE[place.type] || {};
     const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
     document.getElementById('sheetPlace').textContent = name;
+    announce(`${name} 정보를 표시합니다`);
     const badge = document.getElementById('sheetBadge');
     const courseLabel = lang.courseTypeLabel[place.type] || place.label;
     const durLabel    = lang.durationLabel[place.type]   || place.duration;
@@ -2269,8 +2285,8 @@ kakao.maps.load(function () {
 
     // API 로드 장소만 detailCommon2 상세조회 대상 (더미 PLACES의 apiId는 실제 콘텐츠ID가 아니므로 제외)
     const detailSlot = place._fromApi
-      ? `${_sheetImageHtml(place.image)}<div class="sheet-detail-loading" id="sheetDetailLoading">${lang.detailLoading}</div>`
-      : _sheetImageHtml(place.image);
+      ? `${_sheetImageHtml(place.image, name)}<div class="sheet-detail-loading" id="sheetDetailLoading">${lang.detailLoading}</div>`
+      : _sheetImageHtml(place.image, name);
 
     document.getElementById('sheetBody').innerHTML = `
       <div id="sheetDetailSlot">${detailSlot}</div>
@@ -2296,7 +2312,7 @@ kakao.maps.load(function () {
         const overview = detail?.overview || '';
         if (!imgUrl && !overview) { slot.innerHTML = ''; return; }
         slot.innerHTML = `
-          ${_sheetImageHtml(imgUrl)}
+          ${_sheetImageHtml(imgUrl, name)}
           ${overview ? `<p class="sheet-overview" id="sheetOverviewText">${overview}</p>
           <button class="sheet-more-btn" id="sheetMoreBtn">${lang.readMore}</button>` : ''}`;
         const moreBtn = document.getElementById('sheetMoreBtn');
@@ -2323,6 +2339,7 @@ kakao.maps.load(function () {
     activeSiteId = site.id;
     const siteName = site.i18n ? (site.i18n[currentLang] || site.name) : site.name;
     document.getElementById('sheetPlace').textContent = siteName;
+    announce(`${siteName} 정보를 표시합니다`);
     const badge = document.getElementById('sheetBadge');
     badge.textContent = drama.title;
     badge.style.background = '#faf5ff';
@@ -2556,6 +2573,7 @@ kakao.maps.load(function () {
       clearOverlays();
       document.getElementById('panelContent').innerHTML =
         `<div class="empty-state">${L().searchNoResult(q)}</div>`;
+      announce(L().searchNoResult(q));
       const _noLabel = document.getElementById('trendLabel');
       const _noBody  = document.getElementById('trendBody');
       if (_noLabel) _noLabel.textContent = L().searchNoResultLabel;
