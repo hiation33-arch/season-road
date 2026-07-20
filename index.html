@@ -2053,8 +2053,8 @@ kakao.maps.load(function () {
             ${(activePlace.tagsI18n?.[currentLang] || activePlace.tags).map(t=>`<span style="font-size:12px;color:#14532d;background:#dcfce7;padding:4px 10px;border-radius:20px">${t}</span>`).join('')}
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">${lang.fieldDuration}</div><div style="font-size:14px;font-weight:600">${lang.durationLabel[activePlace.type] || activePlace.duration}</div></div>
-            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:#9ca3af;margin-bottom:3px">${lang.fieldLocation}</div><div style="font-size:14px;font-weight:600">${LOCATION_I18N[activePlace.location]?.[currentLang] || activePlace.location}</div></div>
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">${lang.fieldDuration}</div><div style="font-size:14px;font-weight:600">${lang.durationLabel[activePlace.type] || activePlace.duration}</div></div>
+            <div style="background:#f3f4f6;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-card)"><div style="font-size:11px;color:var(--gray-400);margin-bottom:3px">${lang.fieldLocation}</div><div style="font-size:14px;font-weight:600">${LOCATION_I18N[activePlace.location]?.[currentLang] || activePlace.location}</div></div>
           </div>
         </div>`;
     })() : '';
