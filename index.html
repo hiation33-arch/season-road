@@ -17,7 +17,7 @@
       --hallyu-900: #6b21a8;
       --gray-900: #111827;
       --gray-600: #4b5563;
-      --gray-400: #9ca3af;
+      --gray-400: #5f6b7a;
       --gray-200: #e5e7eb;
       --gray-100: #f3f4f6;
       --white: #ffffff;
@@ -728,7 +728,7 @@
   <button class="bf-toggle-btn" id="bfToggleBtn">♿ 무장애 여행</button>
   <a class="hp-mobile-btn" id="hpMobileBtn" href="https://korean.visitkorea.or.kr" target="_blank" rel="noopener">💰 반값 여행</a>
   <span class="bf-toggle-hint" id="bfToggleHint" aria-live="polite">시니어·장애인 모두 이용 가능한 여행지</span>
-  <div class="lang-selector" id="langSelector" style="margin-left:auto">
+  <div class="lang-selector" id="langSelector" style="margin-left:auto" role="group" aria-label="언어 선택" lang="ko">
     <button class="lang-btn active" data-lang="ko">KO</button>
     <button class="lang-btn" data-lang="en">EN</button>
     <button class="lang-btn" data-lang="zh">ZH</button>
@@ -2334,8 +2334,12 @@ kakao.maps.load(function () {
   }
 
   // ── 언어 전환 ──
+  const HTML_LANG_MAP = { ko: 'ko', en: 'en', zh: 'zh-Hans', ja: 'ja' };
+
   function applyLanguage() {
     const lang = L();
+    // 문서 언어 속성 동기화 (스크린리더가 올바른 언어 발음 규칙으로 읽도록)
+    document.documentElement.lang = HTML_LANG_MAP[currentLang] || 'ko';
     // 탭 이름
     document.querySelectorAll('.tab[data-s]').forEach(tab => {
       const key = tab.dataset.s;
