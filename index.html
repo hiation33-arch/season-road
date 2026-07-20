@@ -357,6 +357,7 @@
       position: relative;
     }
     .pin-wrap:active { transform: scale(0.92); }
+    .pin-wrap:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; border-radius: 50%; }
     .pin-wrap svg { display: block; }
     .pin-hp-badge {
       position: absolute; top: -5px; right: -6px;
@@ -383,6 +384,12 @@
     }
     .panel-item:hover { background: var(--gray-100); }
     .panel-item:active { background: var(--gray-200); }
+    .trend-chip:focus-visible, .bf-chip:focus-visible, .panel-item:focus-visible,
+    .bf-course-card:focus-visible, .bf-place-item:focus-visible,
+    .drama-card:focus-visible, .drama-site-item:focus-visible,
+    .trend-strip-header:focus-visible, .sheet-handle-area:focus-visible {
+      outline: 2px solid #2563eb; outline-offset: 2px;
+    }
     .panel-rank { font-size: 13px; font-weight: 700; min-width: 18px; text-align: center; }
     .panel-rank.rank-1 { color: #ef4444; }
     .panel-rank.rank-2 { color: #f97316; }
@@ -737,7 +744,7 @@
 </div>
 
 <div class="trend-strip" id="trendStrip">
-  <div class="trend-strip-header" id="trendStripHeader">
+  <div class="trend-strip-header" id="trendStripHeader" tabindex="0" role="button" aria-expanded="false" aria-controls="trendBody" aria-label="트렌드 목록 펼치기">
     <span class="trend-label" id="trendLabel">🔥 트렌드</span>
     <span class="trend-arrow" id="trendArrow">▼</span>
   </div>
@@ -760,7 +767,7 @@
 </aside>
 
 <div class="sheet" id="sheet">
-  <div class="sheet-handle-area" id="sheetHandle">
+  <div class="sheet-handle-area" id="sheetHandle" tabindex="0" role="button" aria-expanded="false" aria-controls="sheetBody" aria-label="여행지 상세 정보 펼치기">
     <div class="sheet-handle"></div>
     <div class="sheet-title-row">
       <span class="sheet-place" id="sheetPlace">여행지를 선택하세요</span>
@@ -1660,6 +1667,27 @@ const SEASON_EMO = { spring:'🌸', summer:'🌿', autumn:'🍂', winter:'❄️
 let currentLang = 'ko';
 function L() { return I18N[currentLang]; }
 
+// ── 바텀시트 열림 상태 전환 (aria-expanded 동기화) ──
+function setSheetOpen(open) {
+  document.getElementById('sheet').classList.toggle('open', open);
+  const handle = document.getElementById('sheetHandle');
+  if (handle) {
+    handle.setAttribute('aria-expanded', String(open));
+    handle.setAttribute('aria-label', open ? '여행지 상세 정보 접기' : '여행지 상세 정보 펼치기');
+  }
+}
+
+// ── 키보드 접근성: 클릭형 요소에 Enter/Space 키 활성화 부여 ──
+function bindActivatable(el, handler) {
+  el.addEventListener('click', handler);
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      handler(e);
+    }
+  });
+}
+
 // ── 카카오맵 초기화 ──
 kakao.maps.load(function () {
   const map = new kakao.maps.Map(document.getElementById('map'), {
@@ -1706,7 +1734,7 @@ kakao.maps.load(function () {
     overlays.push(o);
   }
 
-  function makePinEl(color, onClick, halfPrice = false, isFestival = false) {
+  function makePinEl(color, onClick, halfPrice = false, isFestival = false, label = '') {
     const wrap = document.createElement('div'); wrap.className = 'pin-wrap';
     wrap.innerHTML = pinMarkerSVG(halfPrice ? '#eab308' : color);
     if (halfPrice) {
@@ -1719,10 +1747,20 @@ kakao.maps.load(function () {
       badge.textContent = '🎉';
       wrap.appendChild(badge);
     }
-    wrap.addEventListener('click', (e) => {
+    wrap.tabIndex = 0;
+    wrap.setAttribute('role', 'button');
+    if (label) wrap.setAttribute('aria-label', label);
+    const activate = (e) => {
       e.stopPropagation(); _pinClicked = true;
       onClick();
       setTimeout(() => { _pinClicked = false; }, 0);
+    };
+    wrap.addEventListener('click', activate);
+    wrap.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        activate(e);
+      }
     });
     return wrap;
   }
@@ -1731,8 +1769,9 @@ kakao.maps.load(function () {
   function addSeasonPins(season) {
     const places = _seasonCache[season] || PLACES.filter(p => p.seasons.includes(season));
     places.forEach(place => {
+      const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       addOverlay(place.lat, place.lng,
-        makePinEl(place.color, () => openPlace(place), isHalfPriceRegion(place.location), place.isFestival)
+        makePinEl(place.color, () => openPlace(place), isHalfPriceRegion(place.location), place.isFestival, `${name} 여행지`)
       );
     });
   }
@@ -1740,8 +1779,9 @@ kakao.maps.load(function () {
   function addDramaPins(dramas) {
     dramas.forEach(drama => {
       drama.sites.forEach(site => {
+        const siteName = site.i18n ? (site.i18n[currentLang] || site.name) : site.name;
         addOverlay(site.lat, site.lng,
-          makePinEl(drama.pinColor, () => openDramaSite(site, drama))
+          makePinEl(drama.pinColor, () => openDramaSite(site, drama), false, false, `${siteName}, ${drama.title} 촬영지`)
         );
       });
     });
@@ -1749,8 +1789,9 @@ kakao.maps.load(function () {
 
   function addBFPins() {
     (_bfCache || BARRIER_FREE_DATA).forEach(place => {
+      const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       addOverlay(place.lat, place.lng,
-        makePinEl('#f97316', () => openBFPlace(place))
+        makePinEl('#f97316', () => openBFPlace(place), false, false, `${name}, 무장애 여행지`)
       );
     });
   }
@@ -1787,9 +1828,11 @@ kakao.maps.load(function () {
 
   // ── 트렌드 스트립 접기/펼치기 (모바일 전용) ──
   function collapseTrendStrip() {
-    const strip = document.getElementById('trendStrip');
+    const strip  = document.getElementById('trendStrip');
+    const header = document.getElementById('trendStripHeader');
     if (!strip) return;
     strip.classList.remove('expanded');
+    if (header) { header.setAttribute('aria-expanded', 'false'); header.setAttribute('aria-label', '트렌드 목록 펼치기'); }
     document.documentElement.style.setProperty('--trend-h', '44px');
     setTimeout(() => { map.relayout(); }, 300);
   }
@@ -1807,7 +1850,9 @@ kakao.maps.load(function () {
       apiPlaces.slice(0, 5).forEach((place, i) => {
         const chip = document.createElement('div'); chip.className = 'trend-chip';
         chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${place.name}`;
-        chip.addEventListener('click', () => { flyTo(place.lat, place.lng); openPlace(place); });
+        chip.tabIndex = 0; chip.setAttribute('role', 'button');
+        chip.setAttribute('aria-label', `${i+1}위, ${place.name}`);
+        bindActivatable(chip, () => { flyTo(place.lat, place.lng); openPlace(place); });
         body.appendChild(chip);
       });
     } else {
@@ -1815,7 +1860,9 @@ kakao.maps.load(function () {
         const chip = document.createElement('div'); chip.className = 'trend-chip';
         const kw = item.keyword[currentLang] || item.keyword.ko;
         chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${kw}`;
-        chip.addEventListener('click', () => {
+        chip.tabIndex = 0; chip.setAttribute('role', 'button');
+        chip.setAttribute('aria-label', `${i+1}위, ${kw}`);
+        bindActivatable(chip, () => {
           const place = PLACES.find(p => p.id === item.placeId);
           if (place) { flyTo(place.lat, place.lng); openPlace(place); }
         });
@@ -1834,7 +1881,9 @@ kakao.maps.load(function () {
     dramas.forEach((d, i) => {
       const chip = document.createElement('div'); chip.className = 'trend-chip drama-chip';
       chip.innerHTML = `<span class="trend-rank rank-${Math.min(i+1,5)}">${i+1}</span>${d.title}`;
-      chip.addEventListener('click', () => {
+      chip.tabIndex = 0; chip.setAttribute('role', 'button');
+      chip.setAttribute('aria-label', `${i+1}위, ${d.title}`);
+      bindActivatable(chip, () => {
         activeDramaId = d.id; activeSiteId = null;
         renderDramaPins([d]); fitBounds(d.sites);
         renderDramaPanel();
@@ -1853,8 +1902,11 @@ kakao.maps.load(function () {
     collapseTrendStrip();
     bfPlaces.forEach(place => {
       const chip = document.createElement('div'); chip.className = 'bf-chip';
-      chip.textContent = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
-      chip.addEventListener('click', () => { flyTo(place.lat, place.lng, 5); openBFPlace(place); });
+      const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
+      chip.textContent = name;
+      chip.tabIndex = 0; chip.setAttribute('role', 'button');
+      chip.setAttribute('aria-label', `${name}, 무장애 여행지`);
+      bindActivatable(chip, () => { flyTo(place.lat, place.lng, 5); openBFPlace(place); });
       body.appendChild(chip);
     });
   }
@@ -1869,7 +1921,7 @@ kakao.maps.load(function () {
       const bs = BADGE_STYLE[c.type] || BADGE_STYLE.day;
       const cName = c.nameI18n?.[currentLang] || c.nameI18n?.ko || c.name;
       const cDesc = c.descI18n?.[currentLang] || c.descI18n?.ko || c.desc;
-      return `<div class="bf-course-card" data-course-id="${c.id}">
+      return `<div class="bf-course-card" data-course-id="${c.id}" tabindex="0" role="button" aria-label="${cName} 코스">
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
           <span class="bf-course-title">${cName}</span>
           <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${bs.bg};color:${bs.color};white-space:nowrap">${lang.durationLabel[c.type]}</span>
@@ -1881,7 +1933,7 @@ kakao.maps.load(function () {
     const placeItems = bfPlaces.map(place => {
       const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       const isActive = place.id === activeBFId;
-      return `<div class="bf-place-item ${isActive?'active':''}" data-bf-id="${place.id}">
+      return `<div class="bf-place-item ${isActive?'active':''}" data-bf-id="${place.id}" tabindex="0" role="button" aria-label="${name}, 무장애 여행지">
         <div class="bf-pin-dot"></div>
         <span class="bf-place-name">${name}</span>
         <span class="bf-place-loc">${(place.location||'').split(' ')[0]}</span>
@@ -1900,7 +1952,7 @@ kakao.maps.load(function () {
       </div>`;
 
     panel.querySelectorAll('.bf-course-card').forEach(el => {
-      el.addEventListener('click', () => {
+      bindActivatable(el, () => {
         const course = BF_COURSES.find(c => c.id === el.dataset.courseId);
         if (!course) return;
         const places = course.placeIds.map(id => BARRIER_FREE_DATA.find(p => p.id === id)).filter(Boolean);
@@ -1910,7 +1962,7 @@ kakao.maps.load(function () {
     });
 
     panel.querySelectorAll('#bfPlaceList .bf-place-item').forEach(el => {
-      el.addEventListener('click', () => {
+      bindActivatable(el, () => {
         const place = bfPlaces.find(p => p.id === el.dataset.bfId);
         if (place) { flyTo(place.lat, place.lng, 5); openBFPlace(place); }
       });
@@ -1956,7 +2008,7 @@ kakao.maps.load(function () {
         <div class="i18n-title">${lang.accessibility}</div>
         <div class="acc-grid" id="bfAccGrid">${accHtml}</div>
       </div>`;
-    document.getElementById('sheet').classList.add('open');
+    setSheetOpen(true);
     if (bfMode && !hallyuMode) renderBFPanel();
 
     if (place._fromApi && place.apiId) {
@@ -2018,7 +2070,7 @@ kakao.maps.load(function () {
       const kw = typeof item.keyword === 'object'
         ? (item.keyword[currentLang] || item.keyword.ko)
         : item.keyword;
-      return `<div class="panel-item" data-id="${item.placeId}">
+      return `<div class="panel-item" data-id="${item.placeId}" tabindex="0" role="button" aria-label="${i+1}위, ${kw}">
         <span class="panel-rank rank-${i+1}">${i+1}</span>
         <span class="panel-item-text">${kw}</span>
         ${p ? `<span class="panel-item-sub">${(p.location||'').split(' ')[0]}</span>` : ''}
@@ -2029,7 +2081,7 @@ kakao.maps.load(function () {
       const bs   = BADGE_STYLE[place.type] || {};
       const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       const isActive = activePlace && activePlace.id === place.id;
-      return `<div class="panel-item" data-id="${place.id}" ${isActive?'style="background:var(--gray-100)"':''}>
+      return `<div class="panel-item" data-id="${place.id}" tabindex="0" role="button" aria-label="${i+1}위, ${name}" ${isActive?'style="background:var(--gray-100)"':''}>
         <span class="panel-rank rank-${i+1}">${i+1}</span>
         <span class="panel-item-text">${name}</span>
         <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${bs.bg};color:${bs.color}">${lang.courseTypeLabel[place.type] || place.label}</span>
@@ -2072,7 +2124,7 @@ kakao.maps.load(function () {
       ${placeCard}`;
 
     panel.querySelectorAll('#trendList .panel-item').forEach(el => {
-      el.addEventListener('click', () => {
+      bindActivatable(el, () => {
         const id  = el.dataset.id;
         const cur = _seasonCache[currentSeason] || PLACES.filter(p => p.seasons.includes(currentSeason));
         const place = cur.find(p => p.id == id) || PLACES.find(p => p.id === Number(id));
@@ -2080,7 +2132,7 @@ kakao.maps.load(function () {
       });
     });
     panel.querySelectorAll('#top5List .panel-item').forEach(el => {
-      el.addEventListener('click', () => {
+      bindActivatable(el, () => {
         const id  = el.dataset.id;
         const cur = _seasonCache[currentSeason] || PLACES.filter(p => p.seasons.includes(currentSeason));
         const place = cur.find(p => p.id == id) || PLACES.find(p => p.id === Number(id));
@@ -2101,7 +2153,7 @@ kakao.maps.load(function () {
     const dramaCards = dramas.map((d, i) => {
       const isActive  = d.id === activeDramaId;
       const rankClass = `rank-${Math.min(d.rank, 5)}`;
-      return `<div class="drama-card ${isActive?'active':''}" data-drama-id="${d.id}">
+      return `<div class="drama-card ${isActive?'active':''}" data-drama-id="${d.id}" tabindex="0" role="button" aria-label="${d.rank}위, ${d.title}">
         <div class="drama-color-dot" style="background:${d.pinColor}"></div>
         <span class="drama-card-rank ${rankClass}">${d.rank}</span>
         <div class="drama-card-info">
@@ -2122,7 +2174,7 @@ kakao.maps.load(function () {
         const items = drama.sites.map(s => {
           const siteName   = s.i18n ? (s.i18n[currentLang] || s.name) : s.name;
           const isActiveSite = s.id === activeSiteId;
-          return `<div class="drama-site-item ${isActiveSite?'active':''}" data-site-id="${s.id}" data-drama-id="${drama.id}">
+          return `<div class="drama-site-item ${isActiveSite?'active':''}" data-site-id="${s.id}" data-drama-id="${drama.id}" tabindex="0" role="button" aria-label="${siteName}, ${drama.title} 촬영지">
             <div>
               <div class="drama-site-name">${siteName}</div>
               <div class="drama-site-scene">${s.scene}</div>
@@ -2150,7 +2202,7 @@ kakao.maps.load(function () {
       ${siteList}`;
 
     panel.querySelectorAll('#dramaCardList .drama-card').forEach(el => {
-      el.addEventListener('click', () => {
+      bindActivatable(el, () => {
         const id    = el.dataset.dramaId;
         const drama = DRAMA_DATA.find(d => d.id === id);
         if (!drama) return;
@@ -2180,7 +2232,7 @@ kakao.maps.load(function () {
     }
 
     panel.querySelectorAll('#siteList .drama-site-item').forEach(el => {
-      el.addEventListener('click', () => {
+      bindActivatable(el, () => {
         const siteId  = el.dataset.siteId;
         const dramaId = el.dataset.dramaId;
         const drama   = DRAMA_DATA.find(d => d.id === dramaId);
@@ -2231,7 +2283,7 @@ kakao.maps.load(function () {
         <div class="info-card"><div class="info-label">${lang.fieldDuration}</div><div class="info-val">${durLabel}</div></div>
         <div class="info-card col-2"><div class="info-label">${lang.fieldLocation}</div><div class="info-val">${locLabel}</div></div>
       </div>`;
-    document.getElementById('sheet').classList.add('open');
+    setSheetOpen(true);
     renderSeasonPanel(place);
 
     if (place._fromApi && place.apiId) {
@@ -2292,7 +2344,7 @@ kakao.maps.load(function () {
           <div class="i18n-item"><span class="i18n-lang">日本語</span><span class="i18n-text">${site.i18n.ja}</span></div>
         </div>
       </div>`;
-    document.getElementById('sheet').classList.add('open');
+    setSheetOpen(true);
     renderDramaPanel();
   }
 
@@ -2308,8 +2360,9 @@ kakao.maps.load(function () {
     addDramaPins(dramas || DRAMA_DATA);
     if (_hallyuCache) {
       _hallyuCache.forEach(place => {
+        const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
         addOverlay(place.lat, place.lng,
-          makePinEl('#a855f7', () => openPlace(place))
+          makePinEl('#a855f7', () => openPlace(place), false, false, `${name} 여행지`)
         );
       });
     }
@@ -2330,7 +2383,7 @@ kakao.maps.load(function () {
       renderSeasonStrip(currentSeason);
       renderSeasonPanel(null);
     }
-    document.getElementById('sheet').classList.remove('open');
+    setSheetOpen(false);
   }
 
   // ── 언어 전환 ──
@@ -2412,10 +2465,11 @@ kakao.maps.load(function () {
   });
 
   // ── 트렌드 아코디언 토글 (모바일) ──
-  document.getElementById('trendStripHeader').addEventListener('click', () => {
+  bindActivatable(document.getElementById('trendStripHeader'), () => {
     if (window.innerWidth > 768) return;
-    const strip = document.getElementById('trendStrip');
-    const body  = document.getElementById('trendBody');
+    const strip  = document.getElementById('trendStrip');
+    const body   = document.getElementById('trendBody');
+    const header = document.getElementById('trendStripHeader');
     if (!strip || !body) return;
     if (strip.classList.contains('expanded')) {
       collapseTrendStrip();
@@ -2423,6 +2477,7 @@ kakao.maps.load(function () {
       strip.classList.add('expanded');
       const totalH = 44 + body.scrollHeight + 2;
       document.documentElement.style.setProperty('--trend-h', totalH + 'px');
+      if (header) { header.setAttribute('aria-expanded', 'true'); header.setAttribute('aria-label', '트렌드 목록 접기'); }
       setTimeout(() => { map.relayout(); }, 300);
     }
   });
@@ -2459,7 +2514,7 @@ kakao.maps.load(function () {
         renderSeasonStrip(currentSeason);
         renderSeasonPanel(null);
       }
-      document.getElementById('sheet').classList.remove('open');
+      setSheetOpen(false);
     }
   });
 
@@ -2537,14 +2592,14 @@ kakao.maps.load(function () {
   });
 
   // ── 바텀시트 핸들 ──
-  document.getElementById('sheetHandle').addEventListener('click', () => {
-    document.getElementById('sheet').classList.toggle('open');
+  bindActivatable(document.getElementById('sheetHandle'), () => {
+    setSheetOpen(!document.getElementById('sheet').classList.contains('open'));
   });
 
   // 지도 클릭 → 바텀시트 닫기
   kakao.maps.event.addListener(map, 'click', () => {
     if (_pinClicked) return;
-    document.getElementById('sheet').classList.remove('open');
+    setSheetOpen(false);
   });
 
   // ── 초기 렌더링 (더미 데이터로 즉시 표시) ──
