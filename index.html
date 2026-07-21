@@ -1037,6 +1037,8 @@ const _seasonCache  = {};
 let   _bfCache      = null;
 let   _hallyuCache  = null;
 const _detailCache  = {}; // key: `${lang}_${contentId}` → detailCommon2 응답 item (없으면 null)
+const _trendCache   = {}; // key: season → 데이터랩 실검색량 기준으로 정렬된 후보 배열(세션 내 재호출 방지)
+const _koNameCache  = {}; // key: contentId → 한국어 원어명 (데이터랩 검색어는 항상 한국어로 보냄)
 
 // 스피너 제어
 function showSpinner() { document.getElementById('apiSpinner').style.display = 'flex'; }
@@ -1212,6 +1214,79 @@ async function loadSeasonData(season) {
   const all = [...spots, ...festivals];
   _seasonCache[season] = all.length ? all : null;
   return _seasonCache[season];
+}
+
+// ── 트렌드 TOP5 후보 선정 (축제 우선 → 부족하면 일반 관광지로 채움) ──
+function pickTrendCandidates(season) {
+  const apiPlaces = _seasonCache[season];
+  if (!apiPlaces || !apiPlaces.length) return null;
+  const festivals = apiPlaces.filter(p => p.isFestival);
+  const spots     = apiPlaces.filter(p => !p.isFestival);
+  const candidates = [...festivals, ...spots].slice(0, 5);
+  return candidates.length ? candidates : null;
+}
+
+// ── 데이터랩 검색어는 항상 한국어로 보낸다: currentLang이 한국어가 아니면
+//    KTO 한국어 서비스(detailCommon2)로 원어명을 별도 조회한다 ──
+async function getKoreanName(place) {
+  if (currentLang === 'ko') return place.name;
+  if (place.id in _koNameCache) return _koNameCache[place.id];
+  try {
+    const qs = new URLSearchParams({
+      contentId: place.id, MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+    });
+    const res = await fetch(`${KTO_BASE_URLS.ko}/detailCommon2?${qs}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data  = await res.json();
+    const items = data?.response?.body?.items?.item;
+    const item  = Array.isArray(items) ? items[0] : items;
+    _koNameCache[place.id] = item?.title || place.name;
+  } catch (e) {
+    console.warn(`[SeasonRoad] 한국어 장소명 조회 실패(contentId=${place.id}), 표시명으로 대체:`, e);
+    _koNameCache[place.id] = place.name;
+  }
+  return _koNameCache[place.id];
+}
+
+// ── 네이버 데이터랩 검색어트렌드로 후보 5개 실제 검색량 순위 매기기 ──
+// 실패 시(네트워크 오류, 응답 이상 등) null이 아닌 후보 원순서(축제 우선)를 그대로 반환해 조용히 대체한다.
+async function loadSeasonTrend(season) {
+  const candidates = pickTrendCandidates(season);
+  if (!candidates) return null;
+  try {
+    const koNames = await Promise.all(candidates.map(p => getKoreanName(p)));
+    const keywordGroups = candidates.map((p, i) => ({ groupName: String(p.id), keywords: [koNames[i]] }));
+    const res = await fetch(`${API_PROXY_BASE}/naver/datalab`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ season, keywordGroups }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data    = await res.json();
+    const results = data?.results;
+    if (!Array.isArray(results) || !results.length) throw new Error('빈 응답');
+    const scoreById = {};
+    results.forEach(r => {
+      const last = r.data && r.data[r.data.length - 1];
+      scoreById[r.title] = last ? last.ratio : 0; // title === groupName === contentId
+    });
+    return [...candidates].sort((a, b) => (scoreById[String(b.id)] ?? 0) - (scoreById[String(a.id)] ?? 0));
+  } catch (e) {
+    console.warn(`[SeasonRoad] 데이터랩 트렌드 조회 실패 → 축제 우선 순서로 대체:`, e);
+    return candidates;
+  }
+}
+
+// ── 트렌드 순위 백그라운드 갱신 (계절당 세션 내 1회) ──
+async function refreshSeasonTrend(season) {
+  if (!USE_REAL_API || _trendCache[season]) return;
+  const ranked = await loadSeasonTrend(season);
+  if (!ranked) return; // 관광지 API 자체가 비어있음 → TREND_DATA 정적 fallback 유지
+  _trendCache[season] = ranked;
+  if (currentSeason === season && !hallyuMode && !bfMode) {
+    renderSeasonStrip(season);
+    renderSeasonPanel(null);
+  }
 }
 
 // ── 무장애 관광지 로드 (KorWithService2: searchKeyword2("무장애") + 지역별 areaBasedList2 병합) ──
@@ -1859,9 +1934,9 @@ kakao.maps.load(function () {
     if (label) label.textContent = L().trendStripLabel;
     body.innerHTML = '';
     collapseTrendStrip();
-    const apiPlaces = _seasonCache[season];
-    if (apiPlaces && apiPlaces.length) {
-      apiPlaces.slice(0, 5).forEach((place, i) => {
+    const trendPlaces = _trendCache[season] || pickTrendCandidates(season);
+    if (trendPlaces && trendPlaces.length) {
+      trendPlaces.slice(0, 5).forEach((place, i) => {
         const chip = document.createElement('div'); chip.className = 'trend-chip';
         chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${place.name}`;
         chip.tabIndex = 0; chip.setAttribute('role', 'button');
@@ -2076,8 +2151,9 @@ kakao.maps.load(function () {
     const sEmo      = SEASON_EMO[currentSeason];
     const sName     = lang.seasonNames[currentSeason];
 
-    const trends = apiPlaces
-      ? apiPlaces.slice(0, 5).map(p => ({ keyword: p.name, placeId: p.id }))
+    const trendPlaces = _trendCache[currentSeason] || pickTrendCandidates(currentSeason);
+    const trends = trendPlaces
+      ? trendPlaces.slice(0, 5).map(p => ({ keyword: p.name, placeId: p.id }))
       : (TREND_DATA[currentSeason] || []);
 
     const trendRows = trends.map((item, i) => {
@@ -2399,6 +2475,7 @@ kakao.maps.load(function () {
     } else {
       renderSeasonStrip(currentSeason);
       renderSeasonPanel(null);
+      refreshSeasonTrend(currentSeason);
     }
     setSheetOpen(false);
   }
@@ -2455,6 +2532,7 @@ kakao.maps.load(function () {
     } else {
       renderSeasonStrip(currentSeason);
       renderSeasonPanel(null);
+      refreshSeasonTrend(currentSeason);
     }
   }
 
@@ -2465,6 +2543,7 @@ kakao.maps.load(function () {
       currentLang = btn.dataset.lang;
       // 캐시 초기화 → 새 언어 API로 재조회
       Object.keys(_seasonCache).forEach(k => delete _seasonCache[k]);
+      Object.keys(_trendCache).forEach(k => delete _trendCache[k]);
       _bfCache = null;
       _hallyuCache = null;
       if (USE_REAL_API) {
@@ -2530,6 +2609,7 @@ kakao.maps.load(function () {
       } else {
         renderSeasonStrip(currentSeason);
         renderSeasonPanel(null);
+        refreshSeasonTrend(currentSeason);
       }
       setSheetOpen(false);
     }
@@ -2635,6 +2715,7 @@ kakao.maps.load(function () {
           refreshPins();
           renderSeasonStrip('spring');
           renderSeasonPanel(null);
+          refreshSeasonTrend('spring');
         }
       })
       .catch(e => console.warn('초기 API 로드 실패, 더미 데이터 유지:', e))
