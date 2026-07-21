@@ -16,6 +16,7 @@ const UPSTREAM_BASES = {
 };
 
 const NAVER_DATALAB_URL = 'https://openapi.naver.com/v1/datalab/search';
+const VALID_SEASONS = ['spring', 'summer', 'autumn', 'winter']; // index.html의 SEASONS와 동일해야 함
 
 function corsHeaders() {
   return {
@@ -47,8 +48,14 @@ async function handleNaverDatalab(request, env) {
   }
 
   const { season, keywordGroups } = payload || {};
-  if (!season || !Array.isArray(keywordGroups) || keywordGroups.length === 0 || keywordGroups.length > 5) {
-    return new Response(JSON.stringify({ error: 'season and keywordGroups(1~5) required' }), {
+  if (!VALID_SEASONS.includes(season)) {
+    return new Response(JSON.stringify({ error: `season must be one of ${VALID_SEASONS.join('/')}` }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+    });
+  }
+  if (!Array.isArray(keywordGroups) || keywordGroups.length === 0 || keywordGroups.length > 5) {
+    return new Response(JSON.stringify({ error: 'keywordGroups(1~5) required' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json', ...corsHeaders() },
     });
