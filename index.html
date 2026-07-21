@@ -1201,11 +1201,14 @@ async function loadSeasonData(season) {
   const SEASON_START = {
     spring:'20260301', summer:'20260601', autumn:'20260901', winter:'20261201',
   };
+  const SEASON_END = {
+    spring:'20260531', summer:'20260831', autumn:'20261130', winter:'20270228',
+  };
   const areaCodes = SEASON_AREA_CODES[season] || [1];
   const spotType = (KTO_CONTENT_TYPES[currentLang] || KTO_CONTENT_TYPES.ko).spot;
   const [spotResults, festivalItems] = await Promise.all([
     Promise.all(areaCodes.map(ac => ktoFetch('areaBasedList2', { areaCode: ac, contentTypeId: spotType }))),
-    ktoFetch('searchFestival2', { eventStartDate: SEASON_START[season], numOfRows: 10 }),
+    ktoFetch('searchFestival2', { eventStartDate: SEASON_START[season], eventEndDate: SEASON_END[season], numOfRows: 10 }),
   ]);
   const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
   const spots     = spotResults.flat().filter(valid).map(i => _ktoToPlace(i, season));
