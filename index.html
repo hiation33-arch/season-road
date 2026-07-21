@@ -1230,13 +1230,14 @@ async function loadBFData(season) {
   if (_bfCache[season] !== undefined) return _bfCache[season]; // sentinel 포함, undefined만 재시도
   const areaCodes = SEASON_AREA_CODES[season] || [1];
   try {
-    if (_bfKeywordCache === null) {
-      _bfKeywordCache = await bfFetch('searchKeyword2', { keyword: '무장애', numOfRows: 20 });
-    }
-    const areaResults = await Promise.all(areaCodes.map(ac => bfFetch('areaBasedList2', { areaCode: ac, contentTypeId: 12, numOfRows: 6 })));
+    const [keywordItems, areaResults] = await Promise.all([
+      _bfKeywordCache === null ? bfFetch('searchKeyword2', { keyword: '무장애', numOfRows: 20 }) : Promise.resolve(_bfKeywordCache),
+      Promise.all(areaCodes.map(ac => bfFetch('areaBasedList2', { areaCode: ac, contentTypeId: 12, numOfRows: 6 }))),
+    ]);
+    _bfKeywordCache = keywordItems;
     const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
     const seen  = new Set();
-    const merged = [..._bfKeywordCache, ...areaResults.flat()].filter(i => {
+    const merged = [...keywordItems, ...areaResults.flat()].filter(i => {
       if (!valid(i) || seen.has(i.contentid)) return false;
       seen.add(i.contentid);
       return true;
@@ -2702,15 +2703,16 @@ kakao.maps.load(function () {
         currentSeason = tab.dataset.s;
         document.querySelectorAll('.tab[data-s]').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        if (USE_REAL_API && !_seasonCache[currentSeason]) {
+        const needsSeasonLoad = USE_REAL_API && !_seasonCache[currentSeason];
+        const needsBFLoad     = bfMode && USE_REAL_API && _bfCache[currentSeason] === undefined;
+        if (needsSeasonLoad || needsBFLoad) {
           showSpinner();
-          try { await loadSeasonData(currentSeason); } catch(e) { console.warn(`${currentSeason} API 실패, 더미 데이터 사용:`, e); }
-          finally { hideSpinner(); }
-        }
-        if (bfMode && USE_REAL_API && _bfCache[currentSeason] === undefined) {
-          showSpinner();
-          try { await loadBFData(currentSeason); } catch(e) { console.warn(`${currentSeason} 무장애 API 실패, 더미 데이터 사용:`, e); }
-          finally { hideSpinner(); }
+          try {
+            await Promise.all([
+              needsSeasonLoad ? loadSeasonData(currentSeason).catch(e => console.warn(`${currentSeason} API 실패, 더미 데이터 사용:`, e)) : null,
+              needsBFLoad     ? loadBFData(currentSeason).catch(e => console.warn(`${currentSeason} 무장애 API 실패, 더미 데이터 사용:`, e)) : null,
+            ]);
+          } finally { hideSpinner(); }
         }
         exitHallyuMode();
       }
