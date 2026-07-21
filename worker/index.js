@@ -26,6 +26,11 @@ function corsHeaders() {
   };
 }
 
+async function sha256Hex(str) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
 // ── 네이버 데이터랩 검색어트렌드 프록시 ──
 // 일일 호출 한도가 공식 문서에 명시돼 있지 않아 보수적으로, 계절(season)당 하루 1회만 실제
 // 네이버 API를 호출하고 같은 날 동일 계절 요청은 Cloudflare Cache API로 응답을 재사용한다.
@@ -62,8 +67,11 @@ async function handleNaverDatalab(request, env) {
   }
 
   const today = new Date().toISOString().slice(0, 10); // UTC 기준 일 단위 캐시 키
+  // 캐시 키에 keywordGroups 내용을 해시로 포함시킨다 — season+날짜만 쓰면 후보 구성이
+  // 달라져도(또는 한 번 잘못된 응답이 캐싱되면) 하루 종일 엉뚱한/오염된 결과가 재사용된다.
+  const kgHash = await sha256Hex(JSON.stringify(keywordGroups));
   const cache = caches.default;
-  const cacheKey = new Request(`https://season-road-datalab-cache.internal/${season}/${today}`);
+  const cacheKey = new Request(`https://season-road-datalab-cache.internal/${season}/${today}/${kgHash}`);
 
   const cached = await cache.match(cacheKey);
   if (cached) {
