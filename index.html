@@ -1002,8 +1002,6 @@ const KTO_BASE_URLS = {
 // 무장애 여행정보 서비스 (실측 확인됨: base는 KorWithService2, 오퍼레이션명은 areaBasedList2/searchKeyword2/
 // detailWithTour2로 KorService2와 동일 체계. EngWithService2 등 다국어 버전은 404/500 — 한국어 전용 서비스임)
 const KTO_BF_BASE_URL = `${API_PROXY_BASE}/bf`;
-// 무장애 후보 지역(전국 분산): 서울/부산/제주/경북/강원
-const BF_AREA_CODES = [1, 6, 39, 35, 32];
 
 // 언어별 contentTypeId 매핑 (국문/외국어 서비스가 서로 다른 코드 체계 사용, 실측 확인됨)
 // 관광지: 국문 12 / 외국어(Eng·Chs·Jpn 공통) 76
@@ -1034,7 +1032,8 @@ const _TD = { day:'당일',      '1night':'1박 2일',   '2night':'2박 3일' };
 
 // 캐시 (탭 전환 시 중복 호출 방지)
 const _seasonCache  = {};
-let   _bfCache      = null;
+const _bfCache      = {}; // key: season → 병합된 무장애 장소 배열 (계절별 캐시)
+let   _bfKeywordCache = null; // 무장애 전용 코스(searchKeyword2, 4건) — 계절 무관, 1회만 조회
 let   _hallyuCache  = null;
 const _detailCache  = {}; // key: `${lang}_${contentId}` → detailCommon2 응답 item (없으면 null)
 const _trendCache   = {}; // key: season → 데이터랩 실검색량 기준으로 정렬된 후보 배열(세션 내 재호출 방지)
@@ -1216,37 +1215,50 @@ async function loadSeasonData(season) {
   return _seasonCache[season];
 }
 
-// ── 무장애 관광지 로드 (KorWithService2: searchKeyword2("무장애") + 지역별 areaBasedList2 병합) ──
+// 계절에 맞는 BARRIER_FREE_DATA 더미만 추림 (seasons 없는 항목은 계절 무관 상시 노출)
+function _bfDummyForSeason(season) {
+  return BARRIER_FREE_DATA.filter(p => !p.seasons || p.seasons.includes(season));
+}
+
+// ── 무장애 관광지 로드 (KorWithService2: searchKeyword2("무장애") 전용코스 + 계절별 areaBasedList2 병합) ──
 // 실측: searchKeyword2("무장애")는 전국 4건("무장애숲길/나눔길" 등 전용 코스)뿐이라 지역별 일반 관광지로 보강.
 // (실측: 표본 관광지들의 detailWithTour2 응답 대부분에 접근성 정보가 채워져 있음을 확인)
-// 결과가 없거나 실패 시 BARRIER_FREE_DATA 더미로 fallback (기존 패턴 동일).
-async function loadBFData() {
-  if (_bfCache !== null) return _bfCache; // sentinel 포함, null만 재시도
+// 전용 코스 4건은 계절 무관 상시 포함하고, 보강용 일반 관광지는 SEASON_AREA_CODES[season]로 계절마다 다르게 조회
+// (실측 확인: KorWithService2 areaBasedList2가 SEASON_AREA_CODES 값 전체에 정상 응답함).
+// 결과가 없거나 실패 시 BARRIER_FREE_DATA 더미로 fallback (기존 패턴 동일, seasons 필드로 계절 필터).
+async function loadBFData(season) {
+  if (_bfCache[season] !== undefined) return _bfCache[season]; // sentinel 포함, undefined만 재시도
+  const areaCodes = SEASON_AREA_CODES[season] || [1];
   try {
-    const [keywordItems, areaResults] = await Promise.all([
-      bfFetch('searchKeyword2', { keyword: '무장애', numOfRows: 20 }),
-      Promise.all(BF_AREA_CODES.map(ac => bfFetch('areaBasedList2', { areaCode: ac, contentTypeId: 12, numOfRows: 6 }))),
-    ]);
+    if (_bfKeywordCache === null) {
+      _bfKeywordCache = await bfFetch('searchKeyword2', { keyword: '무장애', numOfRows: 20 });
+    }
+    const areaResults = await Promise.all(areaCodes.map(ac => bfFetch('areaBasedList2', { areaCode: ac, contentTypeId: 12, numOfRows: 6 })));
     const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
     const seen  = new Set();
-    const merged = [...keywordItems, ...areaResults.flat()].filter(i => {
+    const merged = [..._bfKeywordCache, ...areaResults.flat()].filter(i => {
       if (!valid(i) || seen.has(i.contentid)) return false;
       seen.add(i.contentid);
       return true;
     });
     const places = merged.map(_ktoToBF).slice(0, 16);
     if (places.length) {
-      _bfCache = places;
-      console.info(`[SeasonRoad] 무장애 API(KorWithService2) ${places.length}개 로드 완료`);
+      _bfCache[season] = places;
+      console.info(`[SeasonRoad] 무장애 API(KorWithService2) ${season} ${places.length}개 로드 완료`);
     } else {
       console.warn('[SeasonRoad] 무장애 API 결과 없음 → BARRIER_FREE_DATA 더미로 fallback');
-      _bfCache = BARRIER_FREE_DATA;
+      _bfCache[season] = _bfDummyForSeason(season);
     }
   } catch(e) {
     console.warn('[SeasonRoad] 무장애 API 호출 실패, BARRIER_FREE_DATA 더미로 fallback:', e);
-    _bfCache = BARRIER_FREE_DATA;
+    _bfCache[season] = _bfDummyForSeason(season);
   }
-  return _bfCache;
+  return _bfCache[season];
+}
+
+// ── 계절별 무장애 장소 조회 (캐시 우선, 없으면 계절 필터된 더미) ──
+function bfPlacesForSeason(season) {
+  return _bfCache[season] || _bfDummyForSeason(season);
 }
 
 // ── 한류 관광지 로드 ──
@@ -1527,6 +1539,7 @@ const DRAMA_DATA = [
 // ── 무장애 여행지 데이터 (한국관광공사 OpenAPI 연동 구조, 현재 더미) ──
 const BARRIER_FREE_DATA = [
   { id:'bf1', name:'국립중앙박물관', lat:37.5237, lng:126.9804, type:'day', label:'당일 코스', duration:'당일', location:'서울 용산구',
+    seasons:['spring','summer','autumn','winter'],
     desc:'국내 최대 박물관. 전 구역 휠체어 접근 가능, 시각장애인 오디오 가이드 제공.',
     descI18n:{ ko:'국내 최대 박물관. 전 구역 휠체어 접근 가능, 시각장애인 오디오 가이드 제공.', en:"Korea's largest museum. Fully wheelchair-accessible throughout, with audio guides available for visitors with visual impairments.", zh:'韩国最大博物馆，全区域轮椅可通行，并为视障人士提供语音导览服务。', ja:'韓国最大の博物館。全エリアが車椅子でアクセス可能で、視覚障害者向けオーディオガイドも提供しています。' },
     tags:['#박물관','#시니어','#가족여행'],
@@ -1534,6 +1547,7 @@ const BARRIER_FREE_DATA = [
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'국립중앙박물관', en:'National Museum of Korea', zh:'国立中央博物馆', ja:'国立中央博物館' }, apiId:'264590' },
   { id:'bf2', name:'경복궁', lat:37.5796, lng:126.9770, type:'day', label:'당일 코스', duration:'반나절', location:'서울 종로구',
+    seasons:['spring','autumn'],
     desc:'전동 휠체어 대여 서비스 운영. 무장애 관람 경로 전용 지도 배포.',
     descI18n:{ ko:'전동 휠체어 대여 서비스 운영. 무장애 관람 경로 전용 지도 배포.', en:'Electric wheelchair rental service available on-site. Dedicated barrier-free visitor maps are distributed at the entrance.', zh:'宫内提供电动轮椅租借服务，入口处发放无障碍参观专用地图。', ja:'電動車椅子の貸し出しサービスを実施。バリアフリー観覧専用マップも配布しています。' },
     tags:['#궁궐','#역사','#무장애'],
@@ -1541,6 +1555,7 @@ const BARRIER_FREE_DATA = [
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'경복궁', en:'Gyeongbokgung Palace', zh:'景福宫', ja:'景福宮' }, apiId:'264540' },
   { id:'bf3', name:'한강공원 여의도', lat:37.5285, lng:126.9326, type:'day', label:'당일 코스', duration:'당일', location:'서울 영등포구',
+    seasons:['spring','summer','autumn'],
     desc:'평탄한 자전거·산책로 7.2km. 휠체어·유모차 이동 편리.',
     descI18n:{ ko:'평탄한 자전거·산책로 7.2km. 휠체어·유모차 이동 편리.', en:'A flat 7.2 km cycling and walking path along the Han River. Fully accessible for wheelchairs and strollers throughout.', zh:'沿汉江延伸的7.2公里平坦自行车与步行道，全程轮椅及婴儿车可通行。', ja:'漢江沿いに広がる全長7.2kmのフラットなサイクリング・散策路。車椅子・ベビーカーでも快適に移動できます。' },
     tags:['#공원','#산책','#피크닉'],
@@ -1548,6 +1563,7 @@ const BARRIER_FREE_DATA = [
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
     i18n:{ ko:'한강공원 여의도', en:'Yeouido Han River Park', zh:'汝矣岛汉江公园', ja:'汝矣島漢江公園' }, apiId:'264591' },
   { id:'bf4', name:'제주 사려니숲길', lat:33.4304, lng:126.6623, type:'1night', label:'1박 코스', duration:'1박 2일', location:'제주 제주시',
+    seasons:['spring','autumn'],
     desc:'포장된 숲길 구간(2.4km) 전동 휠체어 통행 가능.',
     descI18n:{ ko:'포장된 숲길 구간(2.4km) 전동 휠체어 통행 가능.', en:'A 2.4 km paved forest trail section is fully accessible for electric wheelchairs, offering a serene woodland experience in Jeju.', zh:'2.4公里的铺装森林小道段落可供电动轮椅通行，在济州享受宁静的森林体验。', ja:'舗装された森林路(2.4km区間)は電動車椅子での通行が可能で、済州の静かな森林を楽しめます。' },
     tags:['#숲길','#제주','#힐링'],
@@ -1555,6 +1571,7 @@ const BARRIER_FREE_DATA = [
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
     i18n:{ ko:'제주 사려니숲길', en:'Jeju Saryeoni Forest Trail', zh:'济州思连伊林荫道', ja:'済州サリョニ森の道' }, apiId:'264592' },
   { id:'bf5', name:'순천만 국가정원', lat:34.9178, lng:127.4923, type:'1night', label:'1박 코스', duration:'1박 2일', location:'전남 순천시',
+    seasons:['spring','summer','autumn'],
     desc:'전 구간 평탄 포장로. 전동 보조 수레 무료 대여.',
     descI18n:{ ko:'전 구간 평탄 포장로. 전동 보조 수레 무료 대여.', en:'Flat paved paths throughout the entire garden. Free electric mobility scooters are available to borrow.', zh:'园内全程平坦铺装道路，免费提供电动辅助车租借服务。', ja:'全エリアフラットな舗装路で、電動補助カートの無料貸し出しサービスも利用できます。' },
     tags:['#국가정원','#생태','#시니어'],
@@ -1562,6 +1579,7 @@ const BARRIER_FREE_DATA = [
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'순천만 국가정원', en:'Suncheon Bay National Garden', zh:'顺天湾国家庭院', ja:'順天湾国家庭園' }, apiId:'264593' },
   { id:'bf6', name:'불국사', lat:35.7902, lng:129.3317, type:'2night', label:'2박 코스', duration:'2박 3일', location:'경북 경주시',
+    seasons:['spring','autumn'],
     desc:'무장애 탐방로 조성. 점자 유물 안내판 운영.',
     descI18n:{ ko:'무장애 탐방로 조성. 점자 유물 안내판 운영.', en:'A dedicated barrier-free trail runs through the temple grounds. Tactile braille information panels are available for visitors with visual impairments.', zh:'寺内设有无障碍参观步道，并设置盲文文物说明牌，为视障访客提供贴心服务。', ja:'バリアフリー参拝路が整備されており、点字の遺物案内板も設置されています。' },
     tags:['#사찰','#경주','#역사'],
@@ -1569,6 +1587,7 @@ const BARRIER_FREE_DATA = [
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:true, parking:true },
     i18n:{ ko:'불국사', en:'Bulguksa Temple', zh:'佛国寺', ja:'仏国寺' }, apiId:'264574' },
   { id:'bf7', name:'해운대 해수욕장', lat:35.1587, lng:129.1603, type:'1night', label:'1박 코스', duration:'1박 2일', location:'부산 해운대구',
+    seasons:['summer'],
     desc:'수상 휠체어 대여(하계). 해안산책로 전 구간 포장.',
     descI18n:{ ko:'수상 휠체어 대여(하계). 해안산책로 전 구간 포장.', en:'Aquatic wheelchairs available for rent in summer. The entire beachside promenade is paved and accessible.', zh:'夏季提供水上轮椅租借服务，沿海步道全程铺装，无障碍通行。', ja:'夏季は水上車椅子の貸し出しあり。海岸沿いの散策路は全区間舗装済みでアクセスしやすい環境です。' },
     tags:['#해변','#여름','#수상휠체어'],
@@ -1576,6 +1595,7 @@ const BARRIER_FREE_DATA = [
     accessibility:{ wheelchair:true, toilet:true, ramp:true, braille:false, parking:true },
     i18n:{ ko:'해운대 해수욕장', en:'Haeundae Beach', zh:'海云台海水浴场', ja:'海雲台海水浴場' }, apiId:'264570' },
   { id:'bf8', name:'전주 한옥마을', lat:35.8150, lng:127.1530, type:'day', label:'당일 코스', duration:'당일', location:'전북 전주시',
+    seasons:['spring','autumn'],
     desc:'무장애 한복 체험관 운영. 관광안내소 점자 지도 비치.',
     descI18n:{ ko:'무장애 한복 체험관 운영. 관광안내소 점자 지도 비치.', en:'A barrier-free hanbok experience center is available. Tactile braille maps are provided at the tourist information office.', zh:'设有无障碍韩服体验馆，旅游服务中心提供盲文地图。', ja:'バリアフリー韓服体験館を運営。観光案内所には点字マップも設置されています。' },
     tags:['#한옥','#전통','#무장애체험'],
@@ -1804,7 +1824,7 @@ kakao.maps.load(function () {
   }
 
   function addBFPins() {
-    (_bfCache || BARRIER_FREE_DATA).forEach(place => {
+    bfPlacesForSeason(currentSeason).forEach(place => {
       const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       addOverlay(place.lat, place.lng,
         makePinEl('#f97316', () => openBFPlace(place), false, false, `${name}, 무장애 여행지`)
@@ -1982,7 +2002,7 @@ kakao.maps.load(function () {
   }
 
   function renderBFStrip() {
-    const bfPlaces = _bfCache || BARRIER_FREE_DATA;
+    const bfPlaces = bfPlacesForSeason(currentSeason);
     const body  = document.getElementById('trendBody');
     const label = document.getElementById('trendLabel');
     if (!body) return;
@@ -2004,7 +2024,7 @@ kakao.maps.load(function () {
   function renderBFPanel() {
     const panel    = document.getElementById('panelContent');
     const lang     = L();
-    const bfPlaces = _bfCache || BARRIER_FREE_DATA;
+    const bfPlaces = bfPlacesForSeason(currentSeason);
 
     const courseCards = BF_COURSES.map(c => {
       const bs = BADGE_STYLE[c.type] || BADGE_STYLE.day;
@@ -2545,13 +2565,14 @@ kakao.maps.load(function () {
       // 캐시 초기화 → 새 언어 API로 재조회
       Object.keys(_seasonCache).forEach(k => delete _seasonCache[k]);
       Object.keys(_trendCache).forEach(k => delete _trendCache[k]);
-      _bfCache = null;
+      Object.keys(_bfCache).forEach(k => delete _bfCache[k]);
+      _bfKeywordCache = null;
       _hallyuCache = null;
       if (USE_REAL_API) {
         showSpinner();
         try {
           if (hallyuMode)      { await loadHallyuData(); }
-          else if (bfMode)     { await loadBFData(); }
+          else if (bfMode)     { await loadBFData(currentSeason); }
           else                 { await loadSeasonData(currentSeason); }
         } catch(e) { console.warn('[SeasonRoad] 언어 전환 API 재조회 실패:', e); }
         finally { hideSpinner(); }
@@ -2588,9 +2609,9 @@ kakao.maps.load(function () {
     const lang         = L();
 
     if (bfMode) {
-      if (USE_REAL_API && _bfCache === null) {
+      if (USE_REAL_API && _bfCache[currentSeason] === undefined) {
         showSpinner();
-        try { await loadBFData(); } catch(e) { console.warn('무장애 API 실패, 더미 데이터 사용:', e); }
+        try { await loadBFData(currentSeason); } catch(e) { console.warn('무장애 API 실패, 더미 데이터 사용:', e); }
         finally { hideSpinner(); }
       }
       btn.classList.add('active');
@@ -2684,6 +2705,11 @@ kakao.maps.load(function () {
         if (USE_REAL_API && !_seasonCache[currentSeason]) {
           showSpinner();
           try { await loadSeasonData(currentSeason); } catch(e) { console.warn(`${currentSeason} API 실패, 더미 데이터 사용:`, e); }
+          finally { hideSpinner(); }
+        }
+        if (bfMode && USE_REAL_API && _bfCache[currentSeason] === undefined) {
+          showSpinner();
+          try { await loadBFData(currentSeason); } catch(e) { console.warn(`${currentSeason} 무장애 API 실패, 더미 데이터 사용:`, e); }
           finally { hideSpinner(); }
         }
         exitHallyuMode();
