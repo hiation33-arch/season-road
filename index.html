@@ -2462,6 +2462,7 @@ kakao.maps.load(function () {
     if (bfMode) addBFPins();
     renderDramaStrip(dramas || DRAMA_DATA);
     renderDramaPanel(searchLabel || null);
+    setSheetOpen(false);
   }
 
   function exitHallyuMode() {
@@ -2597,6 +2598,7 @@ kakao.maps.load(function () {
       hint.textContent = lang.bfHintActive;
       refreshPins();
       if (!hallyuMode) { renderBFStrip(); renderBFPanel(); }
+      setSheetOpen(false);
     } else {
       btn.classList.remove('active');
       bfLegendRow.style.display = 'none';
