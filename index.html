@@ -473,6 +473,9 @@
     }
     .spinner-text { font-size: 13px; color: var(--gray-600); font-weight: 500; }
 
+    .tab[aria-disabled="true"],
+    .bf-toggle-btn[aria-disabled="true"] { opacity: 0.4; pointer-events: none; cursor: default; }
+
     /* ── 모바일 375px 최적화 ── */
     @media (max-width: 380px) {
       .header { padding: 0 10px; gap: 7px; }
@@ -1062,10 +1065,23 @@ let   _bfKeywordCache = null; // 무장애 전용 코스(searchKeyword2, 4건) �
 let   _hallyuCache  = null;
 const _detailCache  = {}; // key: `${lang}_${contentId}` → detailCommon2 응답 item (없으면 null)
 const _trendCache   = {}; // key: season → 데이터랩 실검색량 기준으로 정렬된 후보 배열(세션 내 재호출 방지)
+const _trendPending = new Set(); // key: season → 트렌드 조회 진행 중(중복 fetch 방지)
 const _koNameCache  = {}; // key: contentId → 한국어 원어명 (데이터랩 검색어는 항상 한국어로 보냄)
 
-// 스피너 제어
+let _isLoading = false;
+
+// 스피너 제어 + 로딩 중 탭 잠금
+function setLoading(on) {
+  _isLoading = on;
+  const lockEls = [
+    ...document.querySelectorAll('#seasonTabs .tab'),
+    document.getElementById('bfToggleBtn'),
+  ];
+  lockEls.forEach(el => el.setAttribute('aria-disabled', on ? 'true' : 'false'));
+  document.getElementById('seasonTabs').setAttribute('aria-busy', on ? 'true' : 'false');
+}
 function showSpinner(text) {
+  setLoading(true);
   const el = document.getElementById('apiSpinner');
   el.style.display = 'flex';
   if (text) el.querySelector('.spinner-text').textContent = text;
@@ -1074,6 +1090,7 @@ function showSpinner(text) {
 function hideSpinner() {
   document.getElementById('apiSpinner').style.display = 'none';
   document.getElementById('map').classList.remove('map-loading');
+  setLoading(false);
 }
 
 // ── API 공통 fetch (언어별 다국어 서비스 자동 선택 + KO fallback) ──
@@ -1750,19 +1767,14 @@ function setSheetOpen(open) {
   }
 }
 
-function resetSheet() {
-  setSheetOpen(false);
-  document.getElementById('sheetPlace').textContent = '';
-  document.getElementById('sheetBadge').textContent = '';
-  document.getElementById('sheetBody').innerHTML = '';
-  _lastOpened = null;
-  _sheetEmpty = true;
-}
-
 // ── 키보드 접근성: 클릭형 요소에 Enter/Space 키 활성화 부여 ──
 function bindActivatable(el, handler) {
-  el.addEventListener('click', handler);
+  el.addEventListener('click', (e) => {
+    if (el.getAttribute('aria-disabled') === 'true') return;
+    handler(e);
+  });
   el.addEventListener('keydown', (e) => {
+    if (el.getAttribute('aria-disabled') === 'true') return;
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
       e.preventDefault();
       handler(e);
@@ -1789,6 +1801,15 @@ kakao.maps.load(function () {
   let _searchTimer   = null;
   let _sheetEmpty    = true;
   let _lastOpened    = null; // { kind:'place'|'bf'|'drama', data, drama? }
+
+  function resetSheet() {
+    setSheetOpen(false);
+    document.getElementById('sheetPlace').textContent = '';
+    document.getElementById('sheetBadge').textContent = '';
+    document.getElementById('sheetBody').innerHTML = '';
+    _lastOpened = null;
+    _sheetEmpty = true;
+  }
 
   // ── 지도 이동 ──
   function flyTo(lat, lng, level = 5) {
@@ -1982,13 +2003,18 @@ kakao.maps.load(function () {
 
   // ── 트렌드 순위 백그라운드 갱신 (계절당 세션 내 1회) ──
   async function refreshSeasonTrend(season) {
-    if (!USE_REAL_API || _trendCache[season]) return;
-    const ranked = await loadSeasonTrend(season);
-    if (!ranked) return; // 관광지 API 자체가 비어있음 → TREND_DATA 정적 fallback 유지
-    _trendCache[season] = ranked;
-    if (currentSeason === season && !hallyuMode && !bfMode) {
-      renderSeasonStrip(season);
-      renderSeasonPanel(null);
+    if (!USE_REAL_API || _trendCache[season] || _trendPending.has(season)) return;
+    _trendPending.add(season);
+    try {
+      const ranked = await loadSeasonTrend(season);
+      if (!ranked) return; // 관광지 API 자체가 비어있음 → TREND_DATA 정적 fallback 유지
+      _trendCache[season] = ranked;
+      if (currentSeason === season && !hallyuMode && !bfMode) {
+        renderSeasonStrip(season);
+        renderSeasonPanel(null);
+      }
+    } finally {
+      _trendPending.delete(season);
     }
   }
 
