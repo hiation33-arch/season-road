@@ -53,6 +53,7 @@
     .logo { font-size: 17px; font-weight: 800; color: var(--primary-500); white-space: nowrap; letter-spacing: -0.5px; flex-shrink: 0; }
     .logo span { color: var(--gray-900); }
     .search-bar {
+      position: relative;
       flex: 1; display: flex; align-items: center;
       background: var(--gray-100); border-radius: 10px; padding: 0 12px; height: 38px; gap: 8px;
       transition: background 0.15s, box-shadow 0.15s;
@@ -64,6 +65,21 @@
       font-family: var(--font); font-size: 14px; color: var(--gray-900); outline: none;
     }
     .search-bar input::placeholder { color: var(--gray-400); }
+
+    .drama-dropdown {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+      background: var(--white); border: 1px solid var(--gray-200);
+      border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      margin-top: 4px; max-height: 320px; overflow-y: auto;
+    }
+    .drama-dropdown-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--gray-100);
+      font-size: 14px; color: var(--gray-900);
+    }
+    .drama-dropdown-item:last-child { border-bottom: none; }
+    .drama-dropdown-item:hover { background: var(--hallyu-100); }
+    .drama-dropdown-meta { font-size: 11px; color: var(--gray-400); margin-left: auto; }
     .search-clear {
       display: none; border: none; background: none; cursor: pointer;
       color: var(--gray-400); font-size: 16px; line-height: 1; padding: 2px 4px;
@@ -730,6 +746,7 @@
     </svg>
     <input type="text" id="searchInput" placeholder="드라마 제목으로 촬영지 검색" autocomplete="off" />
     <button class="search-clear" id="searchClear" aria-label="검색 초기화">✕</button>
+    <div id="dramaSuggestions" class="drama-dropdown"></div>
   </div>
 </header>
 
@@ -1496,98 +1513,815 @@ const TREND_DATA = {
 // ── 드라마 데이터 (7편, 18개 촬영지) ──
 const DRAMA_DATA = [
   {
-    id:'d1', rank:1, title:'오징어게임 시즌2', titleEn:'Squid Game S2',
-    genre:'스릴러·서바이벌', ott:'Netflix', pinColor:'#e879f9',
-    sites:[
-      { id:'s1', name:'노량진 수산시장', lat:37.5133, lng:126.9416, location:'서울 동작구',
-        scene:'참가자들이 몰래 접선하는 초반 시장 씬. 생동감 넘치는 군중 속 비밀 거래가 긴장감을 더한다.',
-        i18n:{ ko:'노량진 수산시장', en:'Noryangjin Fish Market', zh:'鹭梁津水产市场', ja:'鷺梁津水産市場' } },
-      { id:'s2', name:'인천 월미도', lat:37.4739, lng:126.5986, location:'인천 중구',
-        scene:'시즌2 오프닝 시퀀스 촬영지. 황량한 놀이공원의 겨울 풍경이 서바이벌의 분위기를 암시한다.',
-        i18n:{ ko:'인천 월미도', en:'Wolmido Island', zh:'月尾岛', ja:'月尾島' } },
-      { id:'s3', name:'수원 장안공원', lat:37.2869, lng:127.0162, location:'경기 수원시',
-        scene:'재참가자 모집 장면 촬영. 거대한 달고나 세트가 설치됐던 공원 광장.',
-        i18n:{ ko:'수원 장안공원', en:'Jangan Park Suwon', zh:'水原长安公园', ja:'水原長安公園' } },
+    "id": "d1",
+    "rank": 1,
+    "title": "도깨비",
+    "titleEn": "Goblin",
+    "genre": "판타지·로맨스",
+    "ott": "tvN·Netflix",
+    "pinColor": "#9333ea",
+    "sites": [
+      {
+        "id": "s1",
+        "name": "모나파크 용평리조트 발왕산 관광케이블카",
+        "lat": 37.642873,
+        "lng": 128.680066,
+        "location": "강원도 평창군",
+        "scene": "김고은이 집 나와서 일하러 간 스키장",
+        "i18n": {
+          "ko": "모나파크 용평리조트 발왕산 관광케이블카",
+          "en": "Balwangsan Cable Car, Yongpyong Resort",
+          "zh": "龙平度假村发旺山观光缆车",
+          "ja": "龍平リゾート発旺山観光ケーブルカー"
+        }
+      },
+      {
+        "id": "s2",
+        "name": "월정사 전나무 숲길",
+        "lat": 37.731998,
+        "lng": 128.599855,
+        "location": "강원도 평창군",
+        "scene": "공유가 집 나온 김고은을 따라가던 촬영지",
+        "i18n": {
+          "ko": "월정사 전나무 숲길",
+          "en": "Woljeongsa Fir Tree Forest Path",
+          "zh": "月精寺冷杉林道",
+          "ja": "月精寺モミの木林道"
+        }
+      },
+      {
+        "id": "s3",
+        "name": "안성 석남사",
+        "lat": 36.939541,
+        "lng": 127.306754,
+        "location": "경기도 안성시",
+        "scene": "공유가 풍등을 날리던 그 절",
+        "i18n": {
+          "ko": "안성 석남사",
+          "en": "Seoknamsa Temple, Anseong",
+          "zh": "安城石南寺",
+          "ja": "安城・石南寺"
+        }
+      },
+      {
+        "id": "s4",
+        "name": "청라호수공원",
+        "lat": 37.533275,
+        "lng": 126.63381,
+        "location": "인천광역시 서구",
+        "scene": "4회에서는 취한 신이 은탁에게 자신이 처음이자 마지막 신부라는 사실을 알리며 차분한 마음으로 했을 것 같은 자신에 대해 조금 더 이야기한다. 13회에서 은탁은 그를 보고 싶다고 그를 여기로 불렀다.",
+        "i18n": {
+          "ko": "청라호수공원",
+          "en": "Cheongna Lake Park",
+          "zh": "青罗湖公园",
+          "ja": "青羅湖公園"
+        }
+      },
+      {
+        "id": "s5",
+        "name": "영진해변",
+        "lat": 37.8691601,
+        "lng": 128.8365243,
+        "location": "강원도 강릉시",
+        "scene": "SNS에서 유명한 도깨비 방파제 촬영지",
+        "i18n": {
+          "ko": "영진해변",
+          "en": "Yeongjin Beach",
+          "zh": "永津海滩",
+          "ja": "永津ビーチ"
+        }
+      }
     ]
   },
   {
-    id:'d2', rank:2, title:'선재 업고 튀어', titleEn:'Lovely Runner',
-    genre:'타임슬립·로맨스', ott:'tvN·Netflix', pinColor:'#d946ef',
-    sites:[
-      { id:'s4', name:'인천 차이나타운', lat:37.4759, lng:126.6173, location:'인천 중구',
-        scene:'솔이가 과거로 타임슬립한 뒤 선재를 처음 발견하는 낯선 거리 씬.',
-        i18n:{ ko:'인천 차이나타운', en:'Incheon Chinatown', zh:'仁川中国城', ja:'仁川チャイナタウン' } },
-      { id:'s5', name:'홍대 걷고싶은거리', lat:37.5570, lng:126.9265, location:'서울 마포구',
-        scene:'아이돌 선재의 팬미팅 행렬 씬. 현재와 과거 홍대 거리의 변화를 대비시킨 감성 장면.',
-        i18n:{ ko:'홍대 걷고싶은거리', en:'Hongdae Walking Street', zh:'弘大步行街', ja:'弘大歩行者天国' } },
-      { id:'s6', name:'구리 한강시민공원', lat:37.5918, lng:127.1542, location:'경기 구리시',
-        scene:'선재가 솔이에게 고백하는 한강 둑 씬. 노을빛 배경이 명장면으로 회자된다.',
-        i18n:{ ko:'구리 한강시민공원', en:'Guri Han River Park', zh:'九里汉江市民公园', ja:'九里漢江市民公園' } },
+    "id": "d2",
+    "rank": 2,
+    "title": "이태원 클라쓰",
+    "titleEn": "Itaewon Class",
+    "genre": "청춘·복수극",
+    "ott": "JTBC·Netflix",
+    "pinColor": "#8b5cf6",
+    "sites": [
+      {
+        "id": "s6",
+        "name": "일산호수공원",
+        "lat": 37.658769,
+        "lng": 126.76252,
+        "location": "경기도 고양시",
+        "scene": "오수아(권나라)는 방과 후 이 편의점에서 일하고 있으며, 박새로이(박서준)의 아버지 박성열(손현주)이 직장을 그만둔 후 1화에서 자신을 찾아가는 곳이다. 그는 그럼에도 불구하고 그녀에게 대학 학비를 계속 지원할 것이라는 것을 알려주고 오수아는 그에게 세 번 보답하겠다고 약속한다. 최종회 16회 에필로그에서는 조각 '휴먼타임스' 바로 뒤 호수에서 일몰을 보며 데이트를 하고 키스를 하는 박세로와 조이서(김다미)의 모습이 그려진다.",
+        "i18n": {
+          "ko": "일산호수공원",
+          "en": "Ilsan Lake Park",
+          "zh": "一山湖公园",
+          "ja": "一山湖公園"
+        }
+      },
+      {
+        "id": "s7",
+        "name": "장자호수공원",
+        "lat": 37.586078,
+        "lng": 127.14116,
+        "location": "경기도 구리시",
+        "scene": "15회에서 병원에서 혼수상태에 빠진 박새로이(박서준)가 공원의 나무다리에서 일종의 백일몽으로 아버지 박성열(손현주)을 만난다.",
+        "i18n": {
+          "ko": "장자호수공원",
+          "en": "Jangja Lake Park",
+          "zh": "庄者湖公园",
+          "ja": "壮者湖公園"
+        }
+      },
+      {
+        "id": "s8",
+        "name": "녹사평(용산구청)역",
+        "lat": 37.534758,
+        "lng": 126.98656,
+        "location": "서울특별시 용산구",
+        "scene": "3회에서 조이서(김다미)와 장근수(김동희)가 스쿠터를 타고 등장한다.",
+        "i18n": {
+          "ko": "녹사평(용산구청)역",
+          "en": "Noksapyeong Station",
+          "zh": "绿莎坪站",
+          "ja": "緑莎坪駅"
+        }
+      },
+      {
+        "id": "s9",
+        "name": "서울한양도성 서울성곽길 남산(목멱산)구간",
+        "lat": 37.564486,
+        "lng": 127.01016,
+        "location": "서울특별시 중구",
+        "scene": "7화에서 박새로이(박서준)와 오수아(권나라)가 우연히 마주치고 이곳을 산책한다. 새로이가 수아를 좋아하는 이유를 말하는 것은 바로 이 순간이다. 8회에서 새로이는 강민정(김혜은 분)을 만나 사업 이야기를 나누며 오수아를 보기 위해 세 번이나 다시 이곳에 온다.",
+        "i18n": {
+          "ko": "서울한양도성 서울성곽길 남산(목멱산)구간",
+          "en": "Seoul City Wall – Namsan Section",
+          "zh": "首尔城郭道路南山段",
+          "ja": "ソウル城郭道南山区間"
+        }
+      },
+      {
+        "id": "s10",
+        "name": "남산공원",
+        "lat": 37.551068,
+        "lng": 126.990858,
+        "location": "서울특별시 중구",
+        "scene": "이태원클라쓰 남산 성곽길",
+        "i18n": {
+          "ko": "남산공원",
+          "en": "Namsan Park",
+          "zh": "南山公园",
+          "ja": "南山公園"
+        }
+      }
     ]
   },
   {
-    id:'d3', rank:3, title:'도깨비', titleEn:'Goblin',
-    genre:'판타지·로맨스', ott:'tvN·Netflix', pinColor:'#9333ea',
-    sites:[
-      { id:'s7', name:'강릉 선교장', lat:37.7869, lng:128.9025, location:'강원 강릉시',
-        scene:'도깨비가 밀밭을 거닐던 강릉 대표 촬영지. 조선시대 양반 가옥과 어우러진 환상적인 장면.',
-        i18n:{ ko:'강릉 선교장', en:'Seongyojang Gangneung', zh:'船桥庄', ja:'船橋荘' } },
-      { id:'s8', name:'삼청동 카페거리', lat:37.5839, lng:126.9815, location:'서울 종로구',
-        scene:'도깨비와 저승사자가 산책하던 골목. 한옥과 카페가 어우러진 레트로 감성 거리.',
-        i18n:{ ko:'삼청동 카페거리', en:'Samcheong-dong Cafe Street', zh:'三清洞咖啡街', ja:'三清洞カフェ通り' } },
-      { id:'s9', name:'인천 개항장 거리', lat:37.4732, lng:126.6213, location:'인천 중구',
-        scene:'도깨비 신부와 걷는 근대 거리 씬. 개항기 건축물이 판타지적 분위기를 자아냈다.',
-        i18n:{ ko:'인천 개항장 거리', en:'Incheon Open Port Street', zh:'仁川开港场街道', ja:'仁川開港場通り' } },
+    "id": "d3",
+    "rank": 3,
+    "title": "빈센조",
+    "titleEn": "Vincenzo",
+    "genre": "법정·액션",
+    "ott": "tvN·Netflix",
+    "pinColor": "#7c3aed",
+    "sites": [
+      {
+        "id": "s11",
+        "name": "서대문형무소역사관",
+        "lat": 37.574692,
+        "lng": 126.95649,
+        "location": "서울특별시 서대문구",
+        "scene": "앞서 교도소 내 살인사건에 연루됐던 강호철은 16회에서 이 건물에서 풀려나 최명희(김여진 분)에게 픽업된다. 19화에서는 장한석(옥택연)이 이곳에서 나온다.",
+        "i18n": {
+          "ko": "서대문형무소역사관",
+          "en": "Seodaemun Prison History Hall",
+          "zh": "西大门刑务所历史馆",
+          "ja": "西大門刑務所歴史館"
+        }
+      },
+      {
+        "id": "s12",
+        "name": "백현동카페거리",
+        "lat": 37.385271,
+        "lng": 127.11082,
+        "location": "경기도 성남시",
+        "scene": "16회에서 박주형(송중기)은 길을 가다가 이 가게 바로 밖에 있는 붕어빵 노점으로 향한다.",
+        "i18n": {
+          "ko": "백현동카페거리",
+          "en": "Baekhyeon-dong Cafe Street",
+          "zh": "百贤洞咖啡街",
+          "ja": "百賢洞カフェ通り"
+        }
+      },
+      {
+        "id": "s13",
+        "name": "용궁칼국수",
+        "lat": 37.7901865,
+        "lng": 126.6838333,
+        "location": "경기도 파주시",
+        "scene": "14회에서 빈첸조 카사노/박주형(송중기), 홍차영(전여빈)이 이 식당에서 검사 정인국(고상호)과 점심을 먹는다.",
+        "i18n": {
+          "ko": "용궁칼국수",
+          "en": "Yonggung Noodle Restaurant",
+          "zh": "龙宫刀切面馆",
+          "ja": "龍宮カルグクス"
+        }
+      },
+      {
+        "id": "s14",
+        "name": "삼성리",
+        "lat": 37.511571,
+        "lng": 127.05676,
+        "location": "서울특별시 강남구",
+        "scene": "6화에서 홍차영(전여빈)과 빈센조 카사노/박주형(송중기)이 이 술집에서 술을 마신다.",
+        "i18n": {
+          "ko": "삼성리",
+          "en": "Samseongri Alley",
+          "zh": "三星里",
+          "ja": "三星里"
+        }
+      },
+      {
+        "id": "s15",
+        "name": "어른이대공원 합정점",
+        "lat": 37.54822,
+        "lng": 126.9196,
+        "location": "서울특별시 마포구",
+        "scene": "4회에서 홍차영(전여빈)이 빈센조 카사노/박주형(송중기)을 만나 Babel Group과 Wusang Law Firm을 무너뜨리기 위해 함께 일하자고 설득한다.",
+        "i18n": {
+          "ko": "어른이대공원 합정점",
+          "en": "Grown-Up Park Cafe, Hapjeong",
+          "zh": "大人主题公园合井店",
+          "ja": "大人の大公園合井店"
+        }
+      }
     ]
   },
   {
-    id:'d4', rank:4, title:'눈물의 여왕', titleEn:'Queen of Tears',
-    genre:'로맨스·드라마', ott:'tvN·Netflix', pinColor:'#6d28d9',
-    sites:[
-      { id:'s10', name:'가평 아침고요수목원', lat:37.8303, lng:127.3897, location:'경기 가평군',
-        scene:'홍해인이 시한부 선고를 받은 뒤 혼자 찾아가는 수목원 씬. 겨울~봄 꽃이 어우러져 감동을 배가했다.',
-        i18n:{ ko:'아침고요수목원', en:'Garden of Morning Calm', zh:'晨静树木园', ja:'朝の静寂樹木園' } },
-      { id:'s11', name:'제주 협재해수욕장', lat:33.3942, lng:126.2393, location:'제주 제주시',
-        scene:'김수현·김지원 커플이 화해하는 해변 씬. 에메랄드빛 바다와 함께 명장면으로 꼽힌다.',
-        i18n:{ ko:'협재해수욕장', en:'Hyeopjae Beach', zh:'挟才海水浴场', ja:'挟才海水浴場' } },
+    "id": "d4",
+    "rank": 4,
+    "title": "호텔 델루나",
+    "titleEn": "Hotel del Luna",
+    "genre": "판타지·로맨스",
+    "ott": "tvN·Netflix",
+    "pinColor": "#a855f7",
+    "sites": [
+      {
+        "id": "s16",
+        "name": "일산호수공원",
+        "lat": 37.658769,
+        "lng": 126.76252,
+        "location": "경기도 고양시",
+        "scene": "구찬성(여진구)은 이곳에서 결혼 주문과 함께 빨간 주머니를 찾고, 장만월(이지은)은 그를 붙잡기 위해 모든 것을 다하다가 마침내 그의 친구 산체스(조현철)에게 발견된다.",
+        "i18n": {
+          "ko": "일산호수공원",
+          "en": "Ilsan Lake Park",
+          "zh": "一山湖公园",
+          "ja": "一山湖公園"
+        }
+      },
+      {
+        "id": "s17",
+        "name": "성흥산 사랑나무",
+        "lat": 36.1971825,
+        "lng": 126.898347,
+        "location": "충청남도 부여군",
+        "scene": "장만월(이지은)은 5회에서 연우(이태선)와 함께 이 나무 밑에 서서 자신이 가장 좋아하는 나무로 집을 지어주겠다고 약속했던 때를 회상한다.",
+        "i18n": {
+          "ko": "성흥산 사랑나무",
+          "en": "Seonghungsan Love Tree",
+          "zh": "圣兴山爱情树",
+          "ja": "聖興山ラブツリー"
+        }
+      },
+      {
+        "id": "s18",
+        "name": "목포근대역사관 1관",
+        "lat": 34.7877511,
+        "lng": 126.382161,
+        "location": "전라남도 목포시",
+        "scene": "장만월(이지은)과 그녀의 직원들이 수세기 동안 운영해 온 죽은 영혼들을 위한 호텔 '호텔 델루나'의 외관이다.",
+        "i18n": {
+          "ko": "목포근대역사관 1관",
+          "en": "Mokpo Modern History Museum",
+          "zh": "木浦近代历史馆",
+          "ja": "木浦近代歴史館"
+        }
+      },
+      {
+        "id": "s19",
+        "name": "망상해수욕장",
+        "lat": 37.594133,
+        "lng": 129.089934,
+        "location": "강원도 동해시",
+        "scene": "호텔델루나 내부에 있는 해수욕장",
+        "i18n": {
+          "ko": "망상해수욕장",
+          "en": "Mangsang Beach",
+          "zh": "望祥海水浴场",
+          "ja": "望祥海水浴場"
+        }
+      },
+      {
+        "id": "s20",
+        "name": "서울대공원",
+        "lat": 37.427542,
+        "lng": 127.01701,
+        "location": "경기도 과천시",
+        "scene": "1회에서 찬성의 아버지(오지호 특별출연)가 건물을 탐방하던 호텔 정원의 일부로 등장한다.",
+        "i18n": {
+          "ko": "서울대공원",
+          "en": "Seoul Grand Park",
+          "zh": "首尔大公园",
+          "ja": "ソウル大公園"
+        }
+      }
     ]
   },
   {
-    id:'d5', rank:5, title:'사랑의 불시착', titleEn:'Crash Landing on You',
-    genre:'로맨스·드라마', ott:'tvN·Netflix', pinColor:'#7c3aed',
-    sites:[
-      { id:'s12', name:'남이섬', lat:37.7905, lng:127.5260, location:'강원 춘천시',
-        scene:'리정혁이 윤세리를 처음 발견하는 패러글라이딩 착지 씬. 국내 촬영분은 남이섬에서 진행됐다.',
-        i18n:{ ko:'남이섬', en:'Nami Island', zh:'南怡岛', ja:'ナミ島' } },
-      { id:'s13', name:'파주 임진각', lat:37.8864, lng:126.7368, location:'경기 파주시',
-        scene:'남북 경계 분위기를 위해 활용된 촬영지. 철조망과 경계 초소가 사실감을 더했다.',
-        i18n:{ ko:'임진각', en:'Imjingak', zh:'临津阁', ja:'臨津閣' } },
+    "id": "d5",
+    "rank": 5,
+    "title": "김비서가 왜 그럴까",
+    "titleEn": "What's Wrong with Secretary Kim",
+    "genre": "로맨스·코미디",
+    "ott": "tvN·Netflix",
+    "pinColor": "#d946ef",
+    "sites": [
+      {
+        "id": "s21",
+        "name": "앞산공원 전망대",
+        "lat": 35.8272862,
+        "lng": 128.587654,
+        "location": "대구광역시 남구",
+        "scene": "김비서가 왜 그럴까에서 박서준,박민영이 간 전망대",
+        "i18n": {
+          "ko": "앞산공원 전망대",
+          "en": "Apsan Park Observatory",
+          "zh": "前山公园瞭望台",
+          "ja": "前山公園展望台"
+        }
+      },
+      {
+        "id": "s22",
+        "name": "경기도잣향기푸른숲",
+        "lat": 37.769366,
+        "lng": 127.339123,
+        "location": "경기도 가평군",
+        "scene": "김비서가 왜 그럴까에서 박서준,박민영이 간 휴양림",
+        "i18n": {
+          "ko": "경기도잣향기푸른숲",
+          "en": "Gyeonggi Pine Scent Green Forest",
+          "zh": "京畿道松香绿森",
+          "ja": "京畿道松の香り緑の森"
+        }
+      },
+      {
+        "id": "s23",
+        "name": "아소산 일산본점",
+        "lat": 37.659182,
+        "lng": 126.78267,
+        "location": "경기도 고양시",
+        "scene": "16회에서 이 식당의 외관은 김미소(박민영)가 시어머니(김혜옥)와 첫 공식 오찬을 하는 장소로 등장합니다.",
+        "i18n": {
+          "ko": "아소산 일산본점",
+          "en": "Asosan Restaurant Ilsan",
+          "zh": "阿苏山一山本店",
+          "ja": "阿蘇山一山本店"
+        }
+      },
+      {
+        "id": "s24",
+        "name": "지혜의 숲",
+        "lat": 37.7082492,
+        "lng": 126.686674,
+        "location": "경기도 파주시",
+        "scene": "4회에서 이영준(박서준)과 김미소(박민영)는 정전이 되자 도서관을 둘러보았다. 그들은 잠시 동안 앉아 있고 그녀는 그녀가 가장 좋아하는 책을 읽습니다. 영준은 그녀를 위해 가짜 손전등으로 전화기를 들고 그녀에게 “내가 예쁘다고 한 적이 있니”라고 묻는다.",
+        "i18n": {
+          "ko": "지혜의 숲",
+          "en": "Forest of Wisdom",
+          "zh": "智慧之森",
+          "ja": "知恵の森"
+        }
+      },
+      {
+        "id": "s25",
+        "name": "서문시장",
+        "lat": 35.868857,
+        "lng": 128.580818,
+        "location": "대구광역시 중구",
+        "scene": "김비서가 왜 그럴까에서 박서준,박민영이 간 전통 시장",
+        "i18n": {
+          "ko": "서문시장",
+          "en": "Seomun Market, Daegu",
+          "zh": "西门市场(大邱)",
+          "ja": "西門市場(大邱)"
+        }
+      }
     ]
   },
   {
-    id:'d6', rank:4, title:'이태원 클라쓰', titleEn:'Itaewon Class',
-    genre:'청춘·복수극', ott:'JTBC·Netflix', pinColor:'#8b5cf6',
-    sites:[
-      { id:'s14', name:'이태원 세계음식거리', lat:37.5350, lng:126.9946, location:'서울 용산구',
-        scene:'박새로이의 포차 "단밤"이 위치한 이태원 거리. 드라마 방영 후 성지 순례 필수 코스.',
-        i18n:{ ko:'이태원 세계음식거리', en:'Itaewon World Food Street', zh:'梨泰院世界美食街', ja:'梨泰院グルメ通り' } },
-      { id:'s15', name:'경리단길', lat:37.5388, lng:126.9884, location:'서울 용산구',
-        scene:'박새로이가 홀로 걸으며 다짐을 새기는 골목 씬. 이태원 언덕의 독특한 분위기가 캐릭터와 맞아 떨어졌다.',
-        i18n:{ ko:'경리단길', en:'Gyeongridan-gil', zh:'经理团路', ja:'経理団通り' } },
+    "id": "d6",
+    "rank": 6,
+    "title": "여신강림",
+    "titleEn": "True Beauty",
+    "genre": "청춘·로맨스",
+    "ott": "tvN·Netflix",
+    "pinColor": "#e879f9",
+    "sites": [
+      {
+        "id": "s26",
+        "name": "일산문화광장",
+        "lat": 37.65839,
+        "lng": 126.7704,
+        "location": "경기도 고양시",
+        "scene": "한준우(오의식)는 13화에서 길 건너 임희경(임세미)을 보고 이 공원 앞 상가 교차로에 선다. 그는 그녀가 길을 건너는 것을 막고, 그녀에게 전화를 걸어 그들이 휴식을 취해야 한다고 말한다.",
+        "i18n": {
+          "ko": "일산문화광장",
+          "en": "Ilsan Culture Square",
+          "zh": "一山文化广场",
+          "ja": "一山文化広場"
+        }
+      },
+      {
+        "id": "s27",
+        "name": "성산빌딩",
+        "lat": 37.52584,
+        "lng": 127.0389,
+        "location": "서울특별시 강남구",
+        "scene": "마지막회 16회에서 임주경(문가영)과 한서준(황인엽)은 이 카페에서 의기투합한다. 진정한 미녀/여신강림(tvN, 2020-21)의 여신강림(여신강림)에서 그녀는 자신의 감정에 보답하지 못한 그에게 사과하고, 그녀를 혼란스럽게 만든 그는 차례로 사과하는 모습을 보여준다.",
+        "i18n": {
+          "ko": "성산빌딩",
+          "en": "Seongsan Building",
+          "zh": "城山大楼",
+          "ja": "城山ビル"
+        }
+      },
+      {
+        "id": "s28",
+        "name": "남산 케이블카",
+        "lat": 37.556593,
+        "lng": 126.98404,
+        "location": "서울특별시 중구",
+        "scene": "임주경(문가영 분)은 이곳에서 케이블카를 타고 첫눈을 보기 위해 남산타워로 향한다.",
+        "i18n": {
+          "ko": "남산 케이블카",
+          "en": "Namsan Cable Car",
+          "zh": "南山缆车",
+          "ja": "南山ケーブルカー"
+        }
+      },
+      {
+        "id": "s29",
+        "name": "킨텍스 온누리공원",
+        "lat": 37.66326,
+        "lng": 126.7464,
+        "location": "경기도 고양시",
+        "scene": "13회에서 이수호(아스트로 차은우)가 임주경(문가영)을 찾아 공원길을 달리는 모습",
+        "i18n": {
+          "ko": "킨텍스 온누리공원",
+          "en": "KINTEX Onnuri Park",
+          "zh": "KINTEX温努里公园",
+          "ja": "KINTEXオンヌリ公園"
+        }
+      },
+      {
+        "id": "s30",
+        "name": "성원상떼뷰아파트",
+        "lat": 37.37038,
+        "lng": 127.1059,
+        "location": "경기도 성남시",
+        "scene": "9회에서 유도를 마친 임주경(문가영 분)과 이수호(아스트로 차은우 분)가 이 건물을 나서는 모습이다.",
+        "i18n": {
+          "ko": "성원상떼뷰아파트",
+          "en": "Seongwon Santeview Apt. Area",
+          "zh": "城苑相遇景公寓区",
+          "ja": "城苑サンテビューエリア"
+        }
+      }
     ]
   },
   {
-    id:'d7', rank:5, title:'응답하라 1988', titleEn:'Reply 1988',
-    genre:'가족·복고', ott:'tvN·Netflix', pinColor:'#c084fc',
-    sites:[
-      { id:'s16', name:'쌍문동 골목 (도봉구)', lat:37.6686, lng:127.0471, location:'서울 도봉구',
-        scene:'덕선이네·택이네·정환이네가 옹기종기 모여 사는 골목. 실제 쌍문동 일대 세트장과 로케이션 혼합 촬영.',
-        i18n:{ ko:'쌍문동 골목', en:'Ssangmun-dong Alley', zh:'双门洞小巷', ja:'雙門洞路地' } },
-      { id:'s17', name:'혜화동 낙산공원', lat:37.5823, lng:127.0024, location:'서울 종로구',
-        scene:'성덕이가 좋아하는 선배와 걷던 성곽 길. 80년대 서울 도심 골목 분위기가 잘 살아있다.',
-        i18n:{ ko:'낙산공원', en:'Naksan Park', zh:'骆山公园', ja:'駱山公園' } },
+    "id": "d7",
+    "rank": 7,
+    "title": "그 해 우리는",
+    "titleEn": "Our Beloved Summer",
+    "genre": "로맨스·드라마",
+    "ott": "SBS·Netflix",
+    "pinColor": "#c084fc",
+    "sites": [
+      {
+        "id": "s31",
+        "name": "화성행궁",
+        "lat": 37.2818191,
+        "lng": 127.013426,
+        "location": "경기도 수원시",
+        "scene": "2회 웅이와 연수가 연애시절 다퉜던 장소",
+        "i18n": {
+          "ko": "화성행궁",
+          "en": "Hwaseong Haenggung Palace",
+          "zh": "华城行宫",
+          "ja": "華城行宮"
+        }
+      },
+      {
+        "id": "s32",
+        "name": "SBS일산제작센터",
+        "lat": 37.696799,
+        "lng": 126.76338,
+        "location": "경기도 고양시",
+        "scene": "톱 아이돌 NJ(노정의)와 김지웅 PD(김성철)가 14회에서 이 건물에서 만난다.",
+        "i18n": {
+          "ko": "SBS일산제작센터",
+          "en": "SBS Ilsan Production Center",
+          "zh": "SBS一山制作中心",
+          "ja": "SBS一山制作センター"
+        }
+      },
+      {
+        "id": "s33",
+        "name": "지동시장 순대타운",
+        "lat": 37.2778704,
+        "lng": 127.020048,
+        "location": "경기도 수원시",
+        "scene": "최우식이 김다미 할머니의 짐을 들어준 시장",
+        "i18n": {
+          "ko": "지동시장 순대타운",
+          "en": "Jidong Market Sundae Street",
+          "zh": "地洞市场血肠城",
+          "ja": "地洞市場スンデタウン"
+        }
+      },
+      {
+        "id": "s34",
+        "name": "행궁파티",
+        "lat": 37.285957,
+        "lng": 127.01088,
+        "location": "경기도 수원시",
+        "scene": "이 곳의 외관(정원과 옥상 포함)은 1화에 등장한다.",
+        "i18n": {
+          "ko": "행궁파티",
+          "en": "Haenggung Patisserie",
+          "zh": "行宫糕点店",
+          "ja": "行宮パティスリー"
+        }
+      },
+      {
+        "id": "s35",
+        "name": "고인돌공원",
+        "lat": 37.1728896,
+        "lng": 127.0473349,
+        "location": "경기도 오산시",
+        "scene": "최우식과 김다미가 첫 키스한 공원",
+        "i18n": {
+          "ko": "고인돌공원",
+          "en": "Dolmen Park, Osan",
+          "zh": "支石墓公园(乌山)",
+          "ja": "支石墓公園(烏山)"
+        }
+      }
     ]
   },
+  {
+    "id": "d8",
+    "rank": 8,
+    "title": "사내맞선",
+    "titleEn": "A Business Proposal",
+    "genre": "로맨스·코미디",
+    "ott": "SBS·Netflix",
+    "pinColor": "#6d28d9",
+    "sites": [
+      {
+        "id": "s36",
+        "name": "모로미쿠시 광교카페거리점",
+        "lat": 37.294673,
+        "lng": 127.05381,
+        "location": "경기도 수원시",
+        "scene": "5회에서 진영서(설인아)는 이 인기있는 동네 식당에서 저녁을 먹기로 결정했습니다",
+        "i18n": {
+          "ko": "모로미쿠시 광교카페거리점",
+          "en": "Moromikushi Gwanggyo",
+          "zh": "Moromikushi光教店",
+          "ja": "モロミクシ光教店"
+        }
+      },
+      {
+        "id": "s37",
+        "name": "가온문화공원",
+        "lat": 37.58181,
+        "lng": 126.88765,
+        "location": "서울특별시 마포구",
+        "scene": "6회에서 차성훈(김민구)이 술에 취한 진영서(설진아)를 따라 귀가하면서, 그에게 술에 취해 자신의 감정을 고백하고, 결국 키스를 하게 되는 것이다.",
+        "i18n": {
+          "ko": "가온문화공원",
+          "en": "Gaon Culture Park",
+          "zh": "가온文化公园",
+          "ja": "ガオン文化公園"
+        }
+      },
+      {
+        "id": "s38",
+        "name": "은성회관",
+        "lat": 37.519615,
+        "lng": 126.93001,
+        "location": "서울특별시 영등포구",
+        "scene": "강태무(안효섭)가 신하리(김세정) 일행과 함께 이 식당에서 비즈니스 만찬을 하는 모습이 9회에서 방송된다.",
+        "i18n": {
+          "ko": "은성회관",
+          "en": "Eunseong Restaurant",
+          "zh": "银星食堂",
+          "ja": "銀星食堂"
+        }
+      },
+      {
+        "id": "s39",
+        "name": "인천자유공원",
+        "lat": 37.474776,
+        "lng": 126.62373,
+        "location": "인천광역시 중구",
+        "scene": "최종회 12회에서 강태무(안효섭)가 신하리(김세정)에게 이 산책로에서 청혼한다.",
+        "i18n": {
+          "ko": "인천자유공원",
+          "en": "Incheon Freedom Park",
+          "zh": "仁川自由公园",
+          "ja": "仁川自由公園"
+        }
+      },
+      {
+        "id": "s40",
+        "name": "스카이베이호텔 경포",
+        "lat": 37.804363,
+        "lng": 128.90769,
+        "location": "강원도 강릉시",
+        "scene": "6회에서 강회장(이덕화 분)과 강태무(안효섭 분)가 취임하는 호텔 '유니온'으로 나온다.",
+        "i18n": {
+          "ko": "스카이베이호텔 경포",
+          "en": "SkyBay Hotel Gyeongpo",
+          "zh": "天空湾酒店镜浦",
+          "ja": "スカイベイホテル鏡浦"
+        }
+      }
+    ]
+  },
+  {
+    "id": "d9",
+    "rank": 9,
+    "title": "나의 아저씨",
+    "titleEn": "My Mister",
+    "genre": "휴먼·드라마",
+    "ott": "tvN",
+    "pinColor": "#6b21a8",
+    "sites": [
+      {
+        "id": "s41",
+        "name": "낙산공원",
+        "lat": 37.580667,
+        "lng": 127.00746,
+        "location": "서울특별시 종로구",
+        "scene": "5회에 할머니를 카트에 넣어 달을 보여준 곳",
+        "i18n": {
+          "ko": "낙산공원",
+          "en": "Naksan Park",
+          "zh": "骆山公园",
+          "ja": "駱山公園"
+        }
+      },
+      {
+        "id": "s42",
+        "name": "신정네거리역",
+        "lat": 37.520098,
+        "lng": 126.85293,
+        "location": "서울특별시 양천구",
+        "scene": "7회에서 박동훈(이선균)과 이지안(아이유)이 하차하는 가상의 후계역이다.",
+        "i18n": {
+          "ko": "신정네거리역",
+          "en": "Sinjeong-negeori Station",
+          "zh": "新亭四叉路口站",
+          "ja": "新亭四ツ角駅"
+        }
+      },
+      {
+        "id": "s43",
+        "name": "운산",
+        "lat": 37.529282,
+        "lng": 126.92486,
+        "location": "서울특별시 영등포구",
+        "scene": "6화에서 왕영국 상무(전국환)가 동료들과 이 식당에서 점심 회식을 한다.",
+        "i18n": {
+          "ko": "운산",
+          "en": "Unsan Restaurant",
+          "zh": "云山食堂",
+          "ja": "雲山食堂"
+        }
+      },
+      {
+        "id": "s44",
+        "name": "운현궁",
+        "lat": 37.575958,
+        "lng": 126.986991,
+        "location": "서울특별시 종로구",
+        "scene": "4회에 아이유와 김영민이 사람들 틈에 접선하는 곳",
+        "i18n": {
+          "ko": "운현궁",
+          "en": "Unhyeongung Palace",
+          "zh": "云岘宫",
+          "ja": "雲峴宮"
+        }
+      },
+      {
+        "id": "s45",
+        "name": "남산육교",
+        "lat": 37.557166,
+        "lng": 126.97634,
+        "location": "서울특별시 중구",
+        "scene": "9회에서 이지안(아이유)은 박동훈(이선균)과 광일(장기용)의 말다툼을 엿듣고 이 고가도로에서 눈물을 흘린다.",
+        "i18n": {
+          "ko": "남산육교",
+          "en": "Namsan Overpass",
+          "zh": "南山高架桥",
+          "ja": "南山陸橋"
+        }
+      }
+    ]
+  },
+  {
+    "id": "d10",
+    "rank": 10,
+    "title": "스타트업",
+    "titleEn": "Start-Up",
+    "genre": "로맨스·성장",
+    "ott": "tvN·Netflix",
+    "pinColor": "#7e22ce",
+    "sites": [
+      {
+        "id": "s46",
+        "name": "일산문화광장",
+        "lat": 37.65839,
+        "lng": 126.7704,
+        "location": "경기도 고양시",
+        "scene": "서달미(배수지)는 벤처캐피털 회사와의 성공적인 만남이 끝난 뒤 언니와 싸운 뒤 이 공원 벤치에 앉아 아버지(김주헌)와 전화 통화를 한다.",
+        "i18n": {
+          "ko": "일산문화광장",
+          "en": "Ilsan Culture Square",
+          "zh": "一山文化广场",
+          "ja": "一山文化広場"
+        }
+      },
+      {
+        "id": "s47",
+        "name": "의정부주교좌성당",
+        "lat": 37.739676,
+        "lng": 127.04144,
+        "location": "경기도 의정부시",
+        "scene": "독실한 천주교 신자인 할머니 최원덕(김해수)과 서달미(배수지)가 가끔 동행하는 교회이다.",
+        "i18n": {
+          "ko": "의정부주교좌성당",
+          "en": "Uijeongbu Cathedral",
+          "zh": "议政府主教座堂",
+          "ja": "議政府大聖堂"
+        }
+      },
+      {
+        "id": "s48",
+        "name": "상사마을 39",
+        "lat": 37.58699,
+        "lng": 126.80203,
+        "location": "서울특별시 강서구",
+        "scene": "1회에서 본 것처럼 최원덕(김해수)이 예전에 이곳에 살았다.",
+        "i18n": {
+          "ko": "상사마을 39",
+          "en": "Sangsa Village",
+          "zh": "商社村",
+          "ja": "商社村"
+        }
+      },
+      {
+        "id": "s49",
+        "name": "DMC문화공원",
+        "lat": 37.577736,
+        "lng": 126.89216,
+        "location": "서울특별시 마포구",
+        "scene": "루카 더 티에서 일을 그만둔 후, 서달미(배수지)는 자신이 내린 결정에 기뻐하며 새로운 공장을 손에 들고 이곳을 지나간다",
+        "i18n": {
+          "ko": "DMC문화공원",
+          "en": "DMC Culture Park",
+          "zh": "DMC文化公园",
+          "ja": "DMC文化公園"
+        }
+      },
+      {
+        "id": "s50",
+        "name": "양재시민의숲역",
+        "lat": 37.469784,
+        "lng": 127.03846,
+        "location": "서울특별시 서초구",
+        "scene": "2회에서 서달미(배수지)가 이 역에 내립니다",
+        "i18n": {
+          "ko": "양재시민의숲역",
+          "en": "Yangjae Citizens' Forest Station",
+          "zh": "良才市民之林站",
+          "ja": "良才市民の森駅"
+        }
+      }
+    ]
+  }
 ];
 
 // ── 무장애 여행지 데이터 (한국관광공사 OpenAPI 연동 구조, 현재 더미) ──
@@ -2715,20 +3449,55 @@ kakao.maps.load(function () {
   const searchInput = document.getElementById('searchInput');
   const searchClear = document.getElementById('searchClear');
   const searchBarEl = document.getElementById('searchBar');
+  const suggBox     = document.getElementById('dramaSuggestions');
 
-  searchInput.addEventListener('focus', () => searchBarEl.classList.add('focused'));
-  searchInput.addEventListener('blur',  () => searchBarEl.classList.remove('focused'));
+  function renderSuggestions(q) {
+    const list = q
+      ? DRAMA_DATA.filter(d =>
+          d.title.includes(q) ||
+          d.titleEn.toLowerCase().includes(q.toLowerCase()))
+      : DRAMA_DATA;
+    if (!list.length) { suggBox.style.display = 'none'; return; }
+    suggBox.innerHTML = list.map(d =>
+      `<div class="drama-dropdown-item" data-title="${d.title}">
+         <span>🎬 ${d.title}</span>
+         <span class="drama-dropdown-meta">${d.genre} · ${d.ott} · 촬영지 ${d.sites.length}곳</span>
+       </div>`
+    ).join('');
+    suggBox.querySelectorAll('.drama-dropdown-item').forEach(el => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const title = el.dataset.title;
+        searchInput.value = title;
+        searchClear.style.display = 'block';
+        suggBox.style.display = 'none';
+        handleSearch(title);
+      });
+    });
+    suggBox.style.display = 'block';
+  }
+
+  searchInput.addEventListener('focus', () => {
+    searchBarEl.classList.add('focused');
+    renderSuggestions(searchInput.value.trim());
+  });
+  searchInput.addEventListener('blur', () => {
+    searchBarEl.classList.remove('focused');
+    setTimeout(() => { suggBox.style.display = 'none'; }, 150);
+  });
 
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim();
     searchClear.style.display = q ? 'block' : 'none';
     clearTimeout(_searchTimer);
+    renderSuggestions(q);
     _searchTimer = setTimeout(() => handleSearch(q), 280);
   });
 
   searchClear.addEventListener('click', () => {
     searchInput.value = ''; searchClear.style.display = 'none';
     activeDramaId = null; activeSiteId = null;
+    suggBox.style.display = 'none';
     exitHallyuMode();
   });
 
