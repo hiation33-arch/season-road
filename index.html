@@ -295,6 +295,7 @@
       left: 0; right: 0; bottom: 0;
       height: calc(100dvh - var(--header-h) - var(--tab-h) - var(--bf-h) - var(--trend-h));
     }
+    #map.map-loading { opacity: 0.5; transition: opacity 0.3s; }
 
     /* ── 범례 ── */
     .legend {
@@ -815,6 +816,12 @@ const I18N = {
     fieldCourseType: '코스 유형', fieldDuration: '소요 기간', fieldLocation: '위치',
     fieldGenre: '장르', fieldOtt: 'OTT 플랫폼',
     detailLoading: '상세정보 불러오는 중…', readMore: '더보기', readLess: '접기',
+    loadingSpring: '봄 여행지 불러오는 중…',
+    loadingSummer: '여름 여행지 불러오는 중…',
+    loadingAutumn: '가을 여행지 불러오는 중…',
+    loadingWinter: '겨울 여행지 불러오는 중…',
+    loadingBF: '무장애 코스 불러오는 중…',
+    loadingHallyu: '한류 촬영지 불러오는 중…',
     courseTypeLabel: { day:'당일 코스', '1night':'1박 코스', '2night':'2박 코스', hallyu:'한류 촬영지' },
     durationLabel:   { day:'당일', '1night':'1박 2일', '2night':'2박 3일', hallyu:'반나절' },
     seasonTop5: (emo, name) => `${emo} ${name} 추천 여행지 TOP5`,
@@ -858,6 +865,12 @@ const I18N = {
     fieldCourseType: 'Course Type', fieldDuration: 'Duration', fieldLocation: 'Location',
     fieldGenre: 'Genre', fieldOtt: 'Platform',
     detailLoading: 'Loading details…', readMore: 'Show more', readLess: 'Show less',
+    loadingSpring: 'Loading spring travel spots…',
+    loadingSummer: 'Loading summer travel spots…',
+    loadingAutumn: 'Loading autumn travel spots…',
+    loadingWinter: 'Loading winter travel spots…',
+    loadingBF: 'Loading accessible courses…',
+    loadingHallyu: 'Loading K-drama locations…',
     courseTypeLabel: { day:'Day Trip', '1night':'1-Night', '2night':'2-Night', hallyu:'K-Drama Site' },
     durationLabel:   { day:'Day Trip', '1night':'1 Night 2 Days', '2night':'2 Nights 3 Days', hallyu:'Half Day' },
     seasonTop5: (emo, name) => `${emo} ${name} Top 5 Picks`,
@@ -901,6 +914,12 @@ const I18N = {
     fieldCourseType: '行程类型', fieldDuration: '所需时间', fieldLocation: '地点',
     fieldGenre: '类型', fieldOtt: '平台',
     detailLoading: '正在加载详情…', readMore: '展开', readLess: '收起',
+    loadingSpring: '正在加载春季旅游景点…',
+    loadingSummer: '正在加载夏季旅游景点…',
+    loadingAutumn: '正在加载秋季旅游景点…',
+    loadingWinter: '正在加载冬季旅游景点…',
+    loadingBF: '正在加载无障碍路线…',
+    loadingHallyu: '正在加载韩流拍摄地…',
     courseTypeLabel: { day:'当日往返', '1night':'1晚行程', '2night':'2晚行程', hallyu:'韩流拍摄地' },
     durationLabel:   { day:'当日', '1night':'1晚2天', '2night':'2晚3天', hallyu:'半天' },
     seasonTop5: (emo, name) => `${emo} ${name}推荐景点 TOP5`,
@@ -944,6 +963,12 @@ const I18N = {
     fieldCourseType: 'コースタイプ', fieldDuration: '所要時間', fieldLocation: '場所',
     fieldGenre: 'ジャンル', fieldOtt: 'プラットフォーム',
     detailLoading: '詳細情報を読み込み中…', readMore: 'もっと見る', readLess: '閉じる',
+    loadingSpring: '春の観光地を読み込み中…',
+    loadingSummer: '夏の観光地を読み込み中…',
+    loadingAutumn: '秋の観光地を読み込み中…',
+    loadingWinter: '冬の観光地を読み込み中…',
+    loadingBF: 'バリアフリーコースを読み込み中…',
+    loadingHallyu: '韓流ロケ地を読み込み中…',
     courseTypeLabel: { day:'日帰りコース', '1night':'1泊コース', '2night':'2泊コース', hallyu:'韓流ロケ地' },
     durationLabel:   { day:'日帰り', '1night':'1泊2日', '2night':'2泊3日', hallyu:'半日' },
     seasonTop5: (emo, name) => `${emo} ${name} おすすめ TOP5`,
@@ -1040,8 +1065,16 @@ const _trendCache   = {}; // key: season → 데이터랩 실검색량 기준으
 const _koNameCache  = {}; // key: contentId → 한국어 원어명 (데이터랩 검색어는 항상 한국어로 보냄)
 
 // 스피너 제어
-function showSpinner() { document.getElementById('apiSpinner').style.display = 'flex'; }
-function hideSpinner() { document.getElementById('apiSpinner').style.display = 'none'; }
+function showSpinner(text) {
+  const el = document.getElementById('apiSpinner');
+  el.style.display = 'flex';
+  if (text) el.querySelector('.spinner-text').textContent = text;
+  document.getElementById('map').classList.add('map-loading');
+}
+function hideSpinner() {
+  document.getElementById('apiSpinner').style.display = 'none';
+  document.getElementById('map').classList.remove('map-loading');
+}
 
 // ── API 공통 fetch (언어별 다국어 서비스 자동 선택 + KO fallback) ──
 async function ktoFetch(endpoint, params = {}) {
@@ -2582,7 +2615,8 @@ kakao.maps.load(function () {
       _bfKeywordCache = null;
       _hallyuCache = null;
       if (USE_REAL_API) {
-        showSpinner();
+        const seasonCap = currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1);
+        showSpinner(hallyuMode ? L().loadingHallyu : bfMode ? L().loadingBF : L()['loading' + seasonCap]);
         try {
           if (hallyuMode)      { await loadHallyuData(); }
           else if (bfMode)     { await loadBFData(currentSeason); }
@@ -2623,7 +2657,7 @@ kakao.maps.load(function () {
 
     if (bfMode) {
       if (USE_REAL_API && _bfCache[currentSeason] === undefined) {
-        showSpinner();
+        showSpinner(L().loadingBF);
         try { await loadBFData(currentSeason); } catch(e) { console.warn('무장애 API 실패, 더미 데이터 사용:', e); }
         finally { hideSpinner(); }
       }
@@ -2705,7 +2739,7 @@ kakao.maps.load(function () {
         searchInput.value = ''; searchClear.style.display = 'none';
         activeDramaId = null; activeSiteId = null;
         if (USE_REAL_API && _hallyuCache === null) {
-          showSpinner();
+          showSpinner(L().loadingHallyu);
           try { await loadHallyuData(); } catch(e) { console.warn('한류 API 실패, 더미 데이터 사용:', e); }
           finally { hideSpinner(); }
         }
@@ -2718,7 +2752,8 @@ kakao.maps.load(function () {
         const needsSeasonLoad = USE_REAL_API && !_seasonCache[currentSeason];
         const needsBFLoad     = bfMode && USE_REAL_API && _bfCache[currentSeason] === undefined;
         if (needsSeasonLoad || needsBFLoad) {
-          showSpinner();
+          const seasonCap = currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1);
+          showSpinner(needsSeasonLoad ? L()['loading' + seasonCap] : L().loadingBF);
           try {
             await Promise.all([
               needsSeasonLoad ? loadSeasonData(currentSeason).catch(e => console.warn(`${currentSeason} API 실패, 더미 데이터 사용:`, e)) : null,
