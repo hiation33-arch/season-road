@@ -1717,6 +1717,15 @@ function setSheetOpen(open) {
   }
 }
 
+function resetSheet() {
+  setSheetOpen(false);
+  document.getElementById('sheetPlace').textContent = '';
+  document.getElementById('sheetBadge').textContent = '';
+  document.getElementById('sheetBody').innerHTML = '';
+  _lastOpened = null;
+  _sheetEmpty = true;
+}
+
 // ── 키보드 접근성: 클릭형 요소에 Enter/Space 키 활성화 부여 ──
 function bindActivatable(el, handler) {
   el.addEventListener('click', handler);
@@ -2486,7 +2495,7 @@ kakao.maps.load(function () {
     if (bfMode) addBFPins();
     renderDramaStrip(dramas || DRAMA_DATA);
     renderDramaPanel(searchLabel || null);
-    setSheetOpen(false);
+    resetSheet();
   }
 
   function exitHallyuMode() {
@@ -2502,7 +2511,7 @@ kakao.maps.load(function () {
       renderSeasonPanel(null);
       refreshSeasonTrend(currentSeason);
     }
-    setSheetOpen(false);
+    resetSheet();
   }
 
   // ── 언어 전환 ──
@@ -2623,7 +2632,7 @@ kakao.maps.load(function () {
       hint.textContent = lang.bfHintActive;
       refreshPins();
       if (!hallyuMode) { renderBFStrip(); renderBFPanel(); }
-      setSheetOpen(false);
+      resetSheet();
     } else {
       btn.classList.remove('active');
       bfLegendRow.style.display = 'none';
@@ -2638,7 +2647,7 @@ kakao.maps.load(function () {
         renderSeasonPanel(null);
         refreshSeasonTrend(currentSeason);
       }
-      setSheetOpen(false);
+      resetSheet();
     }
   });
 
