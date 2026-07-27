@@ -2559,8 +2559,25 @@ kakao.maps.load(function () {
   }
 
   // ── 핀 DOM 생성 ──
+  // 화면 밖으로 나간(안 보이는) 핀은 tabIndex -1로 내려 키보드 tab 순회에서 제외한다.
+  // IntersectionObserver 미지원 브라우저에서는 관찰을 건너뛰고 기존처럼 항상 tabIndex 0을 유지한다.
+  const pinObserver = ('IntersectionObserver' in window)
+    ? new IntersectionObserver((entries) => {
+        entries.forEach(entry => { entry.target.tabIndex = entry.isIntersecting ? 0 : -1; });
+      }, { root: document.getElementById('map') })
+    : null;
+
   let overlays = [];
-  function clearOverlays() { overlays.forEach(o => o.setMap(null)); overlays = []; }
+  function clearOverlays() {
+    overlays.forEach(o => {
+      if (pinObserver) {
+        const el = o.getContent();
+        if (el) pinObserver.unobserve(el);
+      }
+      o.setMap(null);
+    });
+    overlays = [];
+  }
 
   function addOverlay(lat, lng, el) {
     const o = new kakao.maps.CustomOverlay({
@@ -2568,6 +2585,7 @@ kakao.maps.load(function () {
       content: el, yAnchor: 1.0, zIndex: 3,
     });
     o.setMap(map);
+    if (pinObserver) pinObserver.observe(el);
     overlays.push(o);
   }
 
