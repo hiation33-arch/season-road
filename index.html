@@ -360,6 +360,16 @@
     .info-card { background: var(--gray-100); border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow-card); }
     .info-label { font-size: 11px; color: var(--gray-400); margin-bottom: 3px; }
     .info-val   { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+    .stay-section { margin-top: 16px; }
+    .stay-title { font-size: 13px; font-weight: 700; color: var(--gray-600); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+    .stay-list { display: flex; flex-direction: column; gap: 8px; }
+    .stay-card { display: flex; gap: 10px; align-items: center; background: var(--gray-100); border-radius: 12px; padding: 8px; box-shadow: var(--shadow-card); text-decoration: none; }
+    .stay-thumb { width: 56px; height: 56px; border-radius: 9px; object-fit: cover; flex-shrink: 0; background: var(--gray-200); }
+    .stay-thumb-ph { display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .stay-info { min-width: 0; flex: 1; }
+    .stay-name { font-size: 14px; font-weight: 600; color: var(--gray-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stay-meta { font-size: 12px; color: var(--gray-400); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stay-dist { color: var(--primary-500); font-weight: 600; }
     .col-2 { grid-column: 1 / -1; }
 
     /* ── 다국어 그리드 ── */
@@ -835,6 +845,7 @@ const I18N = {
     sheetEmptyDesc: '지도의 핀을 클릭하면 정보가 표시됩니다.',
     fieldCourseType: '코스 유형', fieldDuration: '소요 기간', fieldLocation: '위치',
     fieldGenre: '장르', fieldOtt: 'OTT 플랫폼',
+    nearbyStay: '인근 숙박', stayLoading: '인근 숙박 불러오는 중…', stayNone: '인근 숙박 정보가 없습니다.',
     detailLoading: '상세정보 불러오는 중…', readMore: '더보기', readLess: '접기',
     loadingSpring: '봄 여행지 불러오는 중…',
     loadingSummer: '여름 여행지 불러오는 중…',
@@ -884,6 +895,7 @@ const I18N = {
     sheetEmptyDesc: 'Tap a pin on the map to see details',
     fieldCourseType: 'Course Type', fieldDuration: 'Duration', fieldLocation: 'Location',
     fieldGenre: 'Genre', fieldOtt: 'Platform',
+    nearbyStay: 'Nearby Stays', stayLoading: 'Loading nearby stays…', stayNone: 'No nearby accommodations found.',
     detailLoading: 'Loading details…', readMore: 'Show more', readLess: 'Show less',
     loadingSpring: 'Loading spring travel spots…',
     loadingSummer: 'Loading summer travel spots…',
@@ -933,6 +945,7 @@ const I18N = {
     sheetEmptyDesc: '点击地图上的图钉查看详情',
     fieldCourseType: '行程类型', fieldDuration: '所需时间', fieldLocation: '地点',
     fieldGenre: '类型', fieldOtt: '平台',
+    nearbyStay: '周边住宿', stayLoading: '正在加载周边住宿…', stayNone: '暂无周边住宿信息。',
     detailLoading: '正在加载详情…', readMore: '展开', readLess: '收起',
     loadingSpring: '正在加载春季旅游景点…',
     loadingSummer: '正在加载夏季旅游景点…',
@@ -982,6 +995,7 @@ const I18N = {
     sheetEmptyDesc: '地図のピンをタップすると情報が表示されます',
     fieldCourseType: 'コースタイプ', fieldDuration: '所要時間', fieldLocation: '場所',
     fieldGenre: 'ジャンル', fieldOtt: 'プラットフォーム',
+    nearbyStay: '周辺の宿泊', stayLoading: '周辺の宿泊を読み込み中…', stayNone: '周辺の宿泊情報がありません。',
     detailLoading: '詳細情報を読み込み中…', readMore: 'もっと見る', readLess: '閉じる',
     loadingSpring: '春の観光地を読み込み中…',
     loadingSummer: '夏の観光地を読み込み中…',
@@ -1159,6 +1173,66 @@ async function loadPlaceDetail(contentId) {
     _detailCache[cacheKey] = null;
   }
   return _detailCache[cacheKey];
+}
+
+// ── 인근 숙박 (locationBasedList2 contentTypeId=32, 거리순) ──
+// 관광지 좌표 기준 반경 10km 숙박을 거리순으로. 더미·API 장소 모두 lat/lng가 있어 전 장소에 동작.
+// 좌표 소수 3자리(약 110m)로 캐시 키를 만들어 재방문 시 재호출을 막는다.
+const _stayCache = {};
+async function loadNearbyStays(lat, lng) {
+  if (!lat || !lng) return [];
+  const key = `${currentLang}_${lat.toFixed(3)}_${lng.toFixed(3)}`;
+  if (key in _stayCache) return _stayCache[key];
+  const qs = new URLSearchParams({
+    mapX: lng, mapY: lat, radius: 10000, contentTypeId: 32,
+    arrange: 'E', numOfRows: 5, pageNo: 1,
+    MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+  });
+  const parse = async (res) => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const items = (await res.json())?.response?.body?.items?.item;
+    if (!items) return [];
+    return (Array.isArray(items) ? items : [items]).slice(0, 3);
+  };
+  const base = KTO_BASE_URLS[currentLang] || KTO_BASE_URLS.ko;
+  try {
+    _stayCache[key] = await parse(await fetch(`${base}/locationBasedList2?${qs}`));
+  } catch (e) {
+    if (currentLang !== 'ko') {
+      try { _stayCache[key] = await parse(await fetch(`${KTO_BASE_URLS.ko}/locationBasedList2?${qs}`)); }
+      catch (e2) { console.warn('[SeasonRoad] 인근 숙박 조회 실패:', e2); _stayCache[key] = null; }
+    } else {
+      console.warn('[SeasonRoad] 인근 숙박 조회 실패:', e); _stayCache[key] = null;
+    }
+  }
+  return _stayCache[key];
+}
+
+function _fmtDist(m) {
+  const n = parseFloat(m);
+  if (!n && n !== 0) return '';
+  return n < 1000 ? `${Math.round(n)}m` : `${(n/1000).toFixed(1)}km`;
+}
+
+function _renderStayCards(stays) {
+  const lang = L();
+  if (!stays || !stays.length) return `<div class="sheet-detail-loading">${lang.stayNone}</div>`;
+  return `<div class="stay-list">` + stays.map(s => {
+    const name = (s.title || '').replace(/</g, '&lt;');
+    const dist = _fmtDist(s.dist);
+    const addr = (s.addr1 || '').replace(/</g, '&lt;');
+    const thumb = s.firstimage
+      ? `<img class="stay-thumb" src="${s.firstimage}" alt="${name}" loading="lazy" />`
+      : `<div class="stay-thumb stay-thumb-ph">🏨</div>`;
+    const mapUrl = `https://map.kakao.com/link/to/${encodeURIComponent(s.title || '')},${s.mapy},${s.mapx}`;
+    return `<a class="stay-card" href="${mapUrl}" target="_blank" rel="noopener">
+      ${thumb}
+      <div class="stay-info">
+        <div class="stay-name">${name}</div>
+        <div class="stay-meta">${dist ? `<span class="stay-dist">${dist}</span> · ` : ''}${addr}</div>
+      </div>
+    </a>`;
+  }).join('') + `</div>`;
 }
 
 // ── 무장애 API 공통 fetch (KorWithService2 전용, 다국어 버전 없음 — 항상 한국어) ──
@@ -3234,9 +3308,21 @@ kakao.maps.load(function () {
         <div class="info-card"><div class="info-label">${lang.fieldCourseType}</div><div class="info-val">${courseLabel}</div></div>
         <div class="info-card"><div class="info-label">${lang.fieldDuration}</div><div class="info-val">${durLabel}</div></div>
         <div class="info-card col-2"><div class="info-label">${lang.fieldLocation}</div><div class="info-val">${locLabel}</div></div>
+      </div>
+      <div class="stay-section" id="sheetStaySlot">
+        <div class="stay-title">🏨 ${lang.nearbyStay}</div>
+        <div class="sheet-detail-loading" id="sheetStayLoading">${lang.stayLoading}</div>
       </div>`;
     setSheetOpen(true);
     renderSeasonPanel(place);
+
+    // 인근 숙박 (모든 장소 공통, 좌표 기반)
+    loadNearbyStays(place.lat, place.lng).then(stays => {
+      if (_lastOpened.kind !== 'place' || _lastOpened.data !== place) return; // stale 방지
+      const slot = document.getElementById('sheetStaySlot');
+      if (!slot) return;
+      slot.innerHTML = `<div class="stay-title">🏨 ${lang.nearbyStay}</div>` + _renderStayCards(stays);
+    });
 
     if (place._fromApi && place.apiId) {
       loadPlaceDetail(place.apiId).then(detail => {
