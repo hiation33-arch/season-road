@@ -3396,15 +3396,10 @@ kakao.maps.load(function () {
     });
     document.getElementById('legend').classList.add('hidden');
     clearOverlays();
+    // 선택/필터된 드라마의 촬영지만 핀으로 렌더 (드라마별 색·컨텍스트 유지).
+    // 과거 _hallyuCache 전체를 추가로 그리던 블록은 드롭다운 필터를 무시하고
+    // 전 촬영지를 항상 표시(+선택 드라마 이중 렌더)하는 버그라 제거함.
     addDramaPins(dramas || DRAMA_DATA);
-    if (_hallyuCache) {
-      _hallyuCache.forEach(place => {
-        const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
-        addOverlay(place.lat, place.lng,
-          makePinEl('#a855f7', () => openPlace(place), false, false, `${name} 여행지`)
-        );
-      });
-    }
     if (bfMode) addBFPins();
     renderDramaStrip(dramas || DRAMA_DATA);
     renderDramaPanel(searchLabel || null);
