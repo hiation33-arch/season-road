@@ -1231,9 +1231,25 @@ const KTO_CATEGORY_LABELS = {
   A0401:'쇼핑', A0502:'음식점',
 };
 
+// ── 체류강도 기반 코스 분류 (KTO AreaTarDemDsService 실측, baseYm=202606, 2026-07-28 생성) ──
+// 판정 규칙: 숙박비중(2102)<68 → 당일 / 1박지수(2103)>=2·3박 평균 → 1박 / 그외 → 2박
+// 값은 축약형: d=day, 1=1night, 2=2night. 키는 법정동 시군구 코드(전남광주는 구코드 46/29 유지).
+const DEMAND_TYPES = {0:'2',11110:'d',11140:'d',11170:'d',11200:'d',11215:'d',11230:'d',11260:'d',11290:'d',11305:'d',11320:'d',11350:'d',11380:'d',11410:'d',11440:'d',11470:'d',11500:'d',11530:'d',11545:'d',11560:'d',11590:'d',11620:'d',11650:'d',11680:'d',11710:'d',11740:'d',26110:'d',26140:'d',26170:'d',26200:'d',26230:'d',26260:'d',26290:'d',26320:'d',26350:'2',26380:'d',26410:'d',26440:'d',26470:'d',26500:'d',26530:'d',26710:'d',29110:'d',29140:'d',29155:'d',29170:'d',29200:'d',43111:'d',43112:'d',43113:'d',43114:'d',43130:'1',43150:'1',43720:'d',43730:'d',43740:'2',43745:'d',43750:'d',43760:'d',43770:'d',43800:'1',46110:'2',46130:'1',46150:'2',46170:'d',46230:'2',46710:'d',46720:'d',46730:'2',46770:'2',46780:'d',46790:'d',46800:'2',46810:'2',46820:'2',46830:'d',46840:'d',46860:'d',46870:'2',46880:'d',46890:'2',46900:'2',46910:'2',47111:'d',47113:'1',47130:'1',47150:'d',47170:'2',47190:'2',47210:'2',47230:'d',47250:'d',47280:'1',47290:'d',47730:'d',47750:'2',47760:'2',47770:'1',47820:'d',47830:'d',47840:'d',47850:'d',47900:'2',47920:'2',47930:'2',47940:'2',48121:'d',48123:'d',48125:'d',48127:'d',48129:'d',48170:'2',48220:'1',48240:'2',48250:'d',48270:'d',48310:'1',48330:'d',48720:'d',48730:'d',48740:'d',48820:'d',48840:'1',48850:'2',48860:'2',48870:'d',48880:'2',48890:'2',50110:'2',50130:'2',51110:'1',51130:'2',51150:'1',51170:'2',51190:'2',51210:'1',51230:'2',51720:'1',51730:'2',51750:'2',51760:'2',51770:'1',51780:'2',51790:'2',51800:'2',51810:'d',51820:'1',51830:'1',52111:'d',52113:'d',52130:'1',52140:'d',52180:'2',52190:'2',52210:'d',52710:'d',52720:'d',52730:'2',52740:'2',52750:'d',52770:'d',52790:'2',52800:'1'};
+// 행정구역 개편 과도기 크로스워크: areaBasedList2 신코드(12xxx) → 수요강도 구코드(46/29xxx)
+const DEMAND_XWALK = {12110:'46110',12130:'46130',12150:'46150',12170:'46170',12190:'46230',12210:'29110',12240:'29140',12270:'29155',12300:'29170',12330:'29200',12710:'46710',12720:'46720',12730:'46730',12740:'46770',12750:'46780',12760:'46790',12770:'46800',12780:'46810',12790:'46820',12800:'46830',12810:'46840',12820:'46860',12830:'46870',12840:'46880',12850:'46890',12860:'46900',12870:'46910'};
+const _DEMAND_T = { d:'day', 1:'1night', 2:'2night' };
+function demandType(item) {
+  const r = item.lDongRegnCd, s = item.lDongSignguCd;
+  if (!r || !s) return null;
+  let code = String(r) + String(s);
+  if (DEMAND_XWALK[code]) code = DEMAND_XWALK[code];
+  return _DEMAND_T[DEMAND_TYPES[code]] || null;
+}
+
 // ── 변환 함수 ──
 function _ktoToPlace(item, season, isFestival = false) {
-  const t = _TC[Math.abs(parseInt(item.contentid, 10) || 0) % 3];
+  // 체류강도 데이터 기반 분류, 데이터 없는 지역만 기존 방식 fallback
+  const t = demandType(item) || _TC[Math.abs(parseInt(item.contentid, 10) || 0) % 3];
   const catLabel = KTO_CATEGORY_LABELS[item.cat2];
   return {
     id: item.contentid, name: item.title,
@@ -1367,10 +1383,10 @@ const PLACES = [
     tags:['#궁궐','#한복체험','#드라마촬영지'], duration:'반나절', location:'서울 종로구',
     tagsI18n:{ ko:['#궁궐','#한복체험','#드라마촬영지'], en:['#Palace','#HanbokExperience','#KDramaFilming'], zh:['#宫殿','#韩服体验','#韩剧取景地'], ja:['#宮殿','#韓服体験','#韓国ドラマロケ地'] },
     i18n:{ ko:'경복궁', en:'Gyeongbokgung Palace', zh:'景福宫', ja:'景福宮' }, apiId:'264540' },
-  { id:2,  name:'해운대 해수욕장', lat:35.1587, lng:129.1603, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['summer'],
-    desc:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.',
-    descI18n:{ ko:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티 1박 2일 코스. 야경이 특히 아름답습니다.', en:"Korea's most iconic beach resort. A classic 1-night itinerary links Haeundae, Gwangalli, and Centum City — the after-dark skyline is unmissable.", zh:'韩国最具代表性的海水浴场。推荐海云台→广安里→新世界CENTUM 1晚2天行程，夜景格外迷人。', ja:'韓国を代表するビーチ。海雲台→広安里→センタムシティを巡る1泊2日コースがおすすめ。夜景が特に美しいです。' },
-    tags:['#해변','#야경','#부산여행'], duration:'1박 2일', location:'부산 해운대구',
+  { id:2,  name:'해운대 해수욕장', lat:35.1587, lng:129.1603, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['summer'],
+    desc:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티에 오륙도·감천문화마을까지 더한 2박 3일 코스. 야경이 특히 아름답습니다.',
+    descI18n:{ ko:'대한민국 대표 해수욕장. 해운대→광안리→센텀시티에 오륙도·감천문화마을까지 더한 2박 3일 코스. 야경이 특히 아름답습니다.', en:"Korea's most iconic beach resort. A 2-night itinerary links Haeundae, Gwangalli, and Centum City with Oryukdo and Gamcheon Culture Village — the after-dark skyline is unmissable.", zh:'韩国最具代表性的海水浴场。海云台→广安里→新世界CENTUM，再加五六岛与甘川文化村，推荐2晚3天行程，夜景格外迷人。', ja:'韓国を代表するビーチ。海雲台→広安里→センタムシティに五六島・甘川文化村を加えた2泊3日コースがおすすめ。夜景が特に美しいです。' },
+    tags:['#해변','#야경','#부산여행'], duration:'2박 3일', location:'부산 해운대구',
     tagsI18n:{ ko:['#해변','#야경','#부산여행'], en:['#Beach','#NightView','#Busan'], zh:['#海滩','#夜景','#釜山旅行'], ja:['#ビーチ','#夜景','#釜山旅行'] },
     i18n:{ ko:'해운대 해수욕장', en:'Haeundae Beach', zh:'海云台海水浴场', ja:'海雲台海水浴場' }, apiId:'264570' },
   { id:3,  name:'성산일출봉',      lat:33.4582, lng:126.9428, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','summer','autumn','winter'],
@@ -1391,10 +1407,10 @@ const PLACES = [
     tags:['#겨울연가','#단풍','#가평'], duration:'1박 2일', location:'강원 춘천시',
     tagsI18n:{ ko:['#겨울연가','#단풍','#가평'], en:['#WinterSonata','#AutumnLeaves','#Gapyeong'], zh:['#冬日恋歌','#红叶','#加平'], ja:['#冬のソナタ','#紅葉','#加平'] },
     i18n:{ ko:'남이섬', en:'Nami Island', zh:'南怡岛', ja:'ナミ島' }, apiId:'264573' },
-  { id:6,  name:'불국사',          lat:35.7902, lng:129.3317, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','autumn'],
-    desc:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.',
-    descI18n:{ ko:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 2박 3일 경주 역사 여행.', en:'The pinnacle of Silla-era Buddhist art. Pair it with Seokguram Grotto, Cheomseongdae Observatory, and Anapji Pond for an immersive 2-night Gyeongju history trip.', zh:'新罗千年佛教艺术的瑰宝。与石窟庵、瞻星台、雁鸭池联游，尽享2晚3天庆州历史之旅。', ja:'新羅千年の仏教芸術の結晶。石窟庵・瞻星台・雁鴨池と組み合わせた2泊3日慶州歴史旅行がおすすめです。' },
-    tags:['#경주','#유네스코','#역사여행'], duration:'2박 3일', location:'경북 경주시',
+  { id:6,  name:'불국사',          lat:35.7902, lng:129.3317, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['spring','autumn'],
+    desc:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 1박 2일 경주 역사 여행.',
+    descI18n:{ ko:'신라 천년의 불교 예술 결정체. 석굴암·첨성대·안압지와 함께 1박 2일 경주 역사 여행.', en:'The pinnacle of Silla-era Buddhist art. Pair it with Seokguram Grotto, Cheomseongdae Observatory, and Anapji Pond for an immersive 1-night Gyeongju history trip.', zh:'新罗千年佛教艺术的瑰宝。与石窟庵、瞻星台、雁鸭池联游，尽享1晚2天庆州历史之旅。', ja:'新羅千年の仏教芸術の結晶。石窟庵・瞻星台・雁鴨池と組み合わせた1泊2日慶州歴史旅行がおすすめです。' },
+    tags:['#경주','#유네스코','#역사여행'], duration:'1박 2일', location:'경북 경주시',
     tagsI18n:{ ko:['#경주','#유네스코','#역사여행'], en:['#Gyeongju','#UNESCO','#HistoryTrip'], zh:['#庆州','#联合国教科文组织','#历史之旅'], ja:['#慶州','#ユネスコ','#歴史旅行'] },
     i18n:{ ko:'불국사', en:'Bulguksa Temple', zh:'佛国寺', ja:'仏国寺' }, apiId:'264574' },
   { id:7,  name:'인사동',          lat:37.5743, lng:126.9850, type:'hallyu', label:'한류 촬영지', color:'#a855f7', seasons:['spring','summer','autumn','winter'],
@@ -1403,10 +1419,10 @@ const PLACES = [
     tags:['#갤러리','#전통차','#쇼핑'], duration:'반나절', location:'서울 종로구',
     tagsI18n:{ ko:['#갤러리','#전통차','#쇼핑'], en:['#Gallery','#TraditionalTea','#Shopping'], zh:['#画廊','#传统茶','#购物'], ja:['#ギャラリー','#伝統茶','#ショッピング'] },
     i18n:{ ko:'인사동', en:'Insadong', zh:'仁寺洞', ja:'仁寺洞' }, apiId:'264575' },
-  { id:8,  name:'설악산 국립공원', lat:38.1196, lng:128.4655, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['autumn','winter'],
+  { id:8,  name:'설악산 국립공원', lat:38.1196, lng:128.4655, type:'1night', label:'1박 코스',    color:'#ef4444', seasons:['autumn','winter'],
     desc:'한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.',
     descI18n:{ ko:'한국의 알프스. 가을 단풍과 겨울 설경이 압도적. 대청봉 등산·권금성 케이블카 코스.', en:"Korea's answer to the Alps. Autumn foliage and winter snowscapes are breathtaking — hike to Daecheongbong Peak or take the cable car up to Gwongeumseong Fortress.", zh:'有"韩国阿尔卑斯"之称的名山。秋天红叶、冬季雪景令人叹为观止，可攀登大青峰或乘缆车游览权金城。', ja:'「韓国のアルプス」とも呼ばれる名峰。秋の紅葉と冬の雪景色は圧巻で、大清峰登山や権金城ケーブルカーコースが人気です。' },
-    tags:['#등산','#단풍','#설경'], duration:'2박 3일', location:'강원 속초시',
+    tags:['#등산','#단풍','#설경'], duration:'1박 2일', location:'강원 속초시',
     tagsI18n:{ ko:['#등산','#단풍','#설경'], en:['#Hiking','#AutumnLeaves','#WinterSnow'], zh:['#登山','#红叶','#雪景'], ja:['#登山','#紅葉','#雪景'] },
     i18n:{ ko:'설악산 국립공원', en:'Seoraksan National Park', zh:'雪岳山国立公园', ja:'雪岳山国立公園' }, apiId:'264576' },
   { id:9,  name:'광안리 해수욕장', lat:35.1532, lng:129.1186, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['summer'],
@@ -1433,16 +1449,16 @@ const PLACES = [
     tags:['#등산','#눈꽃','#제주'], duration:'2박 3일', location:'제주특별자치도',
     tagsI18n:{ ko:['#등산','#눈꽃','#제주'], en:['#Hiking','#SnowFlowers','#Jeju'], zh:['#登山','#雪花','#济州'], ja:['#登山','#雪の花','#済州'] },
     i18n:{ ko:'한라산', en:'Hallasan Mountain', zh:'汉拿山', ja:'漢拏山' }, apiId:'264580' },
-  { id:13, name:'안동 하회마을',   lat:36.5352, lng:128.5207, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['autumn'],
-    desc:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.',
-    descI18n:{ ko:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망과 함께하는 당일 역사 여행.', en:'A UNESCO World Heritage village cradled by a bend in the Nakdong River. Watch the Hahoe Mask Dance and soak in the panoramic view from Buyongdae Cliff — a rewarding day trip.', zh:'洛东江环绕的联合国教科文组织世界文化遗产村落。观看河回假面舞、登上芙蓉台俯瞰全景，历史文化一日游值得回味。', ja:'洛東江が集落を囲むユネスコ世界文化遺産。河回仮面劇の観覧や芙蓉台からの絶景を楽しめる充実の日帰り歴史旅行です。' },
-    tags:['#유네스코','#탈춤','#한옥'], duration:'당일', location:'경북 안동시',
+  { id:13, name:'안동 하회마을',   lat:36.5352, lng:128.5207, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['autumn'],
+    desc:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망에 도산서원·월영교까지 잇는 2박 3일 역사 여행.',
+    descI18n:{ ko:'낙동강이 마을을 감싸는 유네스코 세계문화유산. 하회별신굿탈놀이·부용대 전망에 도산서원·월영교까지 잇는 2박 3일 역사 여행.', en:'A UNESCO World Heritage village cradled by a bend in the Nakdong River. Watch the Hahoe Mask Dance, take in Buyongdae Cliff, and add Dosan Seowon and Woryeonggyo Bridge on a 2-night heritage trip.', zh:'洛东江环绕的联合国教科文组织世界文化遗产村落。观看河回假面舞、登芙蓉台俯瞰全景，再联游陶山书院与月映桥，2晚3天历史之旅回味无穷。', ja:'洛東江が集落を囲むユネスコ世界文化遺産。河回仮面劇や芙蓉台からの絶景に、陶山書院・月映橋を加えた2泊3日の歴史旅行が楽しめます。' },
+    tags:['#유네스코','#탈춤','#한옥'], duration:'2박 3일', location:'경북 안동시',
     tagsI18n:{ ko:['#유네스코','#탈춤','#한옥'], en:['#UNESCO','#MaskDance','#Hanok'], zh:['#联合国教科文组织','#假面舞','#韩屋'], ja:['#ユネスコ','#仮面劇','#韓屋'] },
     i18n:{ ko:'안동 하회마을', en:'Andong Hahoe Village', zh:'安东河回村', ja:'安東河回村' }, apiId:'264581' },
-  { id:14, name:'대관령 양떼목장', lat:37.7063, lng:128.7473, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['winter','spring'],
-    desc:'해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.',
-    descI18n:{ ko:'해발 850m 고원에 펼쳐진 설원 목장. 눈꽃 풍경 속 양떼를 만나는 이색 당일 코스.', en:'A highland sheep farm at 850 m elevation, blanketed in snow in winter. Strolling among fluffy sheep amid snow-covered hills is an unforgettable day-trip experience.', zh:'海拔850米高原上的雪原牧场。冬日白雪皑皑，与羊群近距离接触是别具一格的当日往返体验。', ja:'標高850mの高原に広がる雪原牧場。雪景色の中でふわふわの羊たちと触れ合えるユニークな日帰りコースです。' },
-    tags:['#눈꽃','#양떼','#고원'], duration:'당일', location:'강원 평창군',
+  { id:14, name:'대관령 양떼목장', lat:37.7063, lng:128.7473, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['winter','spring'],
+    desc:'해발 850m 고원에 펼쳐진 설원 목장. 발왕산 케이블카·오대산과 잇는 평창 고원 2박 3일 코스.',
+    descI18n:{ ko:'해발 850m 고원에 펼쳐진 설원 목장. 발왕산 케이블카·오대산과 잇는 평창 고원 2박 3일 코스.', en:'A highland sheep farm at 850 m elevation, blanketed in snow in winter. Pair it with the Balwangsan cable car and Odaesan for an unforgettable 2-night highland getaway.', zh:'海拔850米高原上的雪原牧场。与发旺山缆车、五台山串联成2晚3天高原之旅，与羊群近距离接触别具一格。', ja:'標高850mの高原に広がる雪原牧場。バルワン山ケーブルカーや五台山と組み合わせた2泊3日の高原コースで、羊たちと触れ合えます。' },
+    tags:['#눈꽃','#양떼','#고원'], duration:'2박 3일', location:'강원 평창군',
     tagsI18n:{ ko:['#눈꽃','#양떼','#고원'], en:['#SnowFlowers','#Sheep','#Highland'], zh:['#雪花','#羊群','#高原'], ja:['#雪の花','#羊','#高原'] },
     i18n:{ ko:'대관령 양떼목장', en:'Daegwallyeong Sheep Farm', zh:'大关岭羊群牧场', ja:'大関嶺羊牧場' }, apiId:'264582' },
   { id:15, name:'담양 죽녹원',     lat:35.3217, lng:126.9878, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','summer'],
@@ -1458,22 +1474,22 @@ const PLACES = [
     tags:['#독일마을','#남해','#이색여행'], duration:'1박 2일', location:'경남 남해군',
     tagsI18n:{ ko:['#독일마을','#남해','#이색여행'], en:['#GermanVillage','#Namhae','#UniqueTravel'], zh:['#德国村','#南海','#特色旅行'], ja:['#ドイツ村','#南海','#ユニーク旅行'] },
     i18n:{ ko:'남해 독일마을', en:'Namhae German Village', zh:'南海德国村', ja:'南海ドイツ村' }, apiId:'264584' },
-  { id:17, name:'해남 땅끝마을',   lat:34.2913, lng:126.5324, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['autumn','winter'],
-    desc:'한반도 최남단. 땅끝탑·땅끝해수욕장·달마산 미황사를 잇는 당일 코스. 일몰이 장관.',
-    descI18n:{ ko:'한반도 최남단. 땅끝탑·땅끝해수욕장·달마산 미황사를 잇는 당일 코스. 일몰이 장관.', en:"The southernmost tip of the Korean Peninsula. Connect the Land's End Monument, the beach, and Mihwangsa Temple on Dalmasan Mountain — the sunset is glorious.", zh:'朝鲜半岛最南端。游览陆地尽头纪念塔、尽头海水浴场、达摩山美黄寺，串联成一条绝美日落当日游路线。', ja:'朝鮮半島最南端の地。땅끝タワー・땅끝ビーチ・達磨山美黄寺を巡る日帰りコースで、夕日の絶景が堪能できます。' },
-    tags:['#땅끝','#일몰','#해남'], duration:'당일', location:'전남 해남군',
+  { id:17, name:'해남 땅끝마을',   lat:34.2913, lng:126.5324, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['autumn','winter'],
+    desc:'한반도 최남단. 땅끝탑·달마산 미황사에 완도·진도까지 잇는 2박 3일 남도 코스. 일몰이 장관.',
+    descI18n:{ ko:'한반도 최남단. 땅끝탑·달마산 미황사에 완도·진도까지 잇는 2박 3일 남도 코스. 일몰이 장관.', en:"The southernmost tip of the Korean Peninsula. Connect the Land's End Monument, Mihwangsa Temple, and nearby Wando and Jindo on a 2-night southern journey — the sunset is glorious.", zh:'朝鲜半岛最南端。串联陆地尽头纪念塔、达摩山美黄寺，再延伸至莞岛与珍岛，2晚3天南道之旅日落壮观。', ja:'朝鮮半島最南端の地。땅끝タワー・美黄寺に莞島・珍島まで巡る2泊3日の南道コースで、夕日の絶景が堪能できます。' },
+    tags:['#땅끝','#일몰','#해남'], duration:'2박 3일', location:'전남 해남군',
     tagsI18n:{ ko:['#땅끝','#일몰','#해남'], en:['#LandsEnd','#Sunset','#Haenam'], zh:['#陆地尽头','#日落','#海南'], ja:['#陸の果て','#夕日','#海南'] },
     i18n:{ ko:'해남 땅끝마을', en:'Haenam Land\'s End Village', zh:'海南陆地尽头村', ja:'海南땅끝마을' }, apiId:'264585' },
-  { id:18, name:'영월 청령포',     lat:37.1768, lng:128.4651, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','autumn'],
-    desc:'단종의 유배지. 삼면이 강으로 둘러싸인 천혜의 명소. 선돌·별마로천문대와 연계 당일 코스.',
-    descI18n:{ ko:'단종의 유배지. 삼면이 강으로 둘러싸인 천혜의 명소. 선돌·별마로천문대와 연계 당일 코스.', en:'The riverside exile site of Joseon King Danjong, naturally surrounded by water on three sides. Combine with Seondol Rock and Byeolmaaro Observatory for a scenic day trip.', zh:'端宗的流放之地，三面环江，景色天成。结合孤石奇岩与별마로天文台，打造历史与自然兼备的当日行程。', ja:'朝鮮王朝・端宗の流配地。三方を川に囲まれた絶景スポットで、ソンドル奇岩とビョルマロ天文台とセットで巡る日帰りコースがおすすめです。' },
-    tags:['#청령포','#단종','#영월'], duration:'당일', location:'강원 영월군',
+  { id:18, name:'영월 청령포',     lat:37.1768, lng:128.4651, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','autumn'],
+    desc:'단종의 유배지. 삼면이 강으로 둘러싸인 천혜의 명소. 선돌·별마로천문대·동강 래프팅과 잇는 2박 3일 코스.',
+    descI18n:{ ko:'단종의 유배지. 삼면이 강으로 둘러싸인 천혜의 명소. 선돌·별마로천문대·동강 래프팅과 잇는 2박 3일 코스.', en:'The riverside exile site of Joseon King Danjong, naturally surrounded by water on three sides. Combine Seondol Rock, Byeolmaro Observatory, and Donggang River rafting for a scenic 2-night escape.', zh:'端宗的流放之地，三面环江，景色天成。结合孤石奇岩、별마로天文台与东江漂流，2晚3天行程历史与自然兼备。', ja:'朝鮮王朝・端宗の流配地。三方を川に囲まれた絶景スポットで、ソンドル奇岩・ビョルマロ天文台・東江ラフティングを組み合わせた2泊3日コースがおすすめです。' },
+    tags:['#청령포','#단종','#영월'], duration:'2박 3일', location:'강원 영월군',
     tagsI18n:{ ko:['#청령포','#단종','#영월'], en:['#Cheongnyeongpo','#KingDanjong','#Yeongwol'], zh:['#清泠浦','#端宗','#宁越'], ja:['#清泠浦','#端宗','#寧越'] },
     i18n:{ ko:'영월 청령포', en:'Yeongwol Cheongnyeongpo', zh:'宁越清泠浦', ja:'寧越清泠浦' }, apiId:'264586' },
-  { id:19, name:'하동 화개장터',   lat:35.0682, lng:127.6001, type:'day',    label:'당일 코스',   color:'#22c55e', seasons:['spring','autumn'],
-    desc:'벚꽃 십리길로 유명한 전통 장터. 쌍계사·최참판댁·악양 들판과 함께하는 봄·가을 당일 코스.',
-    descI18n:{ ko:'벚꽃 십리길로 유명한 전통 장터. 쌍계사·최참판댁·악양 들판과 함께하는 봄·가을 당일 코스.', en:'A traditional market famous for its 4 km cherry blossom boulevard. Perfect for spring and autumn — combine with Ssanggyesa Temple, Choi Champan-daek, and the Agyang plains.', zh:'以十里樱花路闻名的传统集市。结合双磎寺、崔参判宅、岳阳田野，打造春秋两季精彩当日游。', ja:'桜の十里道で知られる伝統的な市場。双磎寺・崔参判宅・岳陽の田園と組み合わせた春・秋の日帰りコースが人気です。' },
-    tags:['#벚꽃','#장터','#하동'], duration:'당일', location:'경남 하동군',
+  { id:19, name:'하동 화개장터',   lat:35.0682, lng:127.6001, type:'2night', label:'2박 코스',    color:'#3b82f6', seasons:['spring','autumn'],
+    desc:'벚꽃 십리길로 유명한 전통 장터. 쌍계사·최참판댁·악양 들판에 지리산 자락까지 품는 봄·가을 2박 3일 코스.',
+    descI18n:{ ko:'벚꽃 십리길로 유명한 전통 장터. 쌍계사·최참판댁·악양 들판에 지리산 자락까지 품는 봄·가을 2박 3일 코스.', en:'A traditional market famous for its 4 km cherry blossom boulevard. Combine Ssanggyesa Temple, Choi Champan-daek, and the Agyang plains with the Jirisan foothills for a 2-night spring or autumn stay.', zh:'以十里樱花路闻名的传统集市。结合双磎寺、崔参判宅、岳阳田野与智异山山麓，春秋两季2晚3天之旅精彩纷呈。', ja:'桜の十里道で知られる伝統的な市場。双磎寺・崔参判宅・岳陽の田園に智異山の麓を加えた春・秋の2泊3日コースが人気です。' },
+    tags:['#벚꽃','#장터','#하동'], duration:'2박 3일', location:'경남 하동군',
     tagsI18n:{ ko:['#벚꽃','#장터','#하동'], en:['#CherryBlossom','#TraditionalMarket','#Hadong'], zh:['#樱花','#传统集市','#河东'], ja:['#桜','#伝統市場','#河東'] },
     i18n:{ ko:'하동 화개장터', en:'Hadong Hwagae Market', zh:'河东花开场', ja:'河東花開場' }, apiId:'264587' },
 ];
