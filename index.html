@@ -533,6 +533,23 @@
       <button class="hero-stab" data-season="winter">겨울</button>
     </div>
     <button class="hero-cta" id="heroCtaBtn">여행 시작하기 →</button>
+    <div class="hero-features">
+      <button class="hero-feat" data-feat="trend">
+        <span class="hero-feat-ic">🗺️</span>
+        <span class="hero-feat-t">트렌드 여행지도</span>
+        <span class="hero-feat-d">계절별 추천 코스</span>
+      </button>
+      <button class="hero-feat" data-feat="hallyu">
+        <span class="hero-feat-ic">🎬</span>
+        <span class="hero-feat-t">한류 촬영지</span>
+        <span class="hero-feat-d">드라마 촬영지 지도</span>
+      </button>
+      <button class="hero-feat" data-feat="bf">
+        <span class="hero-feat-ic">♿</span>
+        <span class="hero-feat-t">무장애 여행</span>
+        <span class="hero-feat-d">시니어·장애인 맞춤</span>
+      </button>
+    </div>
   </div>
 </section>
 
@@ -678,6 +695,45 @@
   #landing-hero[data-season="winter"] .hero-cta:hover { color: #2a7aab; }
   .hero-cta:active { transform: scale(0.97); }
 
+  /* 기능 소개 카드 3종 */
+  .hero-features {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+    width: 100%;
+    max-width: 420px;
+  }
+  .hero-feat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 6px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.16);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .hero-feat:hover { background: rgba(255,255,255,0.28); }
+  .hero-feat:active { transform: scale(0.96); }
+  .hero-feat-ic { font-size: 22px; line-height: 1; }
+  .hero-feat-t {
+    font-family: var(--font);
+    font-size: 12.5px; font-weight: 700;
+    color: var(--white);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.2);
+  }
+  .hero-feat-d {
+    font-family: var(--font);
+    font-size: 10px; font-weight: 500;
+    color: rgba(255,255,255,0.8);
+    text-align: center; line-height: 1.3;
+  }
+
   /* 모바일 배경 위치 */
   @media (max-width: 768px) {
     .hero-bg { background-position: center 40%; }
@@ -688,6 +744,11 @@
     .hero-season-tabs { gap: 4px; padding: 5px 8px; }
     .hero-stab { padding: 6px 11px; font-size: 12px; }
     .hero-cta { padding: 13px 28px; font-size: 15px; }
+    .hero-features { gap: 6px; margin-top: 14px; }
+    .hero-feat { padding: 10px 4px; border-radius: 13px; }
+    .hero-feat-ic { font-size: 19px; }
+    .hero-feat-t { font-size: 11px; }
+    .hero-feat-d { font-size: 9px; }
   }
 </style>
 
@@ -727,7 +788,8 @@
     });
   });
 
-  cta.addEventListener('click', function() {
+  // 히어로 → 앱 전환 (CTA·기능카드 공용). afterFn: 전환 후 실행할 동작(기능 진입).
+  function enterApp(afterFn) {
     var hero = document.getElementById('landing-hero');
     var app  = document.getElementById('app-wrapper');
     if (app) app.style.display = 'block';
@@ -739,7 +801,30 @@
         window.kakaoMap.setCenter(new kakao.maps.LatLng(36.5, 127.5));
         window.kakaoMap.setLevel(13);
       }
+      // 기능 카드 진입: 앱에 이미 붙어있는 기존 버튼을 트리거 (클로저 경계 우회)
+      if (typeof afterFn === 'function') { try { afterFn(); } catch (e) { console.warn('기능 진입 실패:', e); } }
     }, 300);
+  }
+
+  cta.addEventListener('click', function() { enterApp(); });
+
+  document.querySelectorAll('.hero-feat').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var feat = card.dataset.feat;
+      enterApp(function() {
+        if (feat === 'hallyu') {
+          var t = document.getElementById('hallyuTab');
+          if (t) t.click();
+        } else if (feat === 'bf') {
+          var b = document.getElementById('bfToggleBtn');
+          if (b) b.click();
+        } else { // trend: 히어로에서 고른 계절 탭으로 진입
+          var season = document.getElementById('landing-hero').dataset.season || 'spring';
+          var st = document.querySelector('.tab[data-s="' + season + '"]');
+          if (st) st.click();
+        }
+      });
+    });
   });
 })();
 </script>
