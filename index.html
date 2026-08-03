@@ -242,6 +242,21 @@
     .trend-body { display: contents; }
     .trend-arrow { font-size: 10px; color: var(--gray-400); transition: transform 0.25s ease; flex-shrink: 0; }
     .trend-label { font-size: 11px; font-weight: 700; color: var(--gray-400); white-space: nowrap; flex-shrink: 0; }
+    .strip-toggle { display: flex; align-items: center; gap: 4px; min-width: 0; }
+    .strip-tab {
+      border: none; background: transparent; font-family: var(--font);
+      font-size: 12px; font-weight: 600; color: var(--gray-400);
+      padding: 6px 10px; height: 36px; border-radius: 8px; cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: background 0.15s, color 0.15s;
+    }
+    .strip-tab.is-active { background: var(--gray-100); color: var(--gray-900); font-weight: 700; }
+    .strip-tab:active { transform: scale(0.97); }
+    .trend-arrow-btn {
+      border: none; background: transparent; padding: 6px; margin: 0;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
     .trend-chip {
       display: flex; align-items: center; gap: 5px;
       background: var(--gray-100); border-radius: 20px; padding: 5px 11px;
@@ -283,7 +298,7 @@
       .trend-strip-header {
         display: flex; align-items: center; justify-content: space-between;
         height: 44px; padding: 0 12px;
-        cursor: pointer; flex-shrink: 0; user-select: none;
+        flex-shrink: 0; user-select: none;
       }
       .trend-strip.expanded .trend-arrow { transform: rotate(180deg); }
       .trend-body {
@@ -418,7 +433,7 @@
     .trend-chip:focus-visible, .bf-chip:focus-visible, .panel-item:focus-visible,
     .bf-course-card:focus-visible, .bf-place-item:focus-visible,
     .drama-card:focus-visible, .drama-site-item:focus-visible,
-    .trend-strip-header:focus-visible, .sheet-handle-area:focus-visible {
+    .strip-tab:focus-visible, .trend-arrow-btn:focus-visible, .sheet-handle-area:focus-visible {
       outline: 2px solid #2563eb; outline-offset: 2px;
     }
     .panel-rank { font-size: 13px; font-weight: 700; min-width: 18px; text-align: center; }
@@ -512,6 +527,9 @@
       .hp-mobile-btn { padding: 4px 9px; font-size: 12px; }
       .lang-btn { padding: 3px 5px; font-size: 10px; }
       .lang-selector { gap: 2px; }
+      .trend-strip-header { padding: 0 8px; }
+      .strip-tab { padding: 6px 7px; font-size: 11px; }
+      .trend-arrow-btn { padding: 4px; }
     }
   </style>
 </head>
@@ -866,9 +884,15 @@
 </div>
 
 <div class="trend-strip" id="trendStrip">
-  <div class="trend-strip-header" id="trendStripHeader" tabindex="0" role="button" aria-expanded="false" aria-controls="trendBody" aria-label="트렌드 목록 펼치기">
-    <span class="trend-label" id="trendLabel">🔥 트렌드</span>
-    <span class="trend-arrow" id="trendArrow">▼</span>
+  <div class="trend-strip-header" id="trendStripHeader">
+    <div class="strip-toggle" id="stripToggle" role="tablist" aria-label="목록 전환">
+      <button class="strip-tab is-active" id="stripTabTrend" role="tab" aria-selected="true" aria-controls="trendBody" type="button">🔥 트렌드</button>
+      <button class="strip-tab" id="stripTabSeason" role="tab" aria-selected="false" aria-controls="trendBody" type="button">🌸 추천</button>
+    </div>
+    <span class="trend-label" id="trendLabel" style="display:none">🔥 트렌드</span>
+    <button class="trend-arrow-btn" id="trendArrowBtn" aria-expanded="false" aria-controls="trendBody" aria-label="목록 펼치기" type="button">
+      <span class="trend-arrow" id="trendArrow">▼</span>
+    </button>
   </div>
   <div class="trend-body" id="trendBody"></div>
 </div>
@@ -925,6 +949,7 @@ const I18N = {
     trendStripLabel: '🔥 트렌드',
     bfStripLabel: '♿ 무장애',
     dramaStripLabel: '🎬 드라마',
+    stripTabSeason: '추천',
     legend: { day:'당일 코스', oneNight:'1박 코스', twoNight:'2박 코스', hallyu:'한류 촬영지', bf:'무장애 여행지' },
     sheetEmptyTitle: '여행지를 선택하세요',
     sheetEmptyDesc: '지도의 핀을 클릭하면 정보가 표시됩니다.',
@@ -975,6 +1000,7 @@ const I18N = {
     trendStripLabel: '🔥 Trending',
     bfStripLabel: '♿ Accessible',
     dramaStripLabel: '🎬 Drama',
+    stripTabSeason: 'Picks',
     legend: { day:'Day Trip', oneNight:'1-Night', twoNight:'2-Night', hallyu:'K-Drama Filming Site', bf:'Accessible Destination' },
     sheetEmptyTitle: 'Select a destination',
     sheetEmptyDesc: 'Tap a pin on the map to see details',
@@ -1025,6 +1051,7 @@ const I18N = {
     trendStripLabel: '🔥 热门趋势',
     bfStripLabel: '♿ 无障碍',
     dramaStripLabel: '🎬 韩剧',
+    stripTabSeason: '推荐',
     legend: { day:'当日往返', oneNight:'1晚行程', twoNight:'2晚行程', hallyu:'韩流拍摄地', bf:'无障碍旅游地' },
     sheetEmptyTitle: '请选择旅游地',
     sheetEmptyDesc: '点击地图上的图钉查看详情',
@@ -1075,6 +1102,7 @@ const I18N = {
     trendStripLabel: '🔥 トレンド',
     bfStripLabel: '♿ バリアフリー',
     dramaStripLabel: '🎬 ドラマ',
+    stripTabSeason: 'おすすめ',
     legend: { day:'日帰りコース', oneNight:'1泊コース', twoNight:'2泊コース', hallyu:'韓流ロケ地', bf:'バリアフリー旅行地' },
     sheetEmptyTitle: '旅行先を選択してください',
     sheetEmptyDesc: '地図のピンをタップすると情報が表示されます',
@@ -2710,6 +2738,7 @@ kakao.maps.load(function () {
   let _searchTimer   = null;
   let _sheetEmpty    = true;
   let _lastOpened    = null; // { kind:'place'|'bf'|'drama', data, drama? }
+  let _stripMode     = 'trend'; // 'trend' | 'season' — 모바일 스트립 토글 상태 (계절 전환에도 유지)
 
   function resetSheet() {
     setSheetOpen(false);
@@ -2858,13 +2887,53 @@ kakao.maps.load(function () {
 
   // ── 트렌드 스트립 접기/펼치기 (모바일 전용) ──
   function collapseTrendStrip() {
-    const strip  = document.getElementById('trendStrip');
-    const header = document.getElementById('trendStripHeader');
+    const strip = document.getElementById('trendStrip');
+    const btn   = document.getElementById('trendArrowBtn');
     if (!strip) return;
     strip.classList.remove('expanded');
-    if (header) { header.setAttribute('aria-expanded', 'false'); header.setAttribute('aria-label', '트렌드 목록 펼치기'); }
+    if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', '목록 펼치기'); }
     document.documentElement.style.setProperty('--trend-h', '44px');
     setTimeout(() => { map.relayout(); }, 300);
+  }
+
+  // 펼쳐진 상태에서 목록 내용이 바뀌었을 때 높이만 다시 계산 (펼침/접힘 여부는 바꾸지 않음)
+  function recalcExpandedHeight() {
+    const strip = document.getElementById('trendStrip');
+    const body  = document.getElementById('trendBody');
+    if (!strip || !body || !strip.classList.contains('expanded')) return;
+    const totalH = 44 + body.scrollHeight + 2;
+    document.documentElement.style.setProperty('--trend-h', totalH + 'px');
+    setTimeout(() => { map.relayout(); }, 300);
+  }
+
+  // ── 모바일 스트립 헤더: 트렌드/추천 토글 ↔ 드라마·무장애 정적 라벨 전환 ──
+  function showStripToggle() {
+    const toggle = document.getElementById('stripToggle');
+    const label  = document.getElementById('trendLabel');
+    if (toggle) toggle.style.display = 'flex';
+    if (label)  label.style.display = 'none';
+    const tabTrend  = document.getElementById('stripTabTrend');
+    const tabSeason = document.getElementById('stripTabSeason');
+    if (tabTrend)  tabTrend.textContent  = L().trendStripLabel;
+    if (tabSeason) tabSeason.textContent = `${SEASON_EMO[currentSeason]} ${L().stripTabSeason}`;
+  }
+  function showStripLabel(text) {
+    const toggle = document.getElementById('stripToggle');
+    const label  = document.getElementById('trendLabel');
+    if (toggle) toggle.style.display = 'none';
+    if (label) { label.style.display = ''; label.textContent = text; }
+  }
+
+  // ── 트렌드/추천 토글 전환: 목록만 교체, 펼침 상태는 유지 ──
+  function setStripMode(mode) {
+    if (_stripMode === mode) return;
+    _stripMode = mode;
+    const tabTrend  = document.getElementById('stripTabTrend');
+    const tabSeason = document.getElementById('stripTabSeason');
+    if (tabTrend)  { tabTrend.classList.toggle('is-active', mode === 'trend'); tabTrend.setAttribute('aria-selected', String(mode === 'trend')); }
+    if (tabSeason) { tabSeason.classList.toggle('is-active', mode === 'season'); tabSeason.setAttribute('aria-selected', String(mode === 'season')); }
+    renderStripBody(currentSeason);
+    recalcExpandedHeight();
   }
 
   // ── 트렌드 TOP5 후보 선정 (축제 우선 → 부족하면 일반 관광지로 채움) ──
@@ -2953,45 +3022,61 @@ kakao.maps.load(function () {
     }
   }
 
-  // ── 모바일 스트립 ──
-  function renderSeasonStrip(season) {
-    const body  = document.getElementById('trendBody');
-    const label = document.getElementById('trendLabel');
+  // ── 트렌드/추천 칩 공통 렌더 (실제 장소 객체 배열 → .trend-chip 목록) ──
+  function renderStripChips(body, places) {
+    places.slice(0, 5).forEach((place, i) => {
+      const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
+      const chip = document.createElement('div'); chip.className = 'trend-chip';
+      chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${name}`;
+      chip.tabIndex = 0; chip.setAttribute('role', 'button');
+      chip.setAttribute('aria-label', `${i+1}위, ${name}`);
+      bindActivatable(chip, () => { flyTo(place.lat, place.lng); openPlace(place); });
+      body.appendChild(chip);
+    });
+  }
+
+  // ── #trendBody 내용만 갱신 (펼침 상태는 건드리지 않음) ──
+  function renderStripBody(season) {
+    const body = document.getElementById('trendBody');
     if (!body) return;
-    if (label) label.textContent = L().trendStripLabel;
+    body.setAttribute('aria-busy', 'true');
     body.innerHTML = '';
-    collapseTrendStrip();
-    const trendPlaces = _trendCache[season] || pickTrendCandidates(season);
-    if (trendPlaces && trendPlaces.length) {
-      trendPlaces.slice(0, 5).forEach((place, i) => {
-        const chip = document.createElement('div'); chip.className = 'trend-chip';
-        chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${place.name}`;
-        chip.tabIndex = 0; chip.setAttribute('role', 'button');
-        chip.setAttribute('aria-label', `${i+1}위, ${place.name}`);
-        bindActivatable(chip, () => { flyTo(place.lat, place.lng); openPlace(place); });
-        body.appendChild(chip);
-      });
+    if (_stripMode === 'season') {
+      renderStripChips(body, pickSeasonTop5(season));
     } else {
-      (TREND_DATA[season] || []).forEach((item, i) => {
-        const chip = document.createElement('div'); chip.className = 'trend-chip';
-        const kw = item.keyword[currentLang] || item.keyword.ko;
-        chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${kw}`;
-        chip.tabIndex = 0; chip.setAttribute('role', 'button');
-        chip.setAttribute('aria-label', `${i+1}위, ${kw}`);
-        bindActivatable(chip, () => {
-          const place = PLACES.find(p => p.id === item.placeId);
-          if (place) { flyTo(place.lat, place.lng); openPlace(place); }
+      const trendPlaces = _trendCache[season] || pickTrendCandidates(season);
+      if (trendPlaces && trendPlaces.length) {
+        renderStripChips(body, trendPlaces);
+      } else {
+        (TREND_DATA[season] || []).forEach((item, i) => {
+          const chip = document.createElement('div'); chip.className = 'trend-chip';
+          const kw = item.keyword[currentLang] || item.keyword.ko;
+          chip.innerHTML = `<span class="trend-rank rank-${i+1}">${i+1}</span>${kw}`;
+          chip.tabIndex = 0; chip.setAttribute('role', 'button');
+          chip.setAttribute('aria-label', `${i+1}위, ${kw}`);
+          bindActivatable(chip, () => {
+            const place = PLACES.find(p => p.id === item.placeId);
+            if (place) { flyTo(place.lat, place.lng); openPlace(place); }
+          });
+          body.appendChild(chip);
         });
-        body.appendChild(chip);
-      });
+      }
     }
+    body.setAttribute('aria-busy', 'false');
+  }
+
+  // ── 모바일 스트립: 계절 진입/변경 (토글 라벨 갱신 + 펼침 초기화 + 목록 렌더) ──
+  function renderSeasonStrip(season) {
+    if (!document.getElementById('trendBody')) return;
+    showStripToggle();
+    collapseTrendStrip();
+    renderStripBody(season);
   }
 
   function renderDramaStrip(dramas) {
-    const body  = document.getElementById('trendBody');
-    const label = document.getElementById('trendLabel');
+    const body = document.getElementById('trendBody');
     if (!body) return;
-    if (label) label.textContent = L().dramaStripLabel;
+    showStripLabel(L().dramaStripLabel);
     body.innerHTML = '';
     collapseTrendStrip();
     dramas.forEach((d, i) => {
@@ -3010,10 +3095,9 @@ kakao.maps.load(function () {
 
   function renderBFStrip() {
     const bfPlaces = bfPlacesForSeason(currentSeason);
-    const body  = document.getElementById('trendBody');
-    const label = document.getElementById('trendLabel');
+    const body = document.getElementById('trendBody');
     if (!body) return;
-    if (label) label.textContent = L().bfStripLabel;
+    showStripLabel(L().bfStripLabel);
     body.innerHTML = '';
     collapseTrendStrip();
     bfPlaces.forEach(place => {
@@ -3597,12 +3681,26 @@ kakao.maps.load(function () {
     });
   });
 
-  // ── 트렌드 아코디언 토글 (모바일) ──
-  bindActivatable(document.getElementById('trendStripHeader'), () => {
+  // ── 트렌드/추천 토글 (모바일) ──
+  document.getElementById('stripTabTrend').addEventListener('click', () => setStripMode('trend'));
+  document.getElementById('stripTabSeason').addEventListener('click', () => setStripMode('season'));
+  document.getElementById('stripToggle').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const tabs = [document.getElementById('stripTabTrend'), document.getElementById('stripTabSeason')];
+    const idx  = tabs.indexOf(document.activeElement);
+    if (idx === -1) return;
+    const next = e.key === 'ArrowRight' ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+    tabs[next].focus();
+    setStripMode(tabs[next].id === 'stripTabTrend' ? 'trend' : 'season');
+  });
+
+  // ── 스트립 아코디언 펼치기/접기 (모바일) ──
+  document.getElementById('trendArrowBtn').addEventListener('click', () => {
     if (window.innerWidth > 768) return;
-    const strip  = document.getElementById('trendStrip');
-    const body   = document.getElementById('trendBody');
-    const header = document.getElementById('trendStripHeader');
+    const strip = document.getElementById('trendStrip');
+    const body  = document.getElementById('trendBody');
+    const btn   = document.getElementById('trendArrowBtn');
     if (!strip || !body) return;
     if (strip.classList.contains('expanded')) {
       collapseTrendStrip();
@@ -3610,7 +3708,7 @@ kakao.maps.load(function () {
       strip.classList.add('expanded');
       const totalH = 44 + body.scrollHeight + 2;
       document.documentElement.style.setProperty('--trend-h', totalH + 'px');
-      if (header) { header.setAttribute('aria-expanded', 'true'); header.setAttribute('aria-label', '트렌드 목록 접기'); }
+      btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', '목록 접기');
       setTimeout(() => { map.relayout(); }, 300);
     }
   });
