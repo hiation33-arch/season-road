@@ -5,8 +5,10 @@
 // 라우트:
 //   /:base/:endpoint?...  — base = ko|en|zh|ja|bf (KTO Tour API, bf = 무장애 여행정보 KorWithService2)
 //                            endpoint — areaBasedList2 | searchFestival2 | detailCommon2 | searchKeyword2 | detailWithTour2 등
-//                          — base = demand (AreaTarDemDsService, 지역별 관광 수요 강도) | rlte (TarRlteTarService1, 관광지 연관 관광지 정보)
-//                            같은 KTO_API_KEY로 인증됨(실측 확인, 2026-08)
+//                            (endpoint·파라미터 화이트리스트 없음 — 기존 설계 그대로 유지)
+//   /demand/areaTarSjrnDsList  — AreaTarDemDsService(지역별 관광 수요 강도). endpoint·파라미터 고정 화이트리스트.
+//   /rlte/areaBasedList1       — TarRlteTarService1(관광지 연관 관광지 정보). endpoint·파라미터 고정 화이트리스트.
+//                                 (둘 다 같은 KTO_API_KEY로 인증됨, 실측 확인 2026-08)
 //   /naver/datalab        — 네이버 데이터랩 검색어트렌드 프록시 (POST)
 
 const UPSTREAM_BASES = {
@@ -15,8 +17,21 @@ const UPSTREAM_BASES = {
   zh: 'https://apis.data.go.kr/B551011/ChsService2',
   ja: 'https://apis.data.go.kr/B551011/JpnService2',
   bf: 'https://apis.data.go.kr/B551011/KorWithService2',
-  demand: 'https://apis.data.go.kr/B551011/AreaTarDemDsService',
-  rlte: 'https://apis.data.go.kr/B551011/TarRlteTarService1',
+};
+
+// demand/rlte는 위 base들과 달리 endpoint를 클라이언트가 임의로 지정할 수 없다 — 워커가 공개돼 있으므로
+// 화이트리스트 없이 열어두면 우리 KTO_API_KEY로 해당 서비스의 아무 오퍼레이션이나 호출하는 중계기가 된다.
+const RESTRICTED_ROUTES = {
+  demand: {
+    base: 'https://apis.data.go.kr/B551011/AreaTarDemDsService',
+    endpoint: 'areaTarSjrnDsList',
+    allowedParams: ['baseYm', 'areaCd', 'signguCd', 'tarSjrnDsIxCd', 'numOfRows', 'pageNo', 'MobileOS', 'MobileApp', '_type'],
+  },
+  rlte: {
+    base: 'https://apis.data.go.kr/B551011/TarRlteTarService1',
+    endpoint: 'areaBasedList1',
+    allowedParams: ['baseYm', 'areaCd', 'signguCd', 'numOfRows', 'pageNo', 'MobileOS', 'MobileApp', '_type'],
+  },
 };
 
 const NAVER_DATALAB_URL = 'https://openapi.naver.com/v1/datalab/search';
@@ -140,6 +155,36 @@ export default {
 
     if (base === 'naver' && endpoint === 'datalab') {
       return handleNaverDatalab(request, env);
+    }
+
+    if (base in RESTRICTED_ROUTES) {
+      const route = RESTRICTED_ROUTES[base];
+      if (endpoint !== route.endpoint) {
+        return new Response(JSON.stringify({ error: `/${base} only supports endpoint=${route.endpoint}` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        });
+      }
+      const qs = new URLSearchParams();
+      for (const key of route.allowedParams) {
+        const val = url.searchParams.get(key);
+        if (val != null) qs.set(key, val);
+      }
+      qs.set('serviceKey', env.KTO_API_KEY);
+      const upstreamUrl = `${route.base}/${endpoint}?${qs.toString()}`;
+      try {
+        const upstreamRes = await fetch(upstreamUrl);
+        const body = await upstreamRes.text();
+        return new Response(body, {
+          status: upstreamRes.status,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'upstream fetch failed', detail: String(e) }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+        });
+      }
     }
 
     const upstreamBase = UPSTREAM_BASES[base];
