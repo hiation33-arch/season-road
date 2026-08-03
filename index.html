@@ -963,6 +963,7 @@ const I18N = {
     fieldGenre: '장르', fieldOtt: 'OTT 플랫폼',
     nearbyStay: '인근 숙박', stayLoading: '인근 숙박 불러오는 중…', stayNone: '인근 숙박 정보가 없습니다.',
     detailLoading: '상세정보 불러오는 중…', readMore: '더보기', readLess: '접기',
+    top5Loading: '추천 목록 불러오는 중…',
     loadingSpring: '봄 여행지 불러오는 중…',
     loadingSummer: '여름 여행지 불러오는 중…',
     loadingAutumn: '가을 여행지 불러오는 중…',
@@ -1015,6 +1016,7 @@ const I18N = {
     fieldGenre: 'Genre', fieldOtt: 'Platform',
     nearbyStay: 'Nearby Stays', stayLoading: 'Loading nearby stays…', stayNone: 'No nearby accommodations found.',
     detailLoading: 'Loading details…', readMore: 'Show more', readLess: 'Show less',
+    top5Loading: 'Loading recommendations…',
     loadingSpring: 'Loading spring travel spots…',
     loadingSummer: 'Loading summer travel spots…',
     loadingAutumn: 'Loading autumn travel spots…',
@@ -1067,6 +1069,7 @@ const I18N = {
     fieldGenre: '类型', fieldOtt: '平台',
     nearbyStay: '周边住宿', stayLoading: '正在加载周边住宿…', stayNone: '暂无周边住宿信息。',
     detailLoading: '正在加载详情…', readMore: '展开', readLess: '收起',
+    top5Loading: '正在加载推荐列表…',
     loadingSpring: '正在加载春季旅游景点…',
     loadingSummer: '正在加载夏季旅游景点…',
     loadingAutumn: '正在加载秋季旅游景点…',
@@ -1119,6 +1122,7 @@ const I18N = {
     fieldGenre: 'ジャンル', fieldOtt: 'プラットフォーム',
     nearbyStay: '周辺の宿泊', stayLoading: '周辺の宿泊を読み込み中…', stayNone: '周辺の宿泊情報がありません。',
     detailLoading: '詳細情報を読み込み中…', readMore: 'もっと見る', readLess: '閉じる',
+    top5Loading: 'おすすめリストを読み込み中…',
     loadingSpring: '春の観光地を読み込み中…',
     loadingSummer: '夏の観光地を読み込み中…',
     loadingAutumn: '秋の観光地を読み込み中…',
@@ -1434,11 +1438,16 @@ const DEMAND_TYPES = {0:'2',11110:'d',11140:'d',11170:'d',11200:'d',11215:'d',11
 // 행정구역 개편 과도기 크로스워크: areaBasedList2 신코드(12xxx) → 수요강도 구코드(46/29xxx)
 const DEMAND_XWALK = {12110:'46110',12130:'46130',12150:'46150',12170:'46170',12190:'46230',12210:'29110',12240:'29140',12270:'29155',12300:'29170',12330:'29200',12710:'46710',12720:'46720',12730:'46730',12740:'46770',12750:'46780',12760:'46790',12770:'46800',12780:'46810',12790:'46820',12800:'46830',12810:'46840',12820:'46860',12830:'46870',12840:'46880',12850:'46890',12860:'46900',12870:'46910'};
 const _DEMAND_T = { d:'day', 1:'1night', 2:'2night' };
+// lDongRegnCd+lDongSignguCd → 5자리 지역코드로 정규화 (전남/광주 과도기는 DEMAND_XWALK 재사용).
+// demandType()과 단계 3 추천 TOP5 채점(_regionCode) 양쪽에서 공유.
+function _regionCode(regnCd, signguCd) {
+  if (!regnCd || !signguCd) return null;
+  const raw = String(regnCd) + String(signguCd);
+  return DEMAND_XWALK[raw] || raw;
+}
 function demandType(item) {
-  const r = item.lDongRegnCd, s = item.lDongSignguCd;
-  if (!r || !s) return null;
-  let code = String(r) + String(s);
-  if (DEMAND_XWALK[code]) code = DEMAND_XWALK[code];
+  const code = _regionCode(item.lDongRegnCd, item.lDongSignguCd);
+  if (!code) return null;
   return _DEMAND_T[DEMAND_TYPES[code]] || null;
 }
 
@@ -1458,6 +1467,7 @@ function _ktoToPlace(item, season, isFestival = false) {
     apiId: item.contentid, image: item.firstimage || '',
     _fromApi: true, // detailCommon2 상세조회 대상 여부 (더미 PLACES와 구분용, apiId는 더미도 갖고 있어 구분 불가)
     isFestival, // searchFestival2 출처 여부 (지도 핀 뱃지 구분용)
+    _districtCode: _regionCode(item.lDongRegnCd, item.lDongSignguCd), // (단계 3) 추천 TOP5 지역 채점용
   };
 }
 
@@ -2964,11 +2974,201 @@ kakao.maps.load(function () {
   }
 
   // ── 계절 추천 TOP5 선정 ──
-  // 현재: API 반환 순서 그대로 상위 5개 (정렬 기준 없음 → 단계 3에서 교체 예정)
+  // _seasonTop5Cache[season]이 채워져 있으면(백그라운드 재채점 완료) 그 결과를 쓰고,
+  // 아직이거나 API 실패 시엔 기존 방식(API 반환 순서 상위 5개)으로 조용히 폴백한다.
   function pickSeasonTop5(season) {
+    if (_seasonTop5Cache[season]) return _seasonTop5Cache[season];
     const apiPlaces = _seasonCache[season];
     const curPlaces = apiPlaces || PLACES.filter(p => p.seasons.includes(season));
     return curPlaces.slice(0, 5);
+  }
+
+  // 재채점된 추천 TOP5가 아직 실측 조회 중인지 — true인 동안엔 폴백 목록 대신 로딩 상태를 보여준다.
+  // API 자체가 없거나(더미 fallback) 이미 채점이 끝났다면 false(더 이상 기다릴 게 없음).
+  function seasonTop5Loading(season) {
+    return USE_REAL_API && !_seasonTop5Cache[season] && !!(_seasonCache[season] && _seasonCache[season].length);
+  }
+
+  // ── (단계 3) 추천 TOP5 재채점: 지역 수요 강도(도 단위, 보조 신호) + 연관 관광지 연계 중심성(시군구 단위, 주 신호) ──
+  // AreaTarDemDsService는 signguCd를 생략하면 도 단위 집계값(signguCd="0")을 한 번에 주므로 계절당 3회 수준으로 끝난다.
+  // TarRlteTarService1은 signguCd가 필수라(NO_MANDATORY_REQUEST_PARAMETERS_ERROR1) 시군구 단위 호출을 피할 수 없다.
+  // → 도 단위 수요는 같은 도 안의 후보를 구분 못 하는 3단계 해상도이므로 순위의 주 신호는 연계 중심성에 둔다.
+  const RLTE_BASE_YM = '202606'; // 실측 확인된 최신 기준월 (DEMAND_TYPES·scripts/fetch_demand.py와 동일)
+  const RLTE_CONCURRENCY = 6;    // 시군구별 연관 관광지 호출 동시성 제한 (계절당 26~41개 시군구를 한 번에 쏘지 않음)
+  const DEMAND_WEIGHT = 0.3;     // 도 단위 수요 강도는 보조 신호 — 연계 중심성(가중치 1.0) 대비 낮게
+  const _provinceDemandCache = {}; // key: areaCd(2자리) → 도 단위 숙박비중(2102) 집계값 | null(실패)
+  const _provincePending     = new Set();
+  const _districtRlteCache   = {}; // key: 지역코드(5자리) → Map(정규화 이름→연계 중심성 카운트) | null(실패)
+  const _districtPending     = new Set();
+  const _seasonTop5Cache     = {};
+  const _seasonTop5Pending   = new Set();
+
+  // 이름 정규화: 공백·괄호·특수문자 제거 후 완전일치로만 비교한다(퍼지 매칭은 오탐으로 점수를 왜곡시킴).
+  function _normName(name) {
+    return String(name || '').replace(/[\s()（）·,.\-_/]/g, '').toLowerCase();
+  }
+
+  // 동시성 제한 병렬 처리: items를 limit개씩 워커로 나눠 fn(item)을 실행
+  async function _mapWithConcurrency(items, limit, fn) {
+    const queue = [...items];
+    const workerCount = Math.min(limit, queue.length);
+    const workers = Array.from({ length: workerCount }, async () => {
+      while (queue.length) {
+        const item = queue.shift();
+        await fn(item);
+      }
+    });
+    await Promise.all(workers);
+  }
+
+  async function _fetchProvinceDemand(areaCd) {
+    try {
+      // signguCd를 생략하면 첫 행에 도 단위 집계(signguCd="0")가 포함된다(실측 확인).
+      const qs = new URLSearchParams({
+        MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+        baseYm: RLTE_BASE_YM, areaCd, tarSjrnDsIxCd: '2102', numOfRows: 5, pageNo: 1,
+      });
+      const res = await fetch(`${API_PROXY_BASE}/demand/areaTarSjrnDsList?${qs}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data  = await res.json();
+      const items = data?.response?.body?.items;
+      const rows  = items && items.item ? (Array.isArray(items.item) ? items.item : [items.item]) : [];
+      const total = rows.find(r => r.signguCd === '0') || rows[0];
+      return total ? parseFloat(total.tarSjrnDsIxVal) : null;
+    } catch (e) {
+      console.warn(`[SeasonRoad] 도 단위 수요 강도 조회 실패(${areaCd}):`, e);
+      return null;
+    }
+  }
+
+  async function _fetchDistrictRelations(areaCd, signguCd) {
+    try {
+      const qs = new URLSearchParams({
+        MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+        baseYm: RLTE_BASE_YM, areaCd, signguCd, numOfRows: 1000, pageNo: 1,
+      });
+      const res = await fetch(`${API_PROXY_BASE}/rlte/areaBasedList1?${qs}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data  = await res.json();
+      const items = data?.response?.body?.items;
+      const rows  = items && items.item ? (Array.isArray(items.item) ? items.item : [items.item]) : [];
+      const centrality = new Map();
+      const bump = (name) => {
+        const key = _normName(name);
+        if (!key) return;
+        centrality.set(key, (centrality.get(key) || 0) + 1);
+      };
+      rows.forEach(r => { bump(r.tAtsNm); bump(r.rlteTatsNm); });
+      return centrality;
+    } catch (e) {
+      console.warn(`[SeasonRoad] 연관 관광지 조회 실패(${areaCd}${signguCd}):`, e);
+      return null;
+    }
+  }
+
+  // 도 하나(areaCd)의 수요 강도를 1회만 실측 조회 (계절 무관, 세션 내 캐시)
+  async function _loadProvinceDemand(areaCd) {
+    if (areaCd in _provinceDemandCache) return;
+    if (_provincePending.has(areaCd)) return; // 다른 계절이 이미 조회 중 — 이번 라운드는 건너뜀(점수 0 처리)
+    _provincePending.add(areaCd);
+    try {
+      _provinceDemandCache[areaCd] = await _fetchProvinceDemand(areaCd);
+    } finally {
+      _provincePending.delete(areaCd);
+    }
+  }
+
+  // 시군구 하나(districtCode)의 연관 관광지 덤프를 1회만 실측 조회 (계절 무관, 세션 내 캐시)
+  async function _loadDistrictRlte(districtCode) {
+    if (districtCode in _districtRlteCache) return;
+    if (_districtPending.has(districtCode)) return; // 다른 계절이 이미 조회 중 — 이번 라운드는 건너뜀(점수 0 처리)
+    _districtPending.add(districtCode);
+    try {
+      _districtRlteCache[districtCode] = await _fetchDistrictRelations(districtCode.slice(0, 2), districtCode);
+    } finally {
+      _districtPending.delete(districtCode);
+    }
+  }
+
+  // 지역 다양성 이중 캡: 시군구당 최대 1건 + 도(같은 시군구가 아니어도)당 최대 2건.
+  // 시군구 캡만으로는 같은 도 안의 서로 다른 시군구가 상위 5를 나눠 채워버려(실측 확인, 5개 중 3개 중복)
+  // 가을·겨울처럼 도가 겹치는 계절 조합에서 여전히 많이 겹친다 — 도 캡을 병행해 2/5 수준으로 낮춘다.
+  function _pickDiverseTop5(scored) {
+    const DISTRICT_CAP = 1;
+    const PROVINCE_CAP = 2;
+    const perDistrict = {};
+    const perProvince = {};
+    const picked = [];
+    for (const s of scored) {
+      const dc = perDistrict[s.district] || 0;
+      const pc = perProvince[s.province] || 0;
+      if (dc >= DISTRICT_CAP || pc >= PROVINCE_CAP) continue;
+      perDistrict[s.district] = dc + 1;
+      perProvince[s.province] = pc + 1;
+      picked.push(s);
+      if (picked.length === 5) return picked.map(p => p.place);
+    }
+    for (const s of scored) {
+      if (picked.includes(s)) continue;
+      picked.push(s);
+      if (picked.length === 5) break;
+    }
+    return picked.map(p => p.place);
+  }
+
+  // 정규화(도 단위 수요 강도)×DEMAND_WEIGHT + 정규화(시군구 단위 연계 중심성) 합산 점수로 정렬 후
+  // 시군구 다양성을 적용해 상위 5 선정. 두 신호가 모두 0(동점)이면 Array#sort의 안정 정렬 특성으로
+  // 원래 API 순서가 유지된다.
+  function _scoreAndRankTop5(candidates) {
+    const demandVals = candidates
+      .map(p => p._districtCode ? _provinceDemandCache[p._districtCode.slice(0, 2)] : null)
+      .filter(v => v != null);
+    const dMin = demandVals.length ? Math.min(...demandVals) : 0;
+    const dMax = demandVals.length ? Math.max(...demandVals) : 0;
+
+    const centVals = candidates.map(p => {
+      const map = _districtRlteCache[p._districtCode];
+      return map ? (map.get(_normName(p.name)) || 0) : 0;
+    });
+    const cMax = Math.max(0, ...centVals);
+
+    const scored = candidates.map((p, i) => {
+      const dRaw  = p._districtCode ? _provinceDemandCache[p._districtCode.slice(0, 2)] : null;
+      const dNorm = (dRaw == null || dMax === dMin) ? 0 : (dRaw - dMin) / (dMax - dMin);
+      const cNorm = cMax === 0 ? 0 : centVals[i] / cMax;
+      return {
+        place: p, score: dNorm * DEMAND_WEIGHT + cNorm,
+        district: p._districtCode || `_none_${i}`,
+        province: p._districtCode ? p._districtCode.slice(0, 2) : `_none_${i}`,
+      };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return _pickDiverseTop5(scored);
+  }
+
+  // ── 추천 TOP5 백그라운드 재채점 (지역코드 단위 캐시, 계절당 세션 내 1회) ──
+  async function refreshSeasonTop5(season) {
+    if (!USE_REAL_API || _seasonTop5Cache[season] || _seasonTop5Pending.has(season)) return;
+    const apiPlaces = _seasonCache[season];
+    if (!apiPlaces || !apiPlaces.length) return; // 관광지 API 자체가 비어있음 → 기존 순서 폴백 유지
+    _seasonTop5Pending.add(season);
+    try {
+      const districtCodes = [...new Set(apiPlaces.map(p => p._districtCode).filter(Boolean))];
+      const provinceCodes = [...new Set(districtCodes.map(c => c.slice(0, 2)))];
+      await Promise.all([
+        Promise.all(provinceCodes.map(_loadProvinceDemand)), // 계절당 3회 수준 — 동시성 제한 불필요
+        _mapWithConcurrency(districtCodes, RLTE_CONCURRENCY, _loadDistrictRlte),
+      ]);
+      const ranked = _scoreAndRankTop5(apiPlaces);
+      if (!ranked || !ranked.length) return;
+      _seasonTop5Cache[season] = ranked;
+      if (currentSeason === season && !hallyuMode && !bfMode) {
+        renderSeasonStrip(season);
+        renderSeasonPanel(null);
+      }
+    } finally {
+      _seasonTop5Pending.delete(season);
+    }
   }
 
   // ── 데이터랩 검색어는 항상 한국어로 보낸다: currentLang이 한국어가 아니면
@@ -3059,7 +3259,14 @@ kakao.maps.load(function () {
     body.setAttribute('aria-busy', 'true');
     body.innerHTML = '';
     if (_stripMode === 'season') {
-      renderStripChips(body, pickSeasonTop5(season));
+      if (seasonTop5Loading(season)) {
+        const loading = document.createElement('div');
+        loading.className = 'sheet-detail-loading';
+        loading.textContent = L().top5Loading;
+        body.appendChild(loading);
+      } else {
+        renderStripChips(body, pickSeasonTop5(season));
+      }
     } else {
       const trendPlaces = _trendCache[season] || pickTrendCandidates(season);
       if (trendPlaces && trendPlaces.length) {
@@ -3275,7 +3482,8 @@ kakao.maps.load(function () {
     const lang      = L();
     const apiPlaces = _seasonCache[currentSeason];
     const curPlaces = apiPlaces || PLACES.filter(p => p.seasons.includes(currentSeason));
-    const top5      = pickSeasonTop5(currentSeason);
+    const top5Loading = seasonTop5Loading(currentSeason);
+    const top5      = top5Loading ? [] : pickSeasonTop5(currentSeason);
     const sEmo      = SEASON_EMO[currentSeason];
     const sName     = lang.seasonNames[currentSeason];
 
@@ -3296,7 +3504,7 @@ kakao.maps.load(function () {
       </div>`;
     }).join('');
 
-    const top5Rows = top5.map((place, i) => {
+    const top5Rows = top5Loading ? `<div class="sheet-detail-loading">${lang.top5Loading}</div>` : top5.map((place, i) => {
       const bs   = BADGE_STYLE[place.type] || {};
       const name = place.i18n ? (place.i18n[currentLang] || place.name) : place.name;
       const isActive = activePlace && activePlace.id === place.id;
@@ -3612,6 +3820,7 @@ kakao.maps.load(function () {
       renderSeasonStrip(currentSeason);
       renderSeasonPanel(null);
       refreshSeasonTrend(currentSeason);
+      refreshSeasonTop5(currentSeason);
     }
     resetSheet();
   }
@@ -3669,6 +3878,7 @@ kakao.maps.load(function () {
       renderSeasonStrip(currentSeason);
       renderSeasonPanel(null);
       refreshSeasonTrend(currentSeason);
+      refreshSeasonTop5(currentSeason);
     }
   }
 
@@ -3763,6 +3973,7 @@ kakao.maps.load(function () {
         renderSeasonStrip(currentSeason);
         renderSeasonPanel(null);
         refreshSeasonTrend(currentSeason);
+        refreshSeasonTop5(currentSeason);
       }
       resetSheet();
     }
@@ -3911,6 +4122,7 @@ kakao.maps.load(function () {
           renderSeasonStrip('spring');
           renderSeasonPanel(null);
           refreshSeasonTrend('spring');
+          refreshSeasonTop5('spring');
         }
       })
       .catch(e => console.warn('초기 API 로드 실패, 더미 데이터 유지:', e))

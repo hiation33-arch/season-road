@@ -5,6 +5,8 @@
 // 라우트:
 //   /:base/:endpoint?...  — base = ko|en|zh|ja|bf (KTO Tour API, bf = 무장애 여행정보 KorWithService2)
 //                            endpoint — areaBasedList2 | searchFestival2 | detailCommon2 | searchKeyword2 | detailWithTour2 등
+//                          — base = demand (AreaTarDemDsService, 지역별 관광 수요 강도) | rlte (TarRlteTarService1, 관광지 연관 관광지 정보)
+//                            같은 KTO_API_KEY로 인증됨(실측 확인, 2026-08)
 //   /naver/datalab        — 네이버 데이터랩 검색어트렌드 프록시 (POST)
 
 const UPSTREAM_BASES = {
@@ -13,6 +15,8 @@ const UPSTREAM_BASES = {
   zh: 'https://apis.data.go.kr/B551011/ChsService2',
   ja: 'https://apis.data.go.kr/B551011/JpnService2',
   bf: 'https://apis.data.go.kr/B551011/KorWithService2',
+  demand: 'https://apis.data.go.kr/B551011/AreaTarDemDsService',
+  rlte: 'https://apis.data.go.kr/B551011/TarRlteTarService1',
 };
 
 const NAVER_DATALAB_URL = 'https://openapi.naver.com/v1/datalab/search';
