@@ -240,7 +240,8 @@
     .trend-strip::-webkit-scrollbar { display: none; }
     .trend-strip-header { display: none; }
     .trend-body { display: contents; }
-    .trend-arrow { font-size: 10px; color: var(--gray-400); transition: transform 0.25s ease; flex-shrink: 0; }
+    .trend-arrow { font-size: 13px; color: var(--gray-600); transition: transform 0.25s ease; flex-shrink: 0; }
+    .trend-arrow-text { font-size: 12px; font-weight: 600; color: var(--gray-600); white-space: nowrap; }
     .trend-label { font-size: 11px; font-weight: 700; color: var(--gray-400); white-space: nowrap; flex-shrink: 0; }
     .strip-toggle { display: flex; align-items: center; gap: 4px; min-width: 0; }
     .strip-tab {
@@ -253,7 +254,7 @@
     .strip-tab.is-active { background: var(--gray-100); color: var(--gray-900); font-weight: 700; }
     .strip-tab:active { transform: scale(0.97); }
     .trend-arrow-btn {
-      border: none; background: transparent; padding: 6px; margin: 0;
+      border: none; background: transparent; padding: 6px; margin: 0; gap: 4px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; flex-shrink: 0;
     }
@@ -296,9 +297,12 @@
         overflow: hidden; padding: 0; gap: 0;
       }
       .trend-strip-header {
-        display: flex; align-items: center; justify-content: space-between;
+        display: flex; align-items: center; justify-content: flex-start;
         height: 44px; padding: 0 12px;
         flex-shrink: 0; user-select: none;
+      }
+      .trend-arrow-btn {
+        flex: 1; justify-content: flex-start; min-height: 44px; padding: 0 10px;
       }
       .trend-strip.expanded .trend-arrow { transform: rotate(180deg); }
       .trend-body {
@@ -529,7 +533,7 @@
       .lang-selector { gap: 2px; }
       .trend-strip-header { padding: 0 8px; }
       .strip-tab { padding: 6px 7px; font-size: 11px; }
-      .trend-arrow-btn { padding: 4px; }
+      .trend-arrow-btn { padding: 0 6px; }
     }
   </style>
 </head>
@@ -891,6 +895,7 @@
     </div>
     <span class="trend-label" id="trendLabel" style="display:none">🔥 트렌드</span>
     <button class="trend-arrow-btn" id="trendArrowBtn" aria-expanded="false" aria-controls="trendBody" aria-label="목록 펼치기" type="button">
+      <span class="trend-arrow-text" id="trendArrowText">목록</span>
       <span class="trend-arrow" id="trendArrow">▼</span>
     </button>
   </div>
@@ -950,6 +955,7 @@ const I18N = {
     bfStripLabel: '♿ 무장애',
     dramaStripLabel: '🎬 드라마',
     stripTabSeason: '추천',
+    stripExpandLabel: '목록',
     legend: { day:'당일 코스', oneNight:'1박 코스', twoNight:'2박 코스', hallyu:'한류 촬영지', bf:'무장애 여행지' },
     sheetEmptyTitle: '여행지를 선택하세요',
     sheetEmptyDesc: '지도의 핀을 클릭하면 정보가 표시됩니다.',
@@ -1001,6 +1007,7 @@ const I18N = {
     bfStripLabel: '♿ Accessible',
     dramaStripLabel: '🎬 Drama',
     stripTabSeason: 'Picks',
+    stripExpandLabel: 'List',
     legend: { day:'Day Trip', oneNight:'1-Night', twoNight:'2-Night', hallyu:'K-Drama Filming Site', bf:'Accessible Destination' },
     sheetEmptyTitle: 'Select a destination',
     sheetEmptyDesc: 'Tap a pin on the map to see details',
@@ -1052,6 +1059,7 @@ const I18N = {
     bfStripLabel: '♿ 无障碍',
     dramaStripLabel: '🎬 韩剧',
     stripTabSeason: '推荐',
+    stripExpandLabel: '列表',
     legend: { day:'当日往返', oneNight:'1晚行程', twoNight:'2晚行程', hallyu:'韩流拍摄地', bf:'无障碍旅游地' },
     sheetEmptyTitle: '请选择旅游地',
     sheetEmptyDesc: '点击地图上的图钉查看详情',
@@ -1103,6 +1111,7 @@ const I18N = {
     bfStripLabel: '♿ バリアフリー',
     dramaStripLabel: '🎬 ドラマ',
     stripTabSeason: 'おすすめ',
+    stripExpandLabel: 'リスト',
     legend: { day:'日帰りコース', oneNight:'1泊コース', twoNight:'2泊コース', hallyu:'韓流ロケ地', bf:'バリアフリー旅行地' },
     sheetEmptyTitle: '旅行先を選択してください',
     sheetEmptyDesc: '地図のピンをタップすると情報が表示されます',
@@ -2906,8 +2915,15 @@ kakao.maps.load(function () {
     setTimeout(() => { map.relayout(); }, 300);
   }
 
+  // 펼침 버튼의 텍스트 라벨(언어별) — 모드와 무관하게 항상 노출되므로 두 함수에서 공통 호출
+  function updateArrowLabel() {
+    const arrowText = document.getElementById('trendArrowText');
+    if (arrowText) arrowText.textContent = L().stripExpandLabel;
+  }
+
   // ── 모바일 스트립 헤더: 트렌드/추천 토글 ↔ 드라마·무장애 정적 라벨 전환 ──
   function showStripToggle() {
+    updateArrowLabel();
     const toggle = document.getElementById('stripToggle');
     const label  = document.getElementById('trendLabel');
     if (toggle) toggle.style.display = 'flex';
@@ -2918,6 +2934,7 @@ kakao.maps.load(function () {
     if (tabSeason) tabSeason.textContent = `${SEASON_EMO[currentSeason]} ${L().stripTabSeason}`;
   }
   function showStripLabel(text) {
+    updateArrowLabel();
     const toggle = document.getElementById('stripToggle');
     const label  = document.getElementById('trendLabel');
     if (toggle) toggle.style.display = 'none';
