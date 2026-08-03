@@ -1468,6 +1468,7 @@ function _ktoToPlace(item, season, isFestival = false) {
     _fromApi: true, // detailCommon2 상세조회 대상 여부 (더미 PLACES와 구분용, apiId는 더미도 갖고 있어 구분 불가)
     isFestival, // searchFestival2 출처 여부 (지도 핀 뱃지 구분용)
     _districtCode: _regionCode(item.lDongRegnCd, item.lDongSignguCd), // (단계 3) 추천 TOP5 지역 채점용
+    _cat3: item.cat3 || null, // (단계 3) 추천 TOP5 계절 적합도 채점용 (해수욕장/계곡/온천/산 등 소분류)
   };
 }
 
@@ -1496,7 +1497,12 @@ async function loadSeasonData(season) {
   const areaCodes = SEASON_AREA_CODES[season] || [1];
   const spotType = (KTO_CONTENT_TYPES[currentLang] || KTO_CONTENT_TYPES.ko).spot;
   const [spotResults, festivalItems] = await Promise.all([
-    Promise.all(areaCodes.map(ac => ktoFetch('areaBasedList2', { areaCode: ac, contentTypeId: spotType }))),
+    // arrange 미지정 시 기본값 A(제목순=가나다순)라 후보 풀이 항상 "가"로 시작하는 70건에 갇혔다(실측 확인).
+    // B는 문서상 "조회순"으로 알려져 있으나 응답에 조회수 필드가 없어 그 의미까지는 미확증 —
+    // 실측으로 확인된 사실은 "A(제목순)와 다른 TourAPI 정렬 파라미터"라는 것뿐이라 그렇게만 표기한다.
+    // numOfRows도 20→100으로 넓혀, 지역코드를 공유하는 계절 쌍(예: 여름·겨울)에서도 재채점 시
+    // 겹치지 않는 항목이 상위에 오를 여지를 늘린다.
+    Promise.all(areaCodes.map(ac => ktoFetch('areaBasedList2', { areaCode: ac, contentTypeId: spotType, arrange: 'B', numOfRows: 100 }))),
     ktoFetch('searchFestival2', { eventStartDate: SEASON_START[season], eventEndDate: SEASON_END[season], numOfRows: 10 }),
   ]);
   const valid = i => i.mapx && i.mapy && parseFloat(i.mapx) !== 0 && parseFloat(i.mapy) !== 0;
@@ -2993,12 +2999,45 @@ kakao.maps.load(function () {
   // AreaTarDemDsService는 signguCd를 생략하면 도 단위 집계값(signguCd="0")을 한 번에 주므로 계절당 3회 수준으로 끝난다.
   // TarRlteTarService1은 signguCd가 필수라(NO_MANDATORY_REQUEST_PARAMETERS_ERROR1) 시군구 단위 호출을 피할 수 없다.
   // → 도 단위 수요는 같은 도 안의 후보를 구분 못 하는 3단계 해상도이므로 순위의 주 신호는 연계 중심성에 둔다.
-  const RLTE_BASE_YM = '202606'; // 실측 확인된 최신 기준월 (DEMAND_TYPES·scripts/fetch_demand.py와 동일)
+  // baseYm을 전 계절 공통 단일 상수로 쓰면 수요·연계 신호에 계절성이 전혀 반영되지 않아, 지역코드를
+  // 공유하는 계절 쌍(예: 여름·겨울)은 점수까지 동일해져 겹침이 재발한다(실측 확인). 계절별로 실제
+  // 그 계절에 해당하는 달의 데이터를 쓰도록 분리한다.
+  // 실측 확인된 가용 범위: 202508~202606 (그 이후는 totalCount:0, 미발행). 2026년에 아직 도래하지
+  // 않은 계절(가을 9~11월, 겨울 12월)은 2025년 같은 달로 대체하고, 이미 지난 계절(봄 3~5월,
+  // 여름 중 6월)은 2026년 값을 쓴다.
+  const SEASON_DEMAND_YM = { // 수요 강도: 계절 내 3개월 평균으로 단일 월 노이즈를 완화
+    spring: ['202603', '202604', '202605'],
+    summer: ['202606', '202507', '202508'], // 2026-07·08 미발행 → 2025년 값
+    autumn: ['202509', '202510', '202511'], // 2026년 가을 도래 전 → 2025년 값
+    winter: ['202512', '202601', '202602'],
+  };
+  const SEASON_RLTE_YM = { // 연관 관광지: 시군구 단위 호출이라 3배로 늘리면 호출량이 커짐 — 계절당 대표 1개월만
+    spring: '202604', summer: '202507', autumn: '202510', winter: '202601',
+  };
   const RLTE_CONCURRENCY = 6;    // 시군구별 연관 관광지 호출 동시성 제한 (계절당 26~41개 시군구를 한 번에 쏘지 않음)
   const DEMAND_WEIGHT = 0.3;     // 도 단위 수요 강도는 보조 신호 — 연계 중심성(가중치 1.0) 대비 낮게
-  const _provinceDemandCache = {}; // key: areaCd(2자리) → 도 단위 숙박비중(2102) 집계값 | null(실패)
+
+  // 계절 적합도: 수요 강도·연계 중심성은 둘 다 "이 관광지가 계절에 맞는 종류인지"는 전혀 모른다
+  // (시군구 단위 수요는 강원 안의 스키장과 해수욕장을 구분 못 하고, 연계 중심성도 계절 무관) — 그래서
+  // 겨울 추천 상위에 해수욕장(어달해변)이 오르는 결함이 재현됐다. areaBasedList2 응답의 cat3(소분류)를
+  // 실측으로 확인해 만든 계절-카테고리 매핑을 점수에 반영한다(실측: 강원·충남 areaBasedList2, 2026-08).
+  //   A01011200 해수욕장/해변 · A01010900 계곡 · A01010100 국립공원 · A01010400 산/봉우리 · A02020300 온천
+  // 스키장은 이 방식으로 구분 불가 — contentTypeId=12(관광지) 응답에서는 "휴양관광지"(A0202)로만 잡혀
+  // 여름 콘도 리조트와 구분되지 않는다(실측: 실제 스키장 전용 코드 A03021200은 contentTypeId=28 레포츠
+  // 쪽에만 있고, loadSeasonData()는 12만 조회함). 그래서 "여름 상위에 스키장 없음"은 이 코드만으로는
+  // 보장하지 못한다 — 검증 시 별도로 확인 필요.
+  const SEASON_CAT_MISMATCH = { // 확실히 계절에 안 맞는 소분류는 후보 풀에서 아예 제외(하드 필터)
+    winter: new Set(['A01011200', 'A01010900']), // 겨울에 해수욕장·계곡은 배제
+  };
+  const SEASON_CAT_BONUS = { // 계절에 맞는 소분류는 점수에 가산(정규화된 demand·centrality보다 크게 — 확실한 신호이므로)
+    summer: { 'A01011200': 1, 'A01010900': 1 },   // 해수욕장, 계곡
+    autumn: { 'A01010100': 1, 'A01010400': 1 },   // 국립공원, 산
+    winter: { 'A02020300': 1 },                   // 온천
+  };
+  const SEASON_FIT_WEIGHT = 1.5; // demand(최대 0.3)·centrality(최대 1.0) 합보다 크게 둬서 명백한 부적합/적합을 확실히 반영
+  const _provinceDemandCache = {}; // key: `${areaCd}_${season}` → 도 단위 숙박비중(2102) 계절 평균값 | null(실패)
   const _provincePending     = new Set();
-  const _districtRlteCache   = {}; // key: 지역코드(5자리) → Map(정규화 이름→연계 중심성 카운트) | null(실패)
+  const _districtRlteCache   = {}; // key: `${districtCode}_${season}` → Map(정규화 이름→연계 중심성 카운트) | null(실패)
   const _districtPending     = new Set();
   const _seasonTop5Cache     = {};
   const _seasonTop5Pending   = new Set();
@@ -3021,31 +3060,37 @@ kakao.maps.load(function () {
     await Promise.all(workers);
   }
 
-  async function _fetchProvinceDemand(areaCd) {
-    try {
-      // signguCd를 생략하면 첫 행에 도 단위 집계(signguCd="0")가 포함된다(실측 확인).
-      const qs = new URLSearchParams({
-        MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
-        baseYm: RLTE_BASE_YM, areaCd, tarSjrnDsIxCd: '2102', numOfRows: 5, pageNo: 1,
-      });
-      const res = await fetch(`${API_PROXY_BASE}/demand/areaTarSjrnDsList?${qs}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data  = await res.json();
-      const items = data?.response?.body?.items;
-      const rows  = items && items.item ? (Array.isArray(items.item) ? items.item : [items.item]) : [];
-      const total = rows.find(r => r.signguCd === '0') || rows[0];
-      return total ? parseFloat(total.tarSjrnDsIxVal) : null;
-    } catch (e) {
-      console.warn(`[SeasonRoad] 도 단위 수요 강도 조회 실패(${areaCd}):`, e);
-      return null;
-    }
+  // 계절 내 3개월치를 각각 조회해 평균낸다 — 한 달 호출이 실패해도 나머지로 평균 계산(부분 실패 허용).
+  async function _fetchProvinceDemand(areaCd, season) {
+    const yms = SEASON_DEMAND_YM[season] || [];
+    const results = await Promise.all(yms.map(async (ym) => {
+      try {
+        // signguCd를 생략하면 첫 행에 도 단위 집계(signguCd="0")가 포함된다(실측 확인).
+        const qs = new URLSearchParams({
+          MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+          baseYm: ym, areaCd, tarSjrnDsIxCd: '2102', numOfRows: 5, pageNo: 1,
+        });
+        const res = await fetch(`${API_PROXY_BASE}/demand/areaTarSjrnDsList?${qs}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data  = await res.json();
+        const items = data?.response?.body?.items;
+        const rows  = items && items.item ? (Array.isArray(items.item) ? items.item : [items.item]) : [];
+        const total = rows.find(r => r.signguCd === '0') || rows[0];
+        return total ? parseFloat(total.tarSjrnDsIxVal) : null;
+      } catch (e) {
+        console.warn(`[SeasonRoad] 도 단위 수요 강도 조회 실패(${areaCd}, ${ym}):`, e);
+        return null;
+      }
+    }));
+    const valid = results.filter(v => v != null);
+    return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null;
   }
 
-  async function _fetchDistrictRelations(areaCd, signguCd) {
+  async function _fetchDistrictRelations(areaCd, signguCd, season) {
     try {
       const qs = new URLSearchParams({
         MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
-        baseYm: RLTE_BASE_YM, areaCd, signguCd, numOfRows: 1000, pageNo: 1,
+        baseYm: SEASON_RLTE_YM[season], areaCd, signguCd, numOfRows: 1000, pageNo: 1,
       });
       const res = await fetch(`${API_PROXY_BASE}/rlte/areaBasedList1?${qs}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -3061,32 +3106,34 @@ kakao.maps.load(function () {
       rows.forEach(r => { bump(r.tAtsNm); bump(r.rlteTatsNm); });
       return centrality;
     } catch (e) {
-      console.warn(`[SeasonRoad] 연관 관광지 조회 실패(${areaCd}${signguCd}):`, e);
+      console.warn(`[SeasonRoad] 연관 관광지 조회 실패(${areaCd}${signguCd}, ${season}):`, e);
       return null;
     }
   }
 
-  // 도 하나(areaCd)의 수요 강도를 1회만 실측 조회 (계절 무관, 세션 내 캐시)
-  async function _loadProvinceDemand(areaCd) {
-    if (areaCd in _provinceDemandCache) return;
-    if (_provincePending.has(areaCd)) return; // 다른 계절이 이미 조회 중 — 이번 라운드는 건너뜀(점수 0 처리)
-    _provincePending.add(areaCd);
+  // 도 하나(areaCd)의 계절별 수요 강도를 1회만 실측 조회 (계절마다 다른 baseYm이라 캐시 키에 계절 포함)
+  async function _loadProvinceDemand(areaCd, season) {
+    const key = `${areaCd}_${season}`;
+    if (key in _provinceDemandCache) return;
+    if (_provincePending.has(key)) return; // 같은 계절 재요청이 이미 조회 중 — 이번 라운드는 건너뜀(점수 0 처리)
+    _provincePending.add(key);
     try {
-      _provinceDemandCache[areaCd] = await _fetchProvinceDemand(areaCd);
+      _provinceDemandCache[key] = await _fetchProvinceDemand(areaCd, season);
     } finally {
-      _provincePending.delete(areaCd);
+      _provincePending.delete(key);
     }
   }
 
-  // 시군구 하나(districtCode)의 연관 관광지 덤프를 1회만 실측 조회 (계절 무관, 세션 내 캐시)
-  async function _loadDistrictRlte(districtCode) {
-    if (districtCode in _districtRlteCache) return;
-    if (_districtPending.has(districtCode)) return; // 다른 계절이 이미 조회 중 — 이번 라운드는 건너뜀(점수 0 처리)
-    _districtPending.add(districtCode);
+  // 시군구 하나(districtCode)의 계절별 연관 관광지 덤프를 1회만 실측 조회 (캐시 키에 계절 포함)
+  async function _loadDistrictRlte(districtCode, season) {
+    const key = `${districtCode}_${season}`;
+    if (key in _districtRlteCache) return;
+    if (_districtPending.has(key)) return; // 같은 계절 재요청이 이미 조회 중 — 이번 라운드는 건너뜀(점수 0 처리)
+    _districtPending.add(key);
     try {
-      _districtRlteCache[districtCode] = await _fetchDistrictRelations(districtCode.slice(0, 2), districtCode);
+      _districtRlteCache[key] = await _fetchDistrictRelations(districtCode.slice(0, 2), districtCode, season);
     } finally {
-      _districtPending.delete(districtCode);
+      _districtPending.delete(key);
     }
   }
 
@@ -3116,28 +3163,34 @@ kakao.maps.load(function () {
     return picked.map(p => p.place);
   }
 
-  // 정규화(도 단위 수요 강도)×DEMAND_WEIGHT + 정규화(시군구 단위 연계 중심성) 합산 점수로 정렬 후
-  // 시군구 다양성을 적용해 상위 5 선정. 두 신호가 모두 0(동점)이면 Array#sort의 안정 정렬 특성으로
-  // 원래 API 순서가 유지된다.
-  function _scoreAndRankTop5(candidates) {
-    const demandVals = candidates
-      .map(p => p._districtCode ? _provinceDemandCache[p._districtCode.slice(0, 2)] : null)
+  // 정규화(도 단위 수요 강도)×DEMAND_WEIGHT + 정규화(시군구 단위 연계 중심성) + 계절 적합도 가산 점수로
+  // 정렬 후 시군구 다양성을 적용해 상위 5 선정. 확실히 부적합한 소분류(SEASON_CAT_MISMATCH)는 채점
+  // 전에 후보 풀에서 제외한다. 모든 신호가 0(동점)이면 Array#sort의 안정 정렬 특성으로 원래 API 순서가
+  // 유지된다.
+  function _scoreAndRankTop5(candidates, season) {
+    const mismatch = SEASON_CAT_MISMATCH[season];
+    const pool = mismatch ? candidates.filter(p => !p._cat3 || !mismatch.has(p._cat3)) : candidates;
+
+    const demandVals = pool
+      .map(p => p._districtCode ? _provinceDemandCache[`${p._districtCode.slice(0, 2)}_${season}`] : null)
       .filter(v => v != null);
     const dMin = demandVals.length ? Math.min(...demandVals) : 0;
     const dMax = demandVals.length ? Math.max(...demandVals) : 0;
 
-    const centVals = candidates.map(p => {
-      const map = _districtRlteCache[p._districtCode];
+    const centVals = pool.map(p => {
+      const map = _districtRlteCache[`${p._districtCode}_${season}`];
       return map ? (map.get(_normName(p.name)) || 0) : 0;
     });
     const cMax = Math.max(0, ...centVals);
 
-    const scored = candidates.map((p, i) => {
-      const dRaw  = p._districtCode ? _provinceDemandCache[p._districtCode.slice(0, 2)] : null;
+    const bonusMap = SEASON_CAT_BONUS[season] || {};
+    const scored = pool.map((p, i) => {
+      const dRaw  = p._districtCode ? _provinceDemandCache[`${p._districtCode.slice(0, 2)}_${season}`] : null;
       const dNorm = (dRaw == null || dMax === dMin) ? 0 : (dRaw - dMin) / (dMax - dMin);
       const cNorm = cMax === 0 ? 0 : centVals[i] / cMax;
+      const fit   = (p._cat3 && bonusMap[p._cat3] ? bonusMap[p._cat3] : 0) * SEASON_FIT_WEIGHT;
       return {
-        place: p, score: dNorm * DEMAND_WEIGHT + cNorm,
+        place: p, score: dNorm * DEMAND_WEIGHT + cNorm + fit,
         district: p._districtCode || `_none_${i}`,
         province: p._districtCode ? p._districtCode.slice(0, 2) : `_none_${i}`,
       };
@@ -3146,7 +3199,7 @@ kakao.maps.load(function () {
     return _pickDiverseTop5(scored);
   }
 
-  // ── 추천 TOP5 백그라운드 재채점 (지역코드 단위 캐시, 계절당 세션 내 1회) ──
+  // ── 추천 TOP5 백그라운드 재채점 (지역코드×계절 단위 캐시, 계절당 세션 내 1회) ──
   async function refreshSeasonTop5(season) {
     if (!USE_REAL_API || _seasonTop5Cache[season] || _seasonTop5Pending.has(season)) return;
     const apiPlaces = _seasonCache[season];
@@ -3156,10 +3209,10 @@ kakao.maps.load(function () {
       const districtCodes = [...new Set(apiPlaces.map(p => p._districtCode).filter(Boolean))];
       const provinceCodes = [...new Set(districtCodes.map(c => c.slice(0, 2)))];
       await Promise.all([
-        Promise.all(provinceCodes.map(_loadProvinceDemand)), // 계절당 3회 수준 — 동시성 제한 불필요
-        _mapWithConcurrency(districtCodes, RLTE_CONCURRENCY, _loadDistrictRlte),
+        Promise.all(provinceCodes.map(ac => _loadProvinceDemand(ac, season))), // 계절당 9회 수준(3개월×도) — 동시성 제한 불필요
+        _mapWithConcurrency(districtCodes, RLTE_CONCURRENCY, dc => _loadDistrictRlte(dc, season)),
       ]);
-      const ranked = _scoreAndRankTop5(apiPlaces);
+      const ranked = _scoreAndRankTop5(apiPlaces, season);
       if (!ranked || !ranked.length) return;
       _seasonTop5Cache[season] = ranked;
       if (currentSeason === season && !hallyuMode && !bfMode) {
