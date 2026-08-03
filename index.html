@@ -2877,6 +2877,14 @@ kakao.maps.load(function () {
     return candidates.length ? candidates : null;
   }
 
+  // ── 계절 추천 TOP5 선정 ──
+  // 현재: API 반환 순서 그대로 상위 5개 (정렬 기준 없음 → 단계 3에서 교체 예정)
+  function pickSeasonTop5(season) {
+    const apiPlaces = _seasonCache[season];
+    const curPlaces = apiPlaces || PLACES.filter(p => p.seasons.includes(season));
+    return curPlaces.slice(0, 5);
+  }
+
   // ── 데이터랩 검색어는 항상 한국어로 보낸다: currentLang이 한국어가 아니면
   //    KTO 한국어 서비스(detailCommon2)로 원어명을 별도 조회한다 ──
   async function getKoreanName(place) {
@@ -3166,7 +3174,7 @@ kakao.maps.load(function () {
     const lang      = L();
     const apiPlaces = _seasonCache[currentSeason];
     const curPlaces = apiPlaces || PLACES.filter(p => p.seasons.includes(currentSeason));
-    const top5      = curPlaces.slice(0, 5);
+    const top5      = pickSeasonTop5(currentSeason);
     const sEmo      = SEASON_EMO[currentSeason];
     const sName     = lang.seasonNames[currentSeason];
 
