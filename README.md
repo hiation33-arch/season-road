@@ -201,7 +201,7 @@
 
 ## 활용 OpenAPI
 
-Season Road는 공공데이터포털(data.go.kr)의 TourAPI를 활용해 계절 관광지·축제·무장애 여행 정보를 실시간으로 불러옵니다.
+Season Road는 공공데이터포털(data.go.kr)의 TourAPI를 활용해 계절 관광지·축제·무장애 여행 정보는 물론, 지역 관광 수요 강도와 관광지 간 연관성까지 반영한 계절 적합도 판정 결과를 실시간으로 불러옵니다.
 
 | 서비스명 | 오퍼레이션 | 활용 기능 |
 |---|---|---|
@@ -211,6 +211,9 @@ Season Road는 공공데이터포털(data.go.kr)의 TourAPI를 활용해 계절 
 | 무장애 여행 정보 서비스 (KorWithService2) | `searchKeyword2` | "무장애" 키워드로 전용 코스(무장애숲길·나눔길 등) 검색 |
 | 무장애 여행 정보 서비스 (KorWithService2) | `areaBasedList2` | 지역 기반 무장애 여행지 후보 목록 보강 |
 | 무장애 여행 정보 서비스 (KorWithService2) | `detailWithTour2` | 장소별 접근성(휠체어·화장실·경사로·점자·주차·유모차·수유실 등) 상세 조회 |
+| 지역별 관광 수요 강도 (AreaTarDemDsService) | `areaTarSjrnDsList` | 계절별 추천 TOP5 정렬 — 지역 관광 수요 강도 반영 |
+| 관광지별 연관 관광지 정보 (TarRlteTarService1) | `areaBasedList1` | 계절별 추천 TOP5 정렬 — 관광지 연계 중심성 산출 |
+| 미디어콘텐츠 영상 촬영지 데이터 (한국문화정보원) | 파일데이터/REST | 한류 드라마 촬영지 위치·정보 기반 데이터 |
 
 > API 응답이 없거나 실패하면 각 기능은 내장된 더미 데이터로 자동 전환됩니다(서비스 중단 없음).
 
@@ -251,7 +254,7 @@ npx wrangler secret put KTO_API_KEY   # 프롬프트에 TourAPI 서비스키 입
 
 ### 공공데이터포털 TourAPI 연동
 
-계절 관광지·축제·무장애 여행 정보는 실제 API로 연동되어 있으며(자세한 목록은 [활용 OpenAPI](#활용-openapi) 참고), 응답이 없거나 실패할 경우에만 더미 데이터로 자동 전환됩니다. 한류 촬영지는 대응하는 콘텐츠타입이 없어 더미 데이터(`DRAMA_DATA`)로 렌더링합니다.
+계절 관광지·축제·무장애 여행 정보는 실제 API로 연동되어 있으며(자세한 목록은 [활용 OpenAPI](#활용-openapi) 참고), 응답이 없거나 실패할 경우에만 더미 데이터로 자동 전환됩니다. 한류 촬영지는 한국관광공사 TourAPI에 대응 콘텐츠타입이 없어, 한국문화정보원 「미디어콘텐츠 영상 촬영지 데이터」(공공데이터포털, 2022-11-25 기준)를 기반으로 구성한 정적 데이터(`DRAMA_DATA`)로 렌더링합니다. 원 데이터셋이 제공하지 않는 다국어 장소명과 장면 설명은 자체 작성했습니다.
 
 - API 키 발급: https://api.visitkorea.or.kr
 - 발급받은 키는 Cloudflare Workers 시크릿(`KTO_API_KEY`)에만 등록 (코드에 직접 커밋 금지)
