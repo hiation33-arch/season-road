@@ -184,7 +184,15 @@
     }
     .acc-item .acc-icon { font-size: 14px; flex-shrink: 0; }
     .acc-label { font-size: 11px; color: var(--gray-600); }
-    .acc-note { font-size: 10px; color: var(--gray-400); line-height: 1.35; margin-top: 2px; }
+    .acc-note { font-size: 10px; color: var(--gray-400); line-height: 1.35; margin-top: 4px; }
+    .acc-origin-badge {
+      display: inline-block; font-size: 9px; font-weight: 700; color: var(--barrier-500);
+      background: var(--barrier-100); border-radius: 4px; padding: 1px 5px; margin-right: 5px;
+      vertical-align: middle;
+    }
+    .acc-item-toggle { cursor: pointer; align-items: flex-start; }
+    .acc-item-body { flex: 1; min-width: 0; }
+    .acc-arrow { font-size: 9px; color: var(--gray-400); margin-left: 4px; }
     .bf-course-card {
       border: 1.5px solid #fed7aa; border-radius: 12px; padding: 12px 14px;
       margin-bottom: 8px; cursor: pointer;
@@ -437,7 +445,8 @@
     .trend-chip:focus-visible, .bf-chip:focus-visible, .panel-item:focus-visible,
     .bf-course-card:focus-visible, .bf-place-item:focus-visible,
     .drama-card:focus-visible, .drama-site-item:focus-visible,
-    .strip-tab:focus-visible, .trend-arrow-btn:focus-visible, .sheet-handle-area:focus-visible {
+    .strip-tab:focus-visible, .trend-arrow-btn:focus-visible, .sheet-handle-area:focus-visible,
+    .acc-item-toggle:focus-visible {
       outline: 2px solid #2563eb; outline-offset: 2px;
     }
     .panel-rank { font-size: 13px; font-weight: 700; min-width: 18px; text-align: center; }
@@ -985,6 +994,7 @@ const I18N = {
     multiLang: '🌏 다국어 안내',
     accessibility: '♿ 접근성 정보',
     bfNoAccData: '접근성 상세 정보를 불러오지 못했습니다',
+    bfOriginalBadge: '원문',
     festivalBadge: '🎉 지금 열리는 축제·행사',
     seasonNames: { spring:'봄', summer:'여름', autumn:'가을', winter:'겨울' },
     halfPrice: {
@@ -1038,6 +1048,7 @@ const I18N = {
     multiLang: '🌏 Multilingual Info',
     accessibility: '♿ Accessibility Info',
     bfNoAccData: 'Could not load accessibility details',
+    bfOriginalBadge: 'Original (KR)',
     festivalBadge: '🎉 Festival/Event happening now',
     seasonNames: { spring:'Spring', summer:'Summer', autumn:'Autumn', winter:'Winter' },
     halfPrice: {
@@ -1091,6 +1102,7 @@ const I18N = {
     multiLang: '🌏 多语言说明',
     accessibility: '♿ 无障碍信息',
     bfNoAccData: '无法加载无障碍详细信息',
+    bfOriginalBadge: '原文(韩)',
     festivalBadge: '🎉 正在举行的节庆·活动',
     seasonNames: { spring:'春季', summer:'夏季', autumn:'秋季', winter:'冬季' },
     halfPrice: {
@@ -1144,6 +1156,7 @@ const I18N = {
     multiLang: '🌏 多言語案内',
     accessibility: '♿ アクセシビリティ情報',
     bfNoAccData: 'アクセシビリティ詳細情報を取得できませんでした',
+    bfOriginalBadge: '原文(韓)',
     festivalBadge: '🎉 開催中の祭り・イベント',
     seasonNames: { spring:'春', summer:'夏', autumn:'秋', winter:'冬' },
     halfPrice: {
@@ -1457,15 +1470,57 @@ function bfPresentFields(detail) {
     .sort((a, b) => BF_FIELD_I18N[a].order - BF_FIELD_I18N[b].order);
 }
 
+// 서술 문장 정제: "_시각장애인 편의시설" 같은 카테고리 꼬리표(밑줄 이후)만 제거.
+// 괄호 상세·/·, 구분은 그대로 유지 — 기계번역은 절대 하지 않고 원문을 그대로 노출한다(컨설팅 명시 금지).
+function _bfCleanValue(raw) {
+  return String(raw).split('_')[0].trim();
+}
+
 // detailWithTour2 원본 응답 → 28종 체계 존재 필드 그리드 HTML.
-// 이 단계는 필드 레이블 + 있음 아이콘만 표기하고 값(서술 문장)은 표시하지 않음(2단계에서 원문 배지로 추가).
+// 필드 레이블(1단계, 다국어)만 기본 노출하고, 값(서술 문장)은 카드를 탭해야 펼쳐지는 아코디언으로 숨겨둔다.
+// 값은 detailWithTour2가 한국어 전용 서비스라 항상 한국어이므로, 펼쳤을 때도 번역하지 않고
+// "원문(한국어)" 배지로 표시해 번역 누락이 아니라 데이터 한계임을 알린다.
+// 정제 후 값이 빈 문자열이면(카테고리 꼬리표만 있던 경우) 펼침 기능 자체를 비활성화하고 레이블만 표시.
 function _renderBFFieldGrid(detail) {
   const present = bfPresentFields(detail);
   if (present.length === 0) return '';
-  return present.map(key => `<div class="acc-item">
+  const badge = L().bfOriginalBadge;
+  return present.map(key => {
+    const label   = bfFieldLabel(key, currentLang);
+    const cleaned = _bfCleanValue(detail[key]);
+    if (!cleaned) {
+      return `<div class="acc-item">
+        <span class="acc-icon">✅</span>
+        <div><span class="acc-label">${label}</span></div>
+      </div>`;
+    }
+    const noteId = `bfNote-${key}`;
+    return `<div class="acc-item acc-item-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="${noteId}">
       <span class="acc-icon">✅</span>
-      <div><span class="acc-label">${bfFieldLabel(key, currentLang)}</span></div>
-    </div>`).join('');
+      <div class="acc-item-body">
+        <span class="acc-label">${label}</span>
+        <span class="acc-arrow" aria-hidden="true">▾</span>
+        <div class="acc-note" id="${noteId}" hidden><span class="acc-origin-badge">${badge}</span>${cleaned}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// _renderBFFieldGrid가 만든 .acc-item-toggle 카드에 탭(클릭·Enter·Space) 펼침/접힘 바인딩.
+// innerHTML로 그리드를 새로 그릴 때마다(초기 렌더 + detailWithTour2 lazy 로드 후) 호출해야 한다 —
+// 옛 DOM 노드가 통째로 교체되므로 이전에 바인딩한 리스너는 새 노드에 남아있지 않다.
+function _bindBFFieldToggles(container) {
+  if (!container) return;
+  container.querySelectorAll('.acc-item-toggle').forEach(el => {
+    bindActivatable(el, () => {
+      const nowExpanded = el.getAttribute('aria-expanded') !== 'true';
+      el.setAttribute('aria-expanded', String(nowExpanded));
+      const note = document.getElementById(el.getAttribute('aria-controls'));
+      if (note) note.hidden = !nowExpanded;
+      const arrow = el.querySelector('.acc-arrow');
+      if (arrow) arrow.textContent = nowExpanded ? '▴' : '▾';
+    });
+  });
 }
 
 // accessibility 객체(boolean 또는 텍스트 값 혼용) → acc-grid HTML
@@ -3552,6 +3607,7 @@ kakao.maps.load(function () {
         <div class="acc-grid" id="bfAccGrid">${accHtml}</div>
       </div>`;
     setSheetOpen(true);
+    _bindBFFieldToggles(document.getElementById('bfAccGrid')); // 재방문 시 캐시된 accessibility로 즉시 렌더되는 경우 대비
     if (bfMode && !hallyuMode) renderBFPanel();
 
     if (place._fromApi && place.apiId) {
@@ -3590,6 +3646,7 @@ kakao.maps.load(function () {
         place.accessibility = detail; // detailWithTour2 원본 그대로 재사용(28종 체계)
         const html = detail ? _renderBFFieldGrid(detail) : '';
         grid.innerHTML = html || `<div class="sheet-detail-loading">${lang.bfNoAccData}</div>`;
+        _bindBFFieldToggles(grid);
       });
     }
   }
