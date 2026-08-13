@@ -1239,6 +1239,7 @@ const _trendPending = new Set(); // key: season → 트렌드 조회 진행 중(
 const _koNameCache  = {}; // key: contentId → 한국어 원어명 (데이터랩 검색어는 항상 한국어로 보냄)
 
 let _isLoading = false;
+let _tabLockCount = 0; // 스피너 로딩 + 백그라운드 재채점 등 중첩 가능한 잠금 사유를 카운트(하나라도 남아있으면 잠금 유지)
 
 // 스피너 제어 + 로딩 중 탭 잠금
 function setLoading(on) {
@@ -1250,8 +1251,18 @@ function setLoading(on) {
   lockEls.forEach(el => el.setAttribute('aria-disabled', on ? 'true' : 'false'));
   document.getElementById('seasonTabs').setAttribute('aria-busy', on ? 'true' : 'false');
 }
+// 중첩 잠금(예: 초기 로드 스피너 + 백그라운드 재채점이 겹치는 구간)에서 한쪽이 먼저 끝나도
+// 다른 쪽이 아직 진행 중이면 탭을 계속 잠가둔다 — 카운트가 0이 될 때만 실제로 해제.
+function lockTabs() {
+  _tabLockCount++;
+  if (_tabLockCount === 1) setLoading(true);
+}
+function unlockTabs() {
+  _tabLockCount = Math.max(0, _tabLockCount - 1);
+  if (_tabLockCount === 0) setLoading(false);
+}
 function showSpinner(text) {
-  setLoading(true);
+  lockTabs();
   const el = document.getElementById('apiSpinner');
   el.style.display = 'flex';
   if (text) el.querySelector('.spinner-text').textContent = text;
@@ -1260,7 +1271,7 @@ function showSpinner(text) {
 function hideSpinner() {
   document.getElementById('apiSpinner').style.display = 'none';
   document.getElementById('map').classList.remove('map-loading');
-  setLoading(false);
+  unlockTabs();
 }
 
 // ── API 공통 fetch (언어별 다국어 서비스 자동 선택 + KO fallback) ──
@@ -3096,19 +3107,24 @@ kakao.maps.load(function () {
   }
 
   // ── 계절 추천 TOP5 선정 ──
-  // _seasonTop5Cache[season]이 채워져 있으면(백그라운드 재채점 완료) 그 결과를 쓰고,
-  // 아직이거나 API 실패 시엔 기존 방식(API 반환 순서 상위 5개)으로 조용히 폴백한다.
+  // _seasonTop5Cache[season]에 재채점 결과가 채워져 있으면(성공 시 비어있지 않은 배열) 그 결과를 쓰고,
+  // 아직 시도 전이거나 재채점이 빈 배열로 끝난 경우(예: 계절 부적합 카테고리로 후보가 전부 걸러짐)엔
+  // 기존 방식(API 반환 순서 상위 5개)으로 조용히 폴백한다.
   function pickSeasonTop5(season) {
-    if (_seasonTop5Cache[season]) return _seasonTop5Cache[season];
+    const ranked = _seasonTop5Cache[season];
+    if (ranked && ranked.length) return ranked;
     const apiPlaces = _seasonCache[season];
     const curPlaces = apiPlaces || PLACES.filter(p => p.seasons.includes(season));
     return curPlaces.slice(0, 5);
   }
 
   // 재채점된 추천 TOP5가 아직 실측 조회 중인지 — true인 동안엔 폴백 목록 대신 로딩 상태를 보여준다.
-  // API 자체가 없거나(더미 fallback) 이미 채점이 끝났다면 false(더 이상 기다릴 게 없음).
+  // season in _seasonTop5Cache로 "시도 완료"를 판정한다(값이 빈 배열이어도 완료로 취급) — 캐시 존재
+  // 여부만으로 판정하면(과거 버전) 재채점이 빈 배열로 끝났을 때 캐시가 영영 채워지지 않아 로딩 상태에
+  // 무기한 갇히고 위 폴백에도 영영 도달하지 못하는 결함이 있었다(실측 확인, 콘솔 에러 없이 재현).
+  // API 자체가 없거나(더미 fallback) 이미 시도가 끝났다면 false(더 이상 기다릴 게 없음).
   function seasonTop5Loading(season) {
-    return USE_REAL_API && !_seasonTop5Cache[season] && !!(_seasonCache[season] && _seasonCache[season].length);
+    return USE_REAL_API && !(season in _seasonTop5Cache) && !!(_seasonCache[season] && _seasonCache[season].length);
   }
 
   // ── (단계 3) 추천 TOP5 재채점: 지역 수요 강도(도 단위, 보조 신호) + 연관 관광지 연계 중심성(시군구 단위, 주 신호) ──
@@ -3319,11 +3335,16 @@ kakao.maps.load(function () {
   }
 
   // ── 추천 TOP5 백그라운드 재채점 (지역코드×계절 단위 캐시, 계절당 세션 내 1회) ──
+  // 결과가 빈 배열이어도(부적합 카테고리로 후보 전멸 등) _seasonTop5Cache[season]을 반드시 채워
+  // "시도 완료"로 표시한다 — 그래야 seasonTop5Loading()이 true로 무기한 남지 않고 pickSeasonTop5()의
+  // 폴백(API 반환 순서)에 도달할 수 있다. 진행 중엔 탭을 잠가(aria-disabled) 재채점 도중 탭 이탈로
+  // 인한 currentSeason 불일치 자체를 예방한다.
   async function refreshSeasonTop5(season) {
     if (!USE_REAL_API || _seasonTop5Cache[season] || _seasonTop5Pending.has(season)) return;
     const apiPlaces = _seasonCache[season];
     if (!apiPlaces || !apiPlaces.length) return; // 관광지 API 자체가 비어있음 → 기존 순서 폴백 유지
     _seasonTop5Pending.add(season);
+    lockTabs();
     try {
       const districtCodes = [...new Set(apiPlaces.map(p => p._districtCode).filter(Boolean))];
       const provinceCodes = [...new Set(districtCodes.map(c => c.slice(0, 2)))];
@@ -3331,15 +3352,14 @@ kakao.maps.load(function () {
         Promise.all(provinceCodes.map(ac => _loadProvinceDemand(ac, season))), // 계절당 9회 수준(3개월×도) — 동시성 제한 불필요
         _mapWithConcurrency(districtCodes, RLTE_CONCURRENCY, dc => _loadDistrictRlte(dc, season)),
       ]);
-      const ranked = _scoreAndRankTop5(apiPlaces, season);
-      if (!ranked || !ranked.length) return;
-      _seasonTop5Cache[season] = ranked;
+      _seasonTop5Cache[season] = _scoreAndRankTop5(apiPlaces, season) || [];
       if (currentSeason === season && !hallyuMode && !bfMode) {
         renderSeasonStrip(season);
         renderSeasonPanel(null);
       }
     } finally {
       _seasonTop5Pending.delete(season);
+      unlockTabs();
     }
   }
 
