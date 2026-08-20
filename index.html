@@ -3195,6 +3195,20 @@ kakao.maps.load(function () {
     await Promise.all(workers);
   }
 
+  // 실측(2026-08-20): rlte/demand 호출 중 일부가 응답 없이 90초+ 걸린 사례 확인됨(개별 요청에
+  // 타임아웃이 없어 fetch()가 무기한 대기). refreshSeasonTop5는 이 결과를 기다리며 탭을 잠그므로,
+  // 타임아웃 없이 하나만 멈춰도 전체 계절 전환이 무기한 멈춘 것처럼 보인다. 8초 후 중단시켜
+  // 기존 catch 블록의 "부분 실패 허용" 경로로 넘긴다.
+  async function _fetchWithTimeout(url, timeoutMs = 8000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      return await fetch(url, { signal: ctrl.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   // 계절 내 3개월치를 각각 조회해 평균낸다 — 한 달 호출이 실패해도 나머지로 평균 계산(부분 실패 허용).
   async function _fetchProvinceDemand(areaCd, season) {
     const yms = SEASON_DEMAND_YM[season] || [];
@@ -3205,7 +3219,7 @@ kakao.maps.load(function () {
           MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
           baseYm: ym, areaCd, tarSjrnDsIxCd: '2102', numOfRows: 5, pageNo: 1,
         });
-        const res = await fetch(`${API_PROXY_BASE}/demand/areaTarSjrnDsList?${qs}`);
+        const res = await _fetchWithTimeout(`${API_PROXY_BASE}/demand/areaTarSjrnDsList?${qs}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data  = await res.json();
         const items = data?.response?.body?.items;
@@ -3227,7 +3241,7 @@ kakao.maps.load(function () {
         MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
         baseYm: SEASON_RLTE_YM[season], areaCd, signguCd, numOfRows: 1000, pageNo: 1,
       });
-      const res = await fetch(`${API_PROXY_BASE}/rlte/areaBasedList1?${qs}`);
+      const res = await _fetchWithTimeout(`${API_PROXY_BASE}/rlte/areaBasedList1?${qs}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data  = await res.json();
       const items = data?.response?.body?.items;
@@ -3633,7 +3647,7 @@ kakao.maps.load(function () {
     if (place._fromApi && place.apiId) {
       // 이미지·개요 (detailCommon2, openPlace와 동일 패턴)
       loadPlaceDetail(place.apiId).then(detail => {
-        if (_lastOpened.kind !== 'bf' || _lastOpened.data !== place) return; // stale 응답 방지
+        if (!_lastOpened || _lastOpened.kind !== 'bf' || _lastOpened.data !== place) return; // stale 응답 방지(시트 닫힘 포함)
         const slot = document.getElementById('sheetDetailSlot');
         if (!slot) return;
         const imgUrl   = place.image || detail?.firstimage || '';
@@ -3660,7 +3674,7 @@ kakao.maps.load(function () {
 
       // 접근성 상세 (detailWithTour2, lazy — 목록 전체가 아닌 클릭한 장소만 호출)
       loadBFDetail(place.apiId).then(detail => {
-        if (_lastOpened.kind !== 'bf' || _lastOpened.data !== place) return; // stale 응답 방지
+        if (!_lastOpened || _lastOpened.kind !== 'bf' || _lastOpened.data !== place) return; // stale 응답 방지(시트 닫힘 포함)
         const grid = document.getElementById('bfAccGrid');
         if (!grid) return;
         place.accessibility = detail; // detailWithTour2 원본 그대로 재사용(28종 체계)
@@ -3915,7 +3929,7 @@ kakao.maps.load(function () {
 
     // 인근 숙박 (모든 장소 공통, 좌표 기반)
     loadNearbyStays(place.lat, place.lng).then(stays => {
-      if (_lastOpened.kind !== 'place' || _lastOpened.data !== place) return; // stale 방지
+      if (!_lastOpened || _lastOpened.kind !== 'place' || _lastOpened.data !== place) return; // stale 방지(시트 닫힘 포함)
       const slot = document.getElementById('sheetStaySlot');
       if (!slot) return;
       slot.innerHTML = `<div class="stay-title">🏨 ${lang.nearbyStay}</div>` + _renderStayCards(stays);
@@ -3923,8 +3937,8 @@ kakao.maps.load(function () {
 
     if (place._fromApi && place.apiId) {
       loadPlaceDetail(place.apiId).then(detail => {
-        // 상세조회가 오는 동안 사용자가 다른 장소를 열었으면 반영하지 않음
-        if (_lastOpened.kind !== 'place' || _lastOpened.data !== place) return;
+        // 상세조회가 오는 동안 사용자가 다른 장소를 열었거나 시트를 닫았으면 반영하지 않음
+        if (!_lastOpened || _lastOpened.kind !== 'place' || _lastOpened.data !== place) return;
         const slot = document.getElementById('sheetDetailSlot');
         if (!slot) return;
         const imgUrl   = place.image || detail?.firstimage || '';
@@ -4003,7 +4017,7 @@ kakao.maps.load(function () {
     resetSheet();
   }
 
-  function exitHallyuMode() {
+  async function exitHallyuMode() {
     hallyuMode = false; activeDramaId = null; activeSiteId = null;
     document.getElementById('hallyuTab').classList.remove('active');
     document.getElementById('legend').classList.remove('hidden');
@@ -4015,7 +4029,10 @@ kakao.maps.load(function () {
       renderSeasonStrip(currentSeason);
       renderSeasonPanel(null);
       refreshSeasonTrend(currentSeason);
-      refreshSeasonTop5(currentSeason);
+      // refreshSeasonTop5는 시군구 20~40여 건을 순차 조회하며 lockTabs()로 탭을 잠근다.
+      // 여기서 await하지 않으면 호출부의 스피너가 먼저 꺼져 "로딩은 끝났는데 탭만 안 눌리는"
+      // 무응답 구간이 수 초간 생긴다(실측: 계절 전환당 최대 ~5.6초, season-switch-performance-diagnosis.md 참고).
+      await refreshSeasonTop5(currentSeason);
     }
     resetSheet();
   }
@@ -4275,17 +4292,22 @@ kakao.maps.load(function () {
         tab.classList.add('active');
         const needsSeasonLoad = USE_REAL_API && !_seasonCache[currentSeason];
         const needsBFLoad     = bfMode && USE_REAL_API && _bfCache[currentSeason] === undefined;
-        if (needsSeasonLoad || needsBFLoad) {
+        // top5 재채점(refreshSeasonTop5)이 아직 안 끝난 계절이면 exitHallyuMode() 안에서 탭이 잠긴다.
+        // 그 구간까지 스피너를 계속 띄워야 무응답처럼 보이지 않는다.
+        const needsTop5Rescore = USE_REAL_API && !bfMode && !_seasonTop5Cache[currentSeason] && !_seasonTop5Pending.has(currentSeason);
+        if (needsSeasonLoad || needsBFLoad || needsTop5Rescore) {
           const seasonCap = currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1);
-          showSpinner(needsSeasonLoad ? L()['loading' + seasonCap] : L().loadingBF);
+          showSpinner(needsBFLoad && !needsSeasonLoad ? L().loadingBF : L()['loading' + seasonCap]);
           try {
             await Promise.all([
               needsSeasonLoad ? loadSeasonData(currentSeason).catch(e => console.warn(`${currentSeason} API 실패, 더미 데이터 사용:`, e)) : null,
               needsBFLoad     ? loadBFData(currentSeason).catch(e => console.warn(`${currentSeason} 무장애 API 실패, 더미 데이터 사용:`, e)) : null,
             ]);
+            await exitHallyuMode();
           } finally { hideSpinner(); }
+        } else {
+          exitHallyuMode();
         }
-        exitHallyuMode();
       }
     });
   });
@@ -4317,7 +4339,7 @@ kakao.maps.load(function () {
           renderSeasonStrip('spring');
           renderSeasonPanel(null);
           refreshSeasonTrend('spring');
-          refreshSeasonTop5('spring');
+          return refreshSeasonTop5('spring'); // 반환해야 아래 .finally(hideSpinner)가 top5 잠금 해제까지 기다린다
         }
       })
       .catch(e => console.warn('초기 API 로드 실패, 더미 데이터 유지:', e))
