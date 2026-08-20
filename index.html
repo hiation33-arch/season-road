@@ -1370,6 +1370,39 @@ async function loadNearbyStays(lat, lng) {
   return _stayCache[key];
 }
 
+// ── 인근 맛집 (locationBasedList2 contentTypeId=39, 거리순) ──
+// loadNearbyStays와 동일 패턴(같은 엔드포인트, 반경, 정렬) — contentTypeId만 숙박(32)→음식점(39).
+// 프록시는 /:base/:endpoint에 파라미터 화이트리스트가 없어 contentTypeId=39도 별도 라우트 없이 그대로 통과한다.
+const _restaurantCache = {};
+async function loadNearbyRestaurants(lat, lng, radius = 10000) {
+  if (!lat || !lng) return [];
+  const key = `${currentLang}_${lat.toFixed(3)}_${lng.toFixed(3)}`;
+  if (key in _restaurantCache) return _restaurantCache[key];
+  const qs = new URLSearchParams({
+    mapX: lng, mapY: lat, radius, contentTypeId: 39,
+    arrange: 'E', numOfRows: 5, pageNo: 1,
+    MobileOS: 'ETC', MobileApp: 'SeasonRoad', _type: 'json',
+  });
+  const parse = async (res) => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const items = (await res.json())?.response?.body?.items?.item;
+    if (!items) return [];
+    return (Array.isArray(items) ? items : [items]).slice(0, 3);
+  };
+  const base = KTO_BASE_URLS[currentLang] || KTO_BASE_URLS.ko;
+  try {
+    _restaurantCache[key] = await parse(await fetch(`${base}/locationBasedList2?${qs}`));
+  } catch (e) {
+    if (currentLang !== 'ko') {
+      try { _restaurantCache[key] = await parse(await fetch(`${KTO_BASE_URLS.ko}/locationBasedList2?${qs}`)); }
+      catch (e2) { console.warn('[SeasonRoad] 인근 맛집 조회 실패:', e2); _restaurantCache[key] = []; }
+    } else {
+      console.warn('[SeasonRoad] 인근 맛집 조회 실패:', e); _restaurantCache[key] = [];
+    }
+  }
+  return _restaurantCache[key];
+}
+
 function _fmtDist(m) {
   const n = parseFloat(m);
   if (!n && n !== 0) return '';
