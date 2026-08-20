@@ -354,6 +354,18 @@
     .legend-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gray-600); }
     .legend-dot { width: 14px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
     .legend-dot svg { display: block; }
+    /* 당일/1박/2박 범례는 클릭해서 지도 핀을 필터링할 수 있다(한류·무장애는 대상 아님) */
+    .legend-row.legend-filter {
+      cursor: pointer; padding: 3px 6px; margin: -3px -6px; border-radius: 6px;
+      border: 1px solid transparent; transition: background 0.15s, border-color 0.15s;
+    }
+    .legend-row.legend-filter:hover { background: var(--gray-100); }
+    .legend-row.legend-filter:focus-visible { outline: 2px solid var(--gray-900); outline-offset: 1px; }
+    /* 활성 상태는 색상 점에만 기대지 않도록 배경·테두리·굵기로 함께 표시(WCAG AA 대비 고려) */
+    .legend-row.legend-filter.active {
+      background: var(--gray-100); border-color: var(--gray-900);
+      color: var(--gray-900); font-weight: 700;
+    }
 
     /* ── 바텀시트 ── */
     .sheet {
@@ -914,9 +926,9 @@
 <div id="map" role="main" aria-label="여행지 지도"></div>
 
 <div class="legend" id="legend">
-  <div class="legend-row"><div class="legend-dot" data-pin-color="#22c55e"></div><span id="legendDay">당일 코스</span></div>
-  <div class="legend-row"><div class="legend-dot" data-pin-color="#ef4444"></div><span id="legendOneNight">1박 코스</span></div>
-  <div class="legend-row"><div class="legend-dot" data-pin-color="#3b82f6"></div><span id="legendTwoNight">2박 코스</span></div>
+  <div class="legend-row legend-filter" data-type-filter="day" role="button" tabindex="0" aria-pressed="false"><div class="legend-dot" data-pin-color="#22c55e"></div><span id="legendDay">당일 코스</span></div>
+  <div class="legend-row legend-filter" data-type-filter="1night" role="button" tabindex="0" aria-pressed="false"><div class="legend-dot" data-pin-color="#ef4444"></div><span id="legendOneNight">1박 코스</span></div>
+  <div class="legend-row legend-filter" data-type-filter="2night" role="button" tabindex="0" aria-pressed="false"><div class="legend-dot" data-pin-color="#3b82f6"></div><span id="legendTwoNight">2박 코스</span></div>
   <div class="legend-row"><div class="legend-dot" data-pin-color="#a855f7"></div><span id="legendHallyu">한류 촬영지</span></div>
   <div class="legend-row" id="bfLegendRow" style="display:none"><div class="legend-dot" data-pin-color="#f97316"></div><span id="legendBF">무장애 여행지</span></div>
 </div>
@@ -2891,6 +2903,7 @@ kakao.maps.load(function () {
   let _sheetEmpty    = true;
   let _lastOpened    = null; // { kind:'place'|'bf'|'drama', data, drama? }
   let _stripMode     = 'trend'; // 'trend' | 'season' — 모바일 스트립 토글 상태 (계절 전환에도 유지)
+  let _activeTypeFilter = null; // null | 'day' | '1night' | '2night' — 범례 클릭으로 코스 타입 핀 필터링(한류·무장애 모드는 대상 아님)
 
   function resetSheet() {
     setSheetOpen(false);
@@ -3017,6 +3030,16 @@ kakao.maps.load(function () {
       addSeasonPins(currentSeason);
     }
     if (bfMode) addBFPins();
+  }
+
+  // ── 범례 클릭 → 코스 타입 필터(당일/1박/2박만 대상, 한류·무장애는 범위 밖) ──
+  function setTypeFilter(type) {
+    _activeTypeFilter = (_activeTypeFilter === type) ? null : type; // 같은 항목 재클릭 시 토글 해제
+    document.querySelectorAll('.legend-row.legend-filter').forEach(row => {
+      const on = row.dataset.typeFilter === _activeTypeFilter;
+      row.classList.toggle('active', on);
+      row.setAttribute('aria-pressed', String(on));
+    });
   }
 
   function renderSeasonPins(season) { currentSeason = season; refreshPins(); }
@@ -4310,6 +4333,11 @@ kakao.maps.load(function () {
         }
       }
     });
+  });
+
+  // ── 범례 클릭(당일/1박/2박 필터) ──
+  document.querySelectorAll('.legend-row.legend-filter').forEach(row => {
+    bindActivatable(row, () => setTypeFilter(row.dataset.typeFilter));
   });
 
   // ── 바텀시트 핸들 ──
