@@ -983,6 +983,7 @@ const I18N = {
     fieldCourseType: '코스 유형', fieldDuration: '추천 코스', fieldLocation: '위치',
     fieldGenre: '장르', fieldOtt: 'OTT 플랫폼',
     nearbyStay: '인근 숙박', stayLoading: '인근 숙박 불러오는 중…', stayNone: '인근 숙박 정보가 없습니다.',
+    nearbyFood: '🍴 인근 맛집', foodLoading: '인근 맛집 불러오는 중…',
     detailLoading: '상세정보 불러오는 중…', readMore: '더보기', readLess: '접기',
     top5Loading: '추천 목록 불러오는 중…',
     loadingSpring: '봄 여행지 불러오는 중…',
@@ -1037,6 +1038,7 @@ const I18N = {
     fieldCourseType: 'Course Type', fieldDuration: 'Recommended Course', fieldLocation: 'Location',
     fieldGenre: 'Genre', fieldOtt: 'Platform',
     nearbyStay: 'Nearby Stays', stayLoading: 'Loading nearby stays…', stayNone: 'No nearby accommodations found.',
+    nearbyFood: '🍴 Nearby Food', foodLoading: 'Loading nearby restaurants…',
     detailLoading: 'Loading details…', readMore: 'Show more', readLess: 'Show less',
     top5Loading: 'Loading recommendations…',
     loadingSpring: 'Loading spring travel spots…',
@@ -1091,6 +1093,7 @@ const I18N = {
     fieldCourseType: '行程类型', fieldDuration: '推荐行程', fieldLocation: '地点',
     fieldGenre: '类型', fieldOtt: '平台',
     nearbyStay: '周边住宿', stayLoading: '正在加载周边住宿…', stayNone: '暂无周边住宿信息。',
+    nearbyFood: '🍴 附近餐厅', foodLoading: '正在加载周边餐厅…',
     detailLoading: '正在加载详情…', readMore: '展开', readLess: '收起',
     top5Loading: '正在加载推荐列表…',
     loadingSpring: '正在加载春季旅游景点…',
@@ -1145,6 +1148,7 @@ const I18N = {
     fieldCourseType: 'コースタイプ', fieldDuration: 'おすすめコース', fieldLocation: '場所',
     fieldGenre: 'ジャンル', fieldOtt: 'プラットフォーム',
     nearbyStay: '周辺の宿泊', stayLoading: '周辺の宿泊を読み込み中…', stayNone: '周辺の宿泊情報がありません。',
+    nearbyFood: '🍴 周辺グルメ', foodLoading: '周辺グルメを読み込み中…',
     detailLoading: '詳細情報を読み込み中…', readMore: 'もっと見る', readLess: '閉じる',
     top5Loading: 'おすすめリストを読み込み中…',
     loadingSpring: '春の観光地を読み込み中…',
@@ -3991,16 +3995,29 @@ kakao.maps.load(function () {
       <div class="stay-section" id="sheetStaySlot">
         <div class="stay-title">🏨 ${lang.nearbyStay}</div>
         <div class="sheet-detail-loading" id="sheetStayLoading">${lang.stayLoading}</div>
+      </div>
+      <div class="stay-section" id="sheetFoodSlot">
+        <div class="stay-title">${lang.nearbyFood}</div>
+        <div class="sheet-detail-loading" id="sheetFoodLoading">${lang.foodLoading}</div>
       </div>`;
     setSheetOpen(true);
     renderSeasonPanel(place);
 
-    // 인근 숙박 (모든 장소 공통, 좌표 기반)
+    // 인근 숙박·맛집 (모든 장소 공통, 좌표 기반) — 서로 기다리지 않고 각자 도착하는 대로 렌더
     loadNearbyStays(place.lat, place.lng).then(stays => {
       if (!_lastOpened || _lastOpened.kind !== 'place' || _lastOpened.data !== place) return; // stale 방지(시트 닫힘 포함)
       const slot = document.getElementById('sheetStaySlot');
       if (!slot) return;
       slot.innerHTML = `<div class="stay-title">🏨 ${lang.nearbyStay}</div>` + _renderStayCards(stays);
+    });
+    loadNearbyRestaurants(place.lat, place.lng).then(foods => {
+      if (!_lastOpened || _lastOpened.kind !== 'place' || _lastOpened.data !== place) return;
+      const slot = document.getElementById('sheetFoodSlot');
+      if (!slot) return;
+      // 결과 0건이면 빈 헤더만 남기지 않고 섹션 자체를 제거
+      slot.innerHTML = foods.length
+        ? `<div class="stay-title">${lang.nearbyFood}</div>` + _renderStayCards(foods)
+        : '';
     });
 
     if (place._fromApi && place.apiId) {
