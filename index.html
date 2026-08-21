@@ -3990,7 +3990,7 @@ kakao.maps.load(function () {
       <div class="info-grid">
         <div class="info-card"><div class="info-label">${lang.fieldCourseType}</div><div class="info-val">${courseLabel}</div></div>
         <div class="info-card"><div class="info-label">${lang.fieldDuration}</div><div class="info-val">${durLabel}</div></div>
-        <div class="info-card col-2"><div class="info-label">${lang.fieldLocation}</div><div class="info-val">${locLabel}</div></div>
+        <div class="info-card col-2"><div class="info-label">${lang.fieldLocation}</div><div class="info-val" id="sheetLocVal">${locLabel}</div></div>
       </div>
       <div class="stay-section" id="sheetStaySlot">
         <div class="stay-title">🏨 ${lang.nearbyStay}</div>
@@ -4024,6 +4024,24 @@ kakao.maps.load(function () {
       loadPlaceDetail(place.apiId).then(detail => {
         // 상세조회가 오는 동안 사용자가 다른 장소를 열었거나 시트를 닫았으면 반영하지 않음
         if (!_lastOpened || _lastOpened.kind !== 'place' || _lastOpened.data !== place) return;
+        // detailCommon2는 currentLang 서비스로 조회되므로 title·addr1이 현재 언어 원어명이다.
+        // 언어 전환 후 열려있던 시트가 이전 언어 객체를 붙잡고 있어도(언어별 areaBasedList2 집합
+        // 차이로 재조회 풀에서 id로 못 찾는 경우 포함) 제목·주소·위치를 새 언어로 자기 교정한다.
+        // (비블로킹 — 언어 전환 흐름 자체는 이 조회를 기다리지 않는다)
+        if (detail?.title) {
+          const titleEl = document.getElementById('sheetPlace');
+          if (titleEl && titleEl.textContent !== detail.title) titleEl.textContent = detail.title;
+          place.name = detail.title;
+          if (place.i18n) place.i18n[currentLang] = detail.title;
+        }
+        if (detail?.addr1) {
+          place.desc = detail.addr1;
+          place.location = detail.addr1;
+          const locEl  = document.getElementById('sheetLocVal');
+          if (locEl) locEl.textContent = detail.addr1;
+          const descEl = document.getElementById('sheetDescText'); // 개요 없을 때만 남아있는 주소 문단
+          if (descEl) descEl.textContent = detail.addr1;
+        }
         const slot = document.getElementById('sheetDetailSlot');
         if (!slot) return;
         const imgUrl   = place.image || detail?.firstimage || '';
@@ -4212,11 +4230,17 @@ kakao.maps.load(function () {
       // 조회 당시 언어의 title로 4개 언어 모두 동일하게 채워져, 옛 객체로는 언어 재렌더가 안 됨)
       // 방금 재조회된 새 객체로 교체한다 — id 매칭 실패 시(더미 등) 그대로 두면 자체 i18n으로 렌더됨.
       if (_lastOpened && document.getElementById('sheet').classList.contains('open')) {
+        const cur  = _lastOpened.data;
         const pool = _lastOpened.kind === 'place' ? _seasonCache[currentSeason]
                    : _lastOpened.kind === 'bf'    ? _bfCache[currentSeason]
                    : null;
-        if (Array.isArray(pool)) {
-          const fresh = pool.find(p => p.id === _lastOpened.data.id);
+        if (Array.isArray(pool) && cur) {
+          // KTO 언어별 서비스(KorService2/EngService2…)는 같은 장소에 다른 contentId를 주거나
+          // areaBasedList2가 반환하는 장소 집합 자체가 언어마다 달라, id 매칭만으론 놓친다.
+          // → id 우선, 실패 시 좌표 근접(≈50m)으로도 매칭해 새 언어 객체로 교체한다.
+          const near = (a, b) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) < 5e-4;
+          const fresh = pool.find(p => p.id === cur.id)
+                     || pool.find(p => near(p.lat, cur.lat) && near(p.lng, cur.lng));
           if (fresh) _lastOpened.data = fresh;
         }
       }
