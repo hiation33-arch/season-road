@@ -2939,6 +2939,7 @@ kakao.maps.load(function () {
   let _searchTimer   = null;
   let _sheetEmpty    = true;
   let _lastOpened    = null; // { kind:'place'|'bf'|'drama', data, drama? }
+  let _pendingLangFix = null; // {id, lang} — 언어 전환 시 풀 매칭에 실패한 API 장소 시트. 새 언어 상세조회도 비면(해당 언어 서비스에 데이터 없음) 옛 언어로 홀로 남기지 않고 시트를 닫는 신호
   let _stripMode     = 'trend'; // 'trend' | 'season' — 모바일 스트립 토글 상태 (계절 전환에도 유지)
   let _activeTypeFilter = null; // null | 'day' | '1night' | '2night' — 범례 클릭으로 코스 타입 핀 필터링(한류·무장애 모드는 대상 아님)
 
@@ -2948,6 +2949,7 @@ kakao.maps.load(function () {
     document.getElementById('sheetBadge').textContent = '';
     document.getElementById('sheetBody').innerHTML = '';
     _lastOpened = null;
+    _pendingLangFix = null;
     _sheetEmpty = true;
   }
 
@@ -4042,6 +4044,13 @@ kakao.maps.load(function () {
           const descEl = document.getElementById('sheetDescText'); // 개요 없을 때만 남아있는 주소 문단
           if (descEl) descEl.textContent = detail.addr1;
         }
+        // 언어 전환으로 이 시트를 새 언어로 교정하려 했으나(풀 매칭 실패) 상세조회에도 제목이 없으면
+        // = 현재 언어 서비스에 이 장소 데이터 자체가 없음(예: 이사부크루즈 contentId가 EngService2에
+        // 부재). 지도 핀·목록에도 이미 없는 상태라, 옛 언어 제목으로 홀로 남기지 않고 시트를 닫는다.
+        if (_pendingLangFix && _pendingLangFix.id === place.id && _pendingLangFix.lang === currentLang) {
+          _pendingLangFix = null;
+          if (!detail?.title) { resetSheet(); return; }
+        }
         const slot = document.getElementById('sheetDetailSlot');
         if (!slot) return;
         const imgUrl   = place.image || detail?.firstimage || '';
@@ -4229,6 +4238,7 @@ kakao.maps.load(function () {
       // 열려있는 상세 시트가 이전 언어로 조회된 장소 객체를 참조 중이면(API 장소의 i18n 슬롯은
       // 조회 당시 언어의 title로 4개 언어 모두 동일하게 채워져, 옛 객체로는 언어 재렌더가 안 됨)
       // 방금 재조회된 새 객체로 교체한다 — id 매칭 실패 시(더미 등) 그대로 두면 자체 i18n으로 렌더됨.
+      _pendingLangFix = null;
       if (_lastOpened && document.getElementById('sheet').classList.contains('open')) {
         const cur  = _lastOpened.data;
         const pool = _lastOpened.kind === 'place' ? _seasonCache[currentSeason]
@@ -4241,7 +4251,13 @@ kakao.maps.load(function () {
           const near = (a, b) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) < 5e-4;
           const fresh = pool.find(p => p.id === cur.id)
                      || pool.find(p => near(p.lat, cur.lat) && near(p.lng, cur.lng));
-          if (fresh) _lastOpened.data = fresh;
+          if (fresh) {
+            _lastOpened.data = fresh;
+          } else if (_lastOpened.kind === 'place' && cur._fromApi && cur.apiId && USE_REAL_API) {
+            // 풀에서 못 찾음 → 아래 openPlace의 비블로킹 detailCommon2(새 언어) 자기교정에 맡기되,
+            // 그마저 비면(해당 언어 서비스에 이 장소 데이터 자체가 없음) 시트를 닫도록 신호를 남긴다.
+            _pendingLangFix = { id: cur.id, lang: currentLang };
+          }
         }
       }
       refreshPins();
