@@ -4201,6 +4201,25 @@ kakao.maps.load(function () {
         } catch(e) { console.warn('[SeasonRoad] 언어 전환 API 재조회 실패:', e); }
         finally { hideSpinner(); }
       }
+      // 추천 TOP5 재채점 캐시는 계절 단위 키라 언어가 바뀌어도 살아남아, 이전 언어로 채점된
+      // 장소 객체(옛 _seasonCache 참조)를 그대로 들고 있다 → 언어 전환 후에도 추천 목록이 옛 언어로
+      // 남는다(refreshSeasonTop5 가드가 재채점을 막음). 재조회가 끝난 이 시점에 비워, 아래
+      // applyLanguage() 안의 refreshSeasonTop5가 새 언어 객체로 다시 채점·렌더하게 한다.
+      // (지역 수요·연계 중심성 캐시는 언어 무관 수치라 유지 — 재조회 없이 즉시 재채점됨)
+      Object.keys(_seasonTop5Cache).forEach(k => delete _seasonTop5Cache[k]);
+      _seasonTop5Pending.clear();
+      // 열려있는 상세 시트가 이전 언어로 조회된 장소 객체를 참조 중이면(API 장소의 i18n 슬롯은
+      // 조회 당시 언어의 title로 4개 언어 모두 동일하게 채워져, 옛 객체로는 언어 재렌더가 안 됨)
+      // 방금 재조회된 새 객체로 교체한다 — id 매칭 실패 시(더미 등) 그대로 두면 자체 i18n으로 렌더됨.
+      if (_lastOpened && document.getElementById('sheet').classList.contains('open')) {
+        const pool = _lastOpened.kind === 'place' ? _seasonCache[currentSeason]
+                   : _lastOpened.kind === 'bf'    ? _bfCache[currentSeason]
+                   : null;
+        if (Array.isArray(pool)) {
+          const fresh = pool.find(p => p.id === _lastOpened.data.id);
+          if (fresh) _lastOpened.data = fresh;
+        }
+      }
       refreshPins();
       applyLanguage();
     });
